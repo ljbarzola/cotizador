@@ -24,13 +24,13 @@ Es una aplicacion que permite al equipo de ventas de GEMESEG generar cotizacione
 4. Completar datos del cliente
 5. Imprimir o guardar la cotizacion
 
-## Archivos del proyecto
+## Desarrollo local
 
-| Archivo | Descripcion |
-|---------|-------------|
-| `index (1).html` | Archivo original completo (HTML + CSS + JS en un solo archivo) |
-| `nuevo-proyecto/` | Version modular en progreso (Vite + ES Modules) |
+```bash
+npm install
+npm run dev
+```
 
 ## Despliegue
 
-La aplicacion se puede-hosted gratis en [Netlify](https://app.netlify.com/drop) simplemente arrastrando el archivo HTML.
+La aplicacion se despliega automaticamente via GitHub Pages al hacer push a la rama `master`.

@@ -23,7 +23,7 @@
   - `saved_quotes` - Cotizaciones guardadas (maximo 100)
   - `quote_draft` - Borrador actual
   - `custom_catalog` - Catalogo personalizado
-  - `drive_config` / `auth_config` - Configuracion de sincronizacion
+  - `drive_config` - Configuracion de sincronizacion
   - `cot_seq_YYYYMMDD` - Contadores de secuencia de cotizaciones
 
 ### Arquitectura
@@ -36,9 +36,9 @@ La aplicacion es una SPA (Single Page Application) vanilla sin frameworks de fro
 - Catalogo embebido como array JSON
 - Autenticacion contra Google Sheets (CSV)
 
-**Version modular** (`nuevo-proyecto/`):
+**Version modular** (raiz del repo):
 - Vite como dev server y bundler
-- CSS extraido a `src/styles.css` (908 lineas)
+- CSS extraido a `src/styles.css`
 - JS principal en `src/app.js` (logica de catalogo, carrito, cotizaciones)
 - Modulo de autenticacion en `src/modules/auth.js` (Supabase)
 - Cliente Supabase en `src/lib/supabase.js` (variables de entorno Vite)
@@ -58,7 +58,6 @@ La aplicacion es una SPA (Single Page Application) vanilla sin frameworks de fro
 
 ```bash
 # Desarrollo
-cd nuevo-proyecto
 npm install
 npm run dev        # Dev server con HMR en http://localhost:5173
 
@@ -72,20 +71,24 @@ npm run preview    # Preview del build
 ```
 Cotizador/
 ├── index (1).html              # Archivo original monolitico
-├── nuevo-proyecto/             # Version modular (Vite)
-│   ├── index.html              # HTML con referencias externas
-│   ├── package.json            # Config NPM
-│   ├── build_project.py        # Script de migracion Python
-│   ├── src/
-│   │   ├── main.js             # Entry point
-│   │   ├── app.js              # Logica principal (930 lineas)
-│   │   ├── styles.css          # Estilos (908 lineas)
-│   │   └── modules/            # Modulos stub (no implementados)
-│   │       ├── auth.js
-│   │       ├── catalog.js
-│   │       ├── quote.js
-│   │       └── sync.js
-│   └── node_modules/           # Dependencias
+├── index.html                  # HTML de la version modular
+├── package.json                # Config NPM
+├── vite.config.js              # Config Vite (base: /cotizador/)
+├── .env                        # Variables de entorno (gitignored)
+├── build_project.py            # Script de migracion Python
+├── src/
+│   ├── main.js                 # Entry point
+│   ├── app.js                  # Logica principal
+│   ├── styles.css              # Estilos
+│   └── modules/
+│       ├── auth.js             # Autenticacion Supabase
+│       ├── catalog.js          # Stub
+│       ├── quote.js            # Stub
+│       └── sync.js             # Stub
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # GitHub Actions para GitHub Pages
+└── node_modules/               # Dependencias
 ```
 
 ### Dependencias
@@ -93,15 +96,15 @@ Cotizador/
 **Dependencias de desarrollo:**
 - `vite` ^5.4.10
 
+**Dependencias de produccion:**
+- `@supabase/supabase-js` ^2.110.1
+
 **Dependencias externas (CDN):**
-- `@supabase/supabase-js@2` (autenticacion)
 - Google Fonts (Montserrat)
 
 ### Notas Importantes
 
-- No hay `.gitignore` - `node_modules/` esta being tracked (recomendado agregarlo)
 - No hay tests automatizados
-- No hay `vite.config.js` (configuracion default)
-- Los modulos en `src/modules/` son stubs vacios - toda la logica esta en `app.js`
-- La contrasena de admin esta hardcodeada en el codigo fuente
+- Los modulos en `src/modules/catalog.js`, `quote.js`, `sync.js` son stubs
 - El catalogo completo esta embebido como JSON en `app.js`
+- Deploy automatico via GitHub Pages al hacer push a `master`

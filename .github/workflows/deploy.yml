@@ -19,10 +19,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./nuevo-proyecto
 
     steps:
       - name: Checkout del código
@@ -33,7 +29,6 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: ./nuevo-proyecto/package-lock.json
 
       - name: Instalar dependencias
         run: npm install
@@ -47,7 +42,7 @@ jobs:
       - name: Preparar artefactos para GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './nuevo-proyecto/dist'
+          path: './dist'
 
       - name: Desplegar a GitHub Pages
         id: deployment
