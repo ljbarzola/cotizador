@@ -7,12 +7,60 @@ window.doLogin = doLogin;
 window.logout = logout;
 
 window.addEventListener('DOMContentLoaded', async () => {
+  // Logo loading - two different logos
+  const LOGO_LOGIN = '/cotizador/content/logo-gemeseg-back-white.png';
+  const LOGO_APP = '/cotizador/content/logo-gemeseg-back-blue.png';
+  const FALLBACK_LOGIN = 'GE<span class="m">M</span>ESEG';
+  const FALLBACK_APP = 'GE<span class="m">M</span>ESEG <span class="brand-sub">Tecnología</span>';
+
+  async function tryLoadLogo(path) {
+    try {
+      const res = await fetch(path, { method: 'HEAD' });
+      if (res.ok) return path;
+    } catch {}
+    return null;
+  }
+
+  const [logoLogin, logoApp] = await Promise.all([
+    tryLoadLogo(LOGO_LOGIN),
+    tryLoadLogo(LOGO_APP),
+  ]);
+
+  const loginLogo = document.getElementById('loginLogo');
+  const topbarLogo = document.getElementById('topbarLogo');
+  const printLogo = document.getElementById('printLogo');
+
+  if (loginLogo) loginLogo.innerHTML = logoLogin
+    ? `<img src="${logoLogin}" alt="GEMESEG" class="logo-img logo-img-login">`
+    : FALLBACK_LOGIN;
+
+  const appLogoHtml = logoApp
+    ? `<img src="${logoApp}" alt="GEMESEG" class="logo-img logo-img-topbar">`
+    : FALLBACK_APP;
+  if (topbarLogo) topbarLogo.innerHTML = appLogoHtml;
+
+  if (printLogo) printLogo.innerHTML = logoApp
+    ? `<img src="${logoApp}" alt="GEMESEG" class="logo-img logo-img-print">`
+    : FALLBACK_LOGIN;
+
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('logoutBtn').addEventListener('click', logout);
   document.getElementById('loginPass').addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
   });
   document.getElementById('loginUser').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('loginPass').focus();
   });
+
+  const toggleBtn = document.getElementById('togglePass');
+  const passInput = document.getElementById('loginPass');
+  if (toggleBtn && passInput) {
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = passInput.type === 'password';
+      passInput.type = isPassword ? 'text' : 'password';
+      toggleBtn.textContent = isPassword ? '🙈' : '👁️';
+    });
+  }
 
   const session = await validateSession();
   if (session) {

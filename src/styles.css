@@ -64,6 +64,10 @@
     text-transform: uppercase;
     opacity: 0.85;
   }
+  .logo-img { display: block; object-fit: contain; }
+  .logo-img-login { height: 48px; margin: 0 auto; }
+  .logo-img-topbar { height: 28px; }
+  .logo-img-print { height: 40px; }
   .user-chip {
     display: flex;
     align-items: center;

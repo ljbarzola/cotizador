@@ -18,17 +18,20 @@ export async function fetchUserProfile(userId) {
     .select('*')
     .eq('id', userId)
     .single();
-  if (error) throw new Error('No se pudo cargar el perfil: ' + error.message);
+  if (error) {
+    console.error('Profile fetch error:', error.message, error);
+    return null;
+  }
   return data;
 }
 
 export async function doLogin() {
   const credential = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPass').value.trim();
+  const pass = document.getElementById('loginPass').value;
   document.getElementById('loginError').classList.remove('show');
 
   if (!credential || !pass) {
-    showLoginError('Ingresa usuario/email y clave');
+    showLoginError('Ingresa usuario y clave');
     return;
   }
 
@@ -37,7 +40,8 @@ export async function doLogin() {
   btn.innerHTML = '<span class="login-spinner"></span>Verificando…';
 
   try {
-    const email = credential.includes('@') ? credential : credential + '@gemeseg.local';
+    const email = credential.includes('@') ? credential : credential + '@gemeseg.com';
+    console.log('Login attempt:', { email, passLength: pass.length });
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -45,14 +49,29 @@ export async function doLogin() {
     });
 
     if (error) {
-      showLoginError('Usuario o clave incorrectos.');
+      console.error('Supabase auth error:', error);
+      let msg = error.message || error.error_description || 'Error desconocido';
+      if (msg === 'Invalid login credentials') {
+        msg = 'Usuario o clave incorrectos. Verifica tus datos.';
+      } else if (msg.includes('Database error')) {
+        msg = 'Error del servidor. Intenta de nuevo en unos segundos.';
+      }
+      showLoginError(msg);
       resetLoginBtn();
       return;
     }
 
+    console.log('Login OK, user:', data.user.id);
+
     const profile = await fetchUserProfile(data.user.id);
 
-    if (!profile.activo) {
+    if (!profile) {
+      showLoginError('No se encontro el perfil. Contacta al administrador.');
+      resetLoginBtn();
+      return;
+    }
+
+    if (profile.activo === false) {
       await supabase.auth.signOut();
       showLoginError('Tu acceso fue desactivado. Contacta al administrador.');
       resetLoginBtn();
@@ -61,18 +80,21 @@ export async function doLogin() {
 
     const session = {
       userId: data.user.id,
-      user: credential,
-      nombre: profile.nombre,
-      rol: profile.rol,
-      activo: profile.activo,
+      user: profile.usuario || credential,
+      email: profile.correo || data.user.email,
+      nombre: profile.nombre || data.user.email,
+      rol: profile.rol || 'ventas',
+      activo: profile.activo !== false,
       ts: Date.now(),
     };
-    localStorage.setItem('usuario_nombre', profile.nombre);
-    localStorage.setItem('usuario_rol', profile.rol);
+    localStorage.setItem('usuario_nombre', session.nombre);
+    localStorage.setItem('usuario_rol', session.rol);
     localStorage.setItem('session', JSON.stringify(session));
+    window._enterApp?.(session);
     return session;
   } catch (e) {
-    showLoginError('Error al iniciar sesión: ' + e.message);
+    console.error('Login exception:', e);
+    showLoginError('Error de conexion. Verifica tu internet.');
     resetLoginBtn();
     return null;
   }
@@ -97,15 +119,17 @@ export async function validateSession() {
     }
 
     const profile = await fetchUserProfile(data.session.user.id);
-    if (!profile.activo) {
+    if (profile && profile.activo === false) {
       localStorage.removeItem('session');
       return false;
     }
 
-    session.nombre = profile.nombre;
-    session.rol = profile.rol;
-    localStorage.setItem('usuario_nombre', profile.nombre);
-    localStorage.setItem('usuario_rol', profile.rol);
+    if (profile) {
+      session.nombre = profile.nombre || session.nombre;
+      session.rol = profile.rol || session.rol;
+      localStorage.setItem('usuario_nombre', session.nombre);
+      localStorage.setItem('usuario_rol', session.rol);
+    }
     return session;
   } catch (e) {
     if (Date.now() - session.ts < 7 * 86400000) return session;
