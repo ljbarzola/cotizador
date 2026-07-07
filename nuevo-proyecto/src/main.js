@@ -1,11 +1,23 @@
 import './styles.css';
-import { initAuth } from './modules/auth.js';
-import { initCatalog } from './modules/catalog.js';
-import { initQuote } from './modules/quote.js';
-import { initSync } from './modules/sync.js';
 import './app.js';
 
-initAuth();
-initCatalog();
-initQuote();
-initSync();
+import { doLogin, validateSession, logout } from './modules/auth.js';
+
+window.doLogin = doLogin;
+window.logout = logout;
+
+window.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('loginPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('loginUser').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('loginPass').focus();
+  });
+
+  const session = await validateSession();
+  if (session) {
+    window._enterApp(session);
+  } else {
+    document.getElementById('loginUser').focus();
+  }
+});

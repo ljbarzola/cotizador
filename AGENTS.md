@@ -13,8 +13,8 @@
 | Tecnologia | Uso | Version |
 |---|---|---|
 | Vite | Dev server y bundler | ^5.4.10 |
-| Supabase JS | Autenticacion (CDN, version nueva) | v2 |
-| Google Sheets API | Fuente de datos para catalogo y usuarios | gviz/export |
+| Supabase JS | Autenticacion (via npm, no CDN) | v2 |
+| Google Sheets API | Fuente de datos para catalogo | gviz/export |
 | Google Fonts | Tipografia Montserrat | - |
 
 ### Almacenamiento
@@ -39,13 +39,14 @@ La aplicacion es una SPA (Single Page Application) vanilla sin frameworks de fro
 **Version modular** (`nuevo-proyecto/`):
 - Vite como dev server y bundler
 - CSS extraido a `src/styles.css` (908 lineas)
-- JS principal en `src/app.js` (930 lineas)
-- Modulos stub en `src/modules/` (auth, catalog, quote, sync) - aun no implementados
-- Autenticacion via Supabase (CDN en HTML)
+- JS principal en `src/app.js` (logica de catalogo, carrito, cotizaciones)
+- Modulo de autenticacion en `src/modules/auth.js` (Supabase)
+- Cliente Supabase en `src/lib/supabase.js` (variables de entorno Vite)
+- Variables de entorno via `.env` (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)
 
 ### Funcionalidades Clave
 
-1. **Autenticacion**: Login contra Google Sheets o Supabase. Password admin: `gemeseg2026`
+1. **Autenticacion**: Login via Supabase Auth (`signInWithPassword`). Credenciales en `.env`
 2. **Catalogo**: Productos de seguridad con precios, categorias, indicadores de frescura (verde/amarillo/rojo)
 3. **Carrito**: Agregar items, cantidades, eliminar, calcular totales
 4. **Modalidad de venta**: 35% margen (con instalacion) vs 15% margen (solo equipo)
