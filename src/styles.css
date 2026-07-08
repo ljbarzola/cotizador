@@ -79,17 +79,51 @@
     font-size: 12px;
     font-weight: 600;
     color: white;
+    position: relative;
   }
-  .logout-btn {
-    background: rgba(255,255,255,0.15);
+  .user-chip-info { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .user-chip-role {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.2);
     color: white;
-    border: none;
-    padding: 3px 9px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
-  .logout-btn:hover { background: var(--accent); }
+  .user-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    min-width: 220px;
+    z-index: 1000;
+    overflow: hidden;
+  }
+  .user-dropdown.open { display: block; }
+  .user-dropdown-header { padding: 12px 14px; }
+  .user-dropdown-name { font-weight: 700; font-size: 14px; color: var(--text); }
+  .user-dropdown-role { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .user-dropdown-divider { height: 1px; background: var(--border); }
+  .user-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .user-dropdown-item:hover { background: var(--bg); }
+  .user-dropdown-logout { color: var(--danger); }
   .topbar h1 .badge {
     background: var(--accent);
     color: var(--primary-dark);
@@ -125,6 +159,11 @@
     color: var(--text);
   }
   .btn-ghost:hover { background: var(--bg); }
+  .topbar-actions .btn-ghost {
+    border-color: rgba(255,255,255,0.3);
+    color: white;
+  }
+  .topbar-actions .btn-ghost:hover { background: rgba(255,255,255,0.15); }
 
   .main {
     display: grid;
@@ -530,6 +569,12 @@
     font-weight: 600;
   }
   .actions-bar .btn-save:hover { background: #fbbf24; }
+  .actions-bar .btn-new-quote {
+    background: white;
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  .actions-bar .btn-new-quote:hover { background: #fef2f2; }
 
   /* === SYNC STATUS === */
   .sync-status {
@@ -781,6 +826,79 @@
   .status-rechazada { background: #fee2e2; color: #991b1b; }
   .status-vencida { background: #fde68a; color: #78350f; }
 
+  /* === STATUS SELECT (history) === */
+  .status-select {
+    padding: 4px 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    background: white;
+    cursor: pointer;
+    min-width: 110px;
+  }
+  .status-select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+
+  /* === CATALOG EDITOR === */
+  .editor-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .editor-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .editor-table th {
+    background: #f3f4f6;
+    border: 1px solid var(--border);
+    padding: 6px 8px;
+    font-weight: 700;
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--muted);
+  }
+  .editor-table td {
+    border: 1px solid var(--border);
+    padding: 2px;
+  }
+  .editor-table td input,
+  .editor-table td select {
+    width: 100%;
+    border: none;
+    padding: 5px 6px;
+    font-size: 11px;
+    background: transparent;
+    outline: none;
+  }
+  .editor-table td input:focus,
+  .editor-table td select:focus {
+    background: #eff6ff;
+    box-shadow: inset 0 0 0 2px var(--primary);
+  }
+  .editor-table tr:hover td { background: #f9fafb; }
+  .editor-table tr.row-modified td { background: #fef3c7; }
+  .editor-table tr.row-new td { background: #d1fae5; }
+  .editor-table tr.row-deleted td { background: #fee2e2; text-decoration: line-through; opacity: 0.6; }
+  .editor-table .del-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--danger);
+    padding: 4px;
+  }
+  .editor-table .del-btn:hover { transform: scale(1.2); }
+
+  /* === CATALOG VIEWER (read-only) === */
+  .viewer-table td {
+    padding: 6px 8px;
+  }
+  .viewer-table tr:hover td { background: #f0f9ff; }
+
   /* === HISTORY MODAL === */
   .history-filters {
     display: flex;
@@ -822,7 +940,7 @@
     border-radius: 6px;
     margin-bottom: 6px;
     display: grid;
-    grid-template-columns: 1fr auto auto auto;
+    grid-template-columns: 1fr auto auto;
     gap: 10px;
     align-items: center;
     transition: background 0.1s;

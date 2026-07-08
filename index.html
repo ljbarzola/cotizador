@@ -41,15 +41,25 @@
   <header class="topbar">
     <h1 class="brand" id="topbarLogo"></h1>
     <div class="topbar-actions">
-      <div class="sync-status" id="syncStatus" onclick="handleSyncClick()" title="Actualizar catálogo">
-        <span class="sync-icon" id="syncIcon">🔄</span>
-        <span id="syncLabel">Cargando…</span>
+      <div class="sync-status" id="syncStatus" onclick="handleSyncClick()" title="Ver catálogo">
+        <span class="sync-icon" id="syncIcon">📦</span>
+        <span id="syncLabel">Catálogo</span>
       </div>
       <button class="btn btn-ghost" onclick="openSavedModal()">📂 Historial</button>
-      <button class="btn btn-ghost" onclick="newQuote()">🗑️ Limpiar</button>
       <div class="user-chip" id="userChip">
-        <span id="userChipName">—</span>
-        <button class="logout-btn" id="logoutBtn" title="Cerrar sesión">Salir</button>
+        <div class="user-chip-info" id="userChipToggle" style="cursor:pointer;">
+          <span id="userChipName">—</span>
+          <span class="user-chip-role" id="userChipRole"></span>
+        </div>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="user-dropdown-header">
+            <div class="user-dropdown-name" id="dropdownName">—</div>
+            <div class="user-dropdown-role" id="dropdownRole">—</div>
+          </div>
+          <div class="user-dropdown-divider"></div>
+          <button class="user-dropdown-item" id="btnEditCatalog" onclick="openCatalogEditor()" style="display:none;">📦 Editar catálogo</button>
+          <button class="user-dropdown-item user-dropdown-logout" onclick="logout()">🚪 Cerrar sesión</button>
+        </div>
       </div>
     </div>
   </header>
@@ -207,7 +217,7 @@
         <div class="actions-bar" data-no-print>
           <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
           <button class="btn-save" onclick="saveQuote()">💾 Guardar cotización</button>
-          <button onclick="loadDraft()">📥 Cargar borrador</button>
+          <button class="btn-new-quote" onclick="newQuote()">🔄 Nueva cotización</button>
         </div>
 
         <!-- CONDICIONES PRINT-ONLY -->
@@ -244,72 +254,6 @@
   </main>
 </div>
 
-<!-- MODAL: CONFIG URL DRIVE -->
-<div class="modal-backdrop" id="driveModal">
-  <div class="modal" style="max-width:600px;">
-    <div class="modal-header">
-      <h2>🔄 Sincronización con Google Drive</h2>
-      <button class="modal-close" onclick="closeDriveModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="margin-bottom:12px;font-size:13px;">
-        Actualiza el catálogo desde tu archivo <strong>"COSTOS y PROFORMAS"</strong>. Tienes dos formas:
-      </p>
-
-      <div class="sync-tabs">
-        <button class="sync-tab active" id="tabManual" onclick="switchSyncTab('manual')">📂 Cargar archivo (más simple)</button>
-        <button class="sync-tab" id="tabAuto" onclick="switchSyncTab('auto')">🔄 Automático (avanzado)</button>
-      </div>
-
-      <!-- TAB MANUAL -->
-      <div id="syncManual">
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:12px;border-radius:6px;margin-bottom:14px;font-size:12px;line-height:1.7;">
-          <strong>📋 Pasos:</strong>
-          <ol style="margin:6px 0 0 18px;padding:0;">
-            <li>Abre <em>COSTOS y PROFORMAS</em> en Google Sheets</li>
-            <li>Ve a la hoja de precios (PRECIOS EQUIPOS)</li>
-            <li>Menú: <strong>Archivo → Descargar → Valores separados por comas (.csv)</strong></li>
-            <li>Sube ese archivo aquí abajo 👇</li>
-          </ol>
-        </div>
-        <div class="field">
-          <label>Archivo CSV descargado de Google Sheets</label>
-          <input type="file" id="csvFileInput" accept=".csv,text/csv">
-        </div>
-        <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="importLocalCsv()">📂 Cargar y actualizar catálogo</button>
-      </div>
-
-      <!-- TAB AUTOMÁTICO -->
-      <div id="syncAuto" style="display:none;">
-        <div style="background:#fff7ed;border:1px solid #fdba74;padding:12px;border-radius:6px;margin-bottom:14px;font-size:12px;line-height:1.6;">
-          <strong>⚠️ Requiere hospedar la app online.</strong> La actualización automática diaria solo funciona si abres el cotizador desde una dirección web (no como archivo local en tu PC). Para activarla: sube el archivo a <strong>app.netlify.com/drop</strong> (gratis) y ábrelo desde la URL que te den.
-        </div>
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:12px;border-radius:6px;margin-bottom:14px;font-size:12px;line-height:1.7;">
-          <strong>📋 Publicar el Sheets como CSV:</strong>
-          <ol style="margin:6px 0 0 18px;padding:0;">
-            <li>En Google Sheets: <strong>Archivo → Publicar en la web</strong> (directamente en Archivo, no en Compartir)</li>
-            <li>Elige la hoja PRECIOS EQUIPOS + formato <strong>CSV</strong></li>
-            <li>Clic en Publicar → copia la URL</li>
-          </ol>
-        </div>
-        <div class="field">
-          <label>URL del archivo publicado como CSV</label>
-          <input type="text" id="driveUrlInput" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv">
-          <div style="font-size:11px;color:var(--muted);margin-top:6px;">La URL debe terminar en <code>output=csv</code></div>
-        </div>
-        <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="testAndSaveUrl()">🔄 Probar y guardar URL</button>
-      </div>
-
-      <div id="driveResult" style="margin-top:14px;"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger" onclick="resetCatalog()" style="margin-right:auto;font-size:11px;">Restaurar original</button>
-      <button class="btn btn-ghost" onclick="closeDriveModal()">Cerrar</button>
-      <button class="btn btn-primary" onclick="testAndSaveUrl()">🔄 Probar y guardar</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL: HISTORIAL DE COTIZACIONES -->
 <div class="modal-backdrop" id="savedModal">
   <div class="modal" style="max-width:800px;">
@@ -338,6 +282,91 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeSavedModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: VISOR DE CATÁLOGO (todos los usuarios) -->
+<div class="modal-backdrop" id="catalogViewerModal">
+  <div class="modal" style="max-width:95vw;height:90vh;display:flex;flex-direction:column;">
+    <div class="modal-header">
+      <h2>📦 Catálogo de productos</h2>
+      <button class="modal-close" onclick="closeCatalogViewer()">✕</button>
+    </div>
+    <div class="modal-body" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:12px 16px;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="viewerSearch" placeholder="Buscar código o descripción..." style="flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+        <select id="viewerCategory" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+          <option value="">Todas las categorías</option>
+        </select>
+        <span id="viewerCount" style="font-size:11px;color:var(--muted);"></span>
+        <button class="btn btn-ghost" id="btnGoToEditor" onclick="closeCatalogViewer();openCatalogEditor();" style="font-size:12px;padding:7px 14px;border-color:var(--border);color:var(--text);display:none;">✏️ Editar catálogo</button>
+      </div>
+      <div style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;">
+        <table class="editor-table viewer-table" id="viewerTable">
+          <thead>
+            <tr>
+              <th style="width:100px;">Código</th>
+              <th style="width:180px;">Categoría</th>
+              <th>Descripción</th>
+              <th style="width:70px;">Costo</th>
+              <th style="width:70px;">PVP 35%</th>
+              <th style="width:70px;">PVP 15%</th>
+              <th style="width:90px;">Última act.</th>
+              <th style="width:55px;">Días</th>
+              <th style="width:90px;">Proveedor</th>
+            </tr>
+          </thead>
+          <tbody id="viewerBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCatalogViewer()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDITOR DE CATÁLOGO (solo admin) -->
+<div class="modal-backdrop" id="catalogEditorModal">
+  <div class="modal" style="max-width:95vw;height:90vh;display:flex;flex-direction:column;">
+    <div class="modal-header">
+      <h2>✏️ Editor de catálogo <span style="font-size:12px;font-weight:400;color:var(--muted);">(Admin)</span></h2>
+      <button class="modal-close" onclick="closeCatalogEditor()">✕</button>
+    </div>
+    <div class="modal-body" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:12px 16px;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="editorSearch" placeholder="Buscar código o descripción..." style="flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+        <select id="editorCategory" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+          <option value="">Todas las categorías</option>
+        </select>
+        <span id="editorCount" style="font-size:11px;color:var(--muted);"></span>
+        <button class="btn btn-primary" onclick="saveCatalogEdits()" style="font-size:12px;padding:7px 14px;">💾 Guardar cambios</button>
+        <button class="btn btn-ghost" onclick="addNewProduct()" style="font-size:12px;padding:7px 14px;border-color:var(--border);color:var(--text);">+ Nuevo producto</button>
+      </div>
+      <div style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;">
+        <table class="editor-table" id="editorTable">
+          <thead>
+            <tr>
+              <th style="width:100px;">Código</th>
+              <th style="width:180px;">Categoría</th>
+              <th>Descripción</th>
+              <th style="width:70px;">Costo</th>
+              <th style="width:70px;">PVP 35%</th>
+              <th style="width:70px;">PVP 15%</th>
+              <th style="width:90px;">Última act.</th>
+              <th style="width:55px;">Días</th>
+              <th style="width:90px;">Proveedor</th>
+              <th style="width:50px;">Serv.</th>
+              <th style="width:40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="editorBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCatalogEditor()">Cerrar</button>
     </div>
   </div>
 </div>

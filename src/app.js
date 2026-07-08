@@ -442,16 +442,18 @@ function renderHistoryList(quotes) {
     const d = new Date(q.updated_at || q.saved_at);
     const total = quoteTotal(q);
     const status = q.status || 'borrador';
+    const statusOptions = STATUS_ORDER.map(s =>
+      `<option value="${s}" ${s === status ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`
+    ).join('');
     return `
       <div class="history-item">
         <div class="history-item-info">
           <div class="history-item-client">${client.name || '(sin nombre)'}</div>
           <div class="history-item-meta">${q.cot_num || '(sin número)'} · ${q.items?.length || 0} ítems · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', {hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        ${statusBadge(status)}
+        <select class="status-select" onchange="changeStatus('${q.id}', this.value)">${statusOptions}</select>
         <div class="history-item-actions">
           <button onclick="loadSaved('${q.id}')">Cargar</button>
-          <button class="btn-status" onclick="cycleStatus('${q.id}', '${status}')">Cambiar estado</button>
           <button style="color:var(--danger);border-color:var(--danger);" onclick="deleteSaved('${q.id}')">Eliminar</button>
         </div>
       </div>
@@ -486,26 +488,17 @@ function applyHistoryFilters() {
 
 const STATUS_ORDER = ['borrador', 'enviada', 'vista', 'aceptada', 'rechazada', 'vencida'];
 
-async function cycleStatus(id, current) {
-  const idx = STATUS_ORDER.indexOf(current);
-  const nextIdx = (idx + 1) % STATUS_ORDER.length;
-  const next = STATUS_ORDER[nextIdx];
-  const label = STATUS_LABELS[next];
-
-  // Confirmar cambio
-  const ok = confirm('Cambiar estado a "' + label + '"?');
-  if (!ok) return;
-
+async function changeStatus(id, newStatus) {
+  const label = STATUS_LABELS[newStatus];
   try {
     const { error } = await supabase.from('saved_quotes').update({
-      status: next,
+      status: newStatus,
       updated_at: new Date().toISOString(),
     }).eq('id', id);
     if (error) throw error;
 
-    // Actualizar cache
     const q = historyQuotesCache.find(q => q.id === id);
-    if (q) q.status = next;
+    if (q) q.status = newStatus;
 
     applyHistoryFilters();
     toast('✓ Estado cambiado a: ' + label, 'success');
@@ -580,392 +573,97 @@ function exportJSON() {
   URL.revokeObjectURL(url);
 }
 
-// === CONFIG ===
-const CONFIG_KEY = 'drive_config';
-function getConfig() {
-  try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'); }
-  catch(e) { return {}; }
-}
-function setConfig(c) { localStorage.setItem(CONFIG_KEY, JSON.stringify(c)); }
-
-// === DRIVE MODAL ===
-function openDriveModal() {
-  const c = getConfig();
-  $('driveUrlInput').value = c.driveUrl || '';
-  $('driveResult').innerHTML = '';
-  $('driveModal').classList.add('open');
-}
-function closeDriveModal() { $('driveModal').classList.remove('open'); }
-
-async function testAndSaveUrl() {
-  const url = $('driveUrlInput').value.trim();
-  if (!url) { $('driveResult').innerHTML = errBox('Pega una URL antes de probar'); return; }
-  if (!url.includes('docs.google.com')) { $('driveResult').innerHTML = errBox('La URL debe ser de Google Sheets (docs.google.com)'); return; }
-
-  $('driveResult').innerHTML = '<div style="padding:12px;background:#f3f4f6;border-radius:6px;font-size:13px;">⏳ Probando conexión y procesando archivo…</div>';
-
-  try {
-    const text = await fetchCsv(url);
-    const items = parseCatalogFromCSV(text);
-    if (items.length === 0) throw new Error('No se detectaron productos válidos. Verifica que la hoja publicada tenga el formato esperado (Modelo, Producto/Servicio, Costo Unitario, Precio/Und).');
-    // Guardar URL para sync automática futura
-    const cfg = getConfig();
-    cfg.driveUrl = url;
-    setConfig(cfg);
-    await applyNewCatalog(items, 'Google Drive');
-  } catch(e) {
-    $('driveResult').innerHTML = errBox(e.message + '<br><br>Si dice "Failed to fetch", probablemente abriste el cotizador como archivo local. La sincronización automática requiere hospedar la app online (ver instrucciones arriba). Mientras tanto, usa la pestaña "Cargar archivo".');
-  }
-}
-
-function errBox(msg) {
-  return `<div style="padding:12px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;font-size:13px;color:#991b1b;"><strong>Error:</strong> ${msg}</div>`;
-}
-
-// === TABS DE SINCRONIZACIÓN ===
-function switchSyncTab(tab) {
-  $('driveResult').innerHTML = '';
-  if (tab === 'manual') {
-    $('tabManual').classList.add('active');
-    $('tabAuto').classList.remove('active');
-    $('syncManual').style.display = 'block';
-    $('syncAuto').style.display = 'none';
-  } else {
-    $('tabAuto').classList.add('active');
-    $('tabManual').classList.remove('active');
-    $('syncAuto').style.display = 'block';
-    $('syncManual').style.display = 'none';
-  }
-}
-
-// === CARGA MANUAL DE CSV (funciona desde archivo local) ===
-function importLocalCsv() {
-  const f = $('csvFileInput').files[0];
-  if (!f) { $('driveResult').innerHTML = errBox('Selecciona un archivo CSV primero'); return; }
-  $('driveResult').innerHTML = '<div style="padding:12px;background:#f3f4f6;border-radius:6px;font-size:13px;">⏳ Procesando archivo…</div>';
-  const reader = new FileReader();
-  reader.onload = async e => {
-    try {
-      const items = parseCatalogFromCSV(e.target.result);
-      if (items.length === 0) throw new Error('No se detectaron productos válidos. Verifica que el CSV sea de la hoja de precios (con columnas Modelo, Producto/Servicio, Costo Unitario, Precio/Und).');
-      await applyNewCatalog(items, 'archivo cargado');
-    } catch(err) {
-      $('driveResult').innerHTML = errBox(err.message);
-    }
-  };
-  reader.onerror = () => { $('driveResult').innerHTML = errBox('No se pudo leer el archivo'); };
-  reader.readAsText(f, 'utf-8');
-}
-
-// === APLICAR NUEVO CATÁLOGO (común para manual y automático) ===
-async function applyNewCatalog(items, fuente) {
-  const cats = [...new Set(items.map(i => i.category))];
-  const services = items.filter(i => i.isService).length;
-  CATALOG.length = 0;
-  items.forEach(i => CATALOG.push(i));
-  localStorage.setItem('custom_catalog', JSON.stringify(items));
-  const cfg = getConfig();
-  cfg.lastSync = new Date().toISOString();
-  setConfig(cfg);
-
-  // Guardar en Supabase
-  try {
-    await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    const rows = items.map(i => ({
-      code: i.code || null,
-      category: i.category,
-      description: i.description,
-      cost: i.cost || 0,
-      pvp35: i.pvp35 || 0,
-      pvp15: i.pvp15 || 0,
-      last_update: i.lastUpdate || null,
-      days_old: i.daysOld ?? null,
-      supplier: i.supplier || '',
-      is_service: i.isService || false,
-      unit: i.unit || '',
-    }));
-    const { error } = await supabase.from('products').insert(rows);
-    if (error) console.warn('Error guardando catálogo en DB:', error.message);
-  } catch (e) {
-    console.warn('Error guardando catálogo en DB:', e.message);
-  }
-
-  $('categoryFilter').innerHTML = '<option value="">Todas las categorías</option>';
-  renderCategories();
-  renderCatalog();
-  updateSyncStatus();
-  $('driveResult').innerHTML = `
-    <div style="padding:12px;background:#dcfce7;border:1px solid #86efac;border-radius:6px;font-size:13px;">
-      <strong style="color:#166534;">✓ Catálogo actualizado desde ${fuente}</strong><br>
-      <div style="margin-top:6px;">Productos: <strong>${items.length - services}</strong> · Servicios: <strong>${services}</strong> · Categorías: <strong>${cats.length}</strong></div>
-    </div>`;
-  toast('✓ Catálogo actualizado: ' + items.length + ' ítems', 'success');
-  setTimeout(() => closeDriveModal(), 2200);
-}
-
-// === FETCH CSV (con respaldo automático para Google Sheets) ===
-async function fetchCsv(url) {
-  const bust = u => u + (u.includes('?') ? '&' : '?') + '_t=' + Date.now();
-  try {
-    const resp = await fetch(bust(url));
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    if (!text || text.trim().length < 5) throw new Error('Respuesta vacía');
-    return text;
-  } catch(e) {
-    // Respaldo: si era gviz, intentar el endpoint export
-    if (url.includes('/gviz/tq')) {
-      const exportUrl = url.replace(/\/gviz\/tq\?tqx=out:csv/, '/export?format=csv');
-      const resp2 = await fetch(bust(exportUrl));
-      if (!resp2.ok) throw new Error('No se pudo descargar el archivo (HTTP ' + resp2.status + '). Verifica que la hoja esté compartida como "cualquiera con el enlace".');
-      return await resp2.text();
-    }
-    throw e;
-  }
-}
-
-// === PARSER CSV ===
-function parseCSV(text) {
-  const rows = [];
-  let row = [], cell = '', inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i], next = text[i+1];
-    if (inQuotes) {
-      if (ch === '"' && next === '"') { cell += '"'; i++; }
-      else if (ch === '"') { inQuotes = false; }
-      else { cell += ch; }
-    } else {
-      if (ch === '"') { inQuotes = true; }
-      else if (ch === ',') { row.push(cell); cell = ''; }
-      else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
-      else if (ch === '\r') { /* ignore */ }
-      else { cell += ch; }
-    }
-  }
-  if (cell || row.length) { row.push(cell); rows.push(row); }
-  return rows;
-}
-
-// === PARSER INTELIGENTE DEL CATÁLOGO ===
-// Maneja el formato real de "COSTOS y PROFORMAS": columna "Modelo" (código),
-// "Precio/Und" (PVP sin IVA), múltiples tablas, filas vacías intercaladas, notas.
-function parseCatalogFromCSV(text) {
-  const rows = parseCSV(text);
-  const items = [];
-  const today = new Date('2026-05-20');
-  let currentCategory = 'Sin categoría';
-  let colMap = null;
-  const normalize = s => (s || '').toString().trim().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const COL_NAMES = ['modelo','producto / servicio','producto','servicio','unds','costo unitario','costo','margen ganancia 35%','precio/und','precio','iva','total a pagar','total','ultima act','proveedor'];
-
-  for (const row of rows) {
-    const nonEmpty = row.filter(c => (c || '').trim()).length;
-    if (nonEmpty === 0) continue;
-    const normRow = row.map(normalize);
-
-    // 1. ¿Header de tabla? (acepta "Modelo" o "Código")
-    const hasCode = normRow.some(c => c.includes('codigo') || c.includes('modelo'));
-    const hasDesc = normRow.some(c => c.includes('producto') || c.includes('descrip') || c.includes('servicio'));
-    const hasCost = normRow.some(c => c.includes('costo'));
-    if (hasCode && hasDesc && hasCost) {
-      colMap = {
-        code: normRow.findIndex(c => c.includes('codigo') || c.includes('modelo')),
-        desc: normRow.findIndex(c => c.includes('producto') || c.includes('descrip') || c.includes('servicio')),
-        cost: normRow.findIndex(c => c.includes('costo')),
-        // PVP sin IVA = "Precio/Und" (NO "margen", NO "total")
-        pvp: normRow.findIndex(c => c.includes('precio') && !c.includes('total')),
-        date: normRow.findIndex(c => c.includes('actualiz') || c.includes('ultima') || c.includes('ult act') || c.includes('fecha')),
-        supplier: normRow.findIndex(c => c.includes('proveedor')),
-      };
-      if (colMap.pvp === -1) colMap.pvp = normRow.findIndex(c => c.includes('pvp') || c.includes('venta'));
-      continue;
-    }
-
-    // 2. ¿Fila de datos? (tiene número válido en columna costo + descripción)
-    if (colMap) {
-      const costVal = parseFloat((row[colMap.cost] || '').replace(/[^\d.-]/g, ''));
-      const descVal = (row[colMap.desc] || '').trim();
-      if (!isNaN(costVal) && costVal > 0 && descVal.length >= 4) {
-        let pvp35 = colMap.pvp !== -1 ? parseFloat((row[colMap.pvp] || '').replace(/[^\d.-]/g, '')) : NaN;
-        if (isNaN(pvp35) || pvp35 <= 0) pvp35 = +(costVal * 1.35).toFixed(2);
-        const dateRaw = colMap.date !== -1 ? (row[colMap.date] || '').trim() : '';
-        let lastUpdate = null, daysOld = null;
-        const dm = dateRaw.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/) || dateRaw.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
-        if (dm) {
-          let y, m, d;
-          if (/^\d{4}/.test(dm[0])) { y = +dm[1]; m = +dm[2]; d = +dm[3]; }
-          else { d = +dm[1]; m = +dm[2]; y = +dm[3]; if (y < 100) y += 2000; }
-          lastUpdate = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-          daysOld = Math.floor((today - new Date(y, m-1, d)) / 86400000);
-        }
-        const code = colMap.code !== -1 ? (row[colMap.code] || '').trim() : '';
-        const supplier = colMap.supplier !== -1 ? (row[colMap.supplier] || '').trim() : '';
-        const isService = /servicio|instalacion|instalación|mantenimiento|mano de obra|viatic/i.test(currentCategory);
-        items.push({
-          code: (code === '(s/c)' || code === '\u2014') ? '' : code,
-          category: currentCategory,
-          description: descVal,
-          cost: costVal,
-          pvp35: pvp35,
-          pvp15: +(costVal * 1.15).toFixed(2),
-          lastUpdate: lastUpdate,
-          daysOld: daysOld,
-          supplier: supplier === '\u2014' ? '' : supplier,
-          isService: isService,
-          unit: 'u',
-        });
-        continue;
-      }
-    }
-
-    // 3. Header de categoría (cualquier otra fila con texto significativo)
-    let catText = '';
-    for (const cell of row) {
-      const c = (cell || '').trim();
-      if (c.length > catText.length && !c.match(/^[\d.,$\s]+$/) && !c.startsWith('@')) {
-        const nc = normalize(c);
-        if (!COL_NAMES.includes(nc) && !nc.includes('considerar margen')) {
-          catText = c;
-        }
-      }
-    }
-    if (catText) currentCategory = catText;
-  }
-  return items;
-}
-
-// === SYNC PRINCIPAL ===
-// === CLICK EN EL STATUS ===
-// Si hay URL configurada y la app está hospedada (no file://), intenta sync directo.
-// Si no, abre el modal para cargar manualmente.
 function handleSyncClick() {
-  const c = getConfig();
-  const isLocal = location.protocol === 'file:';
-  if (c.driveUrl && !isLocal) {
-    syncCatalog(false);
+  openCatalogViewer();
+}
+
+// === CATALOG VIEWER (read-only, all users) ===
+function openCatalogViewer() {
+  $('catalogViewerModal').classList.add('open');
+  loadViewerProducts();
+  if (isAdmin()) {
+    $('btnGoToEditor').style.display = 'inline-flex';
   } else {
-    openDriveModal();
+    $('btnGoToEditor').style.display = 'none';
   }
 }
 
-async function syncCatalog(silent) {
-  const c = getConfig();
-  if (!c.driveUrl) {
-    if (silent) return;
-    openDriveModal();
-    return;
-  }
+function closeCatalogViewer() {
+  $('catalogViewerModal').classList.remove('open');
+}
 
-  const status = $('syncStatus');
-  status.classList.add('syncing');
-  status.classList.remove('error', 'success');
-  $('syncLabel').textContent = 'Actualizando…';
+let viewerProducts = [];
 
+async function loadViewerProducts() {
+  $('viewerBody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;">Cargando...</td></tr>';
   try {
-    const text = await fetchCsv(c.driveUrl);
-    const items = parseCatalogFromCSV(text);
-    if (items.length === 0) throw new Error('No se detectaron productos en el archivo');
+    const { data, error } = await supabase.from('products').select('*').order('category');
+    if (error) throw error;
+    viewerProducts = data || [];
 
-    CATALOG.length = 0;
-    items.forEach(i => CATALOG.push(i));
-    localStorage.setItem('custom_catalog', JSON.stringify(items));
+    const cats = [...new Set(viewerProducts.map(p => p.category))].sort();
+    const sel = $('viewerCategory');
+    sel.innerHTML = '<option value="">Todas las categorías</option>';
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c.length > 50 ? c.slice(0, 50) + '…' : c;
+      sel.appendChild(opt);
+    });
 
-    c.lastSync = new Date().toISOString();
-    setConfig(c);
-
-    // Guardar en Supabase
-    try {
-      await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      const rows = items.map(i => ({
-        code: i.code || null,
-        category: i.category,
-        description: i.description,
-        cost: i.cost || 0,
-        pvp35: i.pvp35 || 0,
-        pvp15: i.pvp15 || 0,
-        last_update: i.lastUpdate || null,
-        days_old: i.daysOld ?? null,
-        supplier: i.supplier || '',
-        is_service: i.isService || false,
-        unit: i.unit || '',
-      }));
-      const { error } = await supabase.from('products').insert(rows);
-      if (error) console.warn('Error guardando catálogo en DB:', error.message);
-    } catch (e) {
-      console.warn('Error guardando catálogo en DB:', e.message);
-    }
-
-    // Refrescar UI
-    $('categoryFilter').innerHTML = '<option value="">Todas las categorías</option>';
-    renderCategories();
-    renderCatalog();
-    status.classList.remove('syncing');
-    status.classList.add('success');
-    updateSyncStatus();
-
-    if (!silent) toast('✓ Catálogo actualizado: ' + items.length + ' ítems', 'success');
-    setTimeout(() => status.classList.remove('success'), 3000);
-  } catch(e) {
-    status.classList.remove('syncing');
-    status.classList.add('error');
-    $('syncLabel').textContent = 'Error en sync';
-    if (!silent) toast('Error: ' + e.message, 'danger');
-    setTimeout(() => { status.classList.remove('error'); updateSyncStatus(); }, 4000);
+    renderViewerTable();
+  } catch (e) {
+    $('viewerBody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:red;">Error: ' + e.message + '</td></tr>';
   }
 }
 
-function updateSyncStatus() {
-  const c = getConfig();
-  const hasCustom = !!localStorage.getItem('custom_catalog');
-  if (!c.lastSync && !hasCustom) {
-    $('syncIcon').textContent = '📥';
-    $('syncLabel').textContent = 'Actualizar catálogo';
+function renderViewerTable() {
+  const q = $('viewerSearch').value.toLowerCase().trim();
+  const cat = $('viewerCategory').value;
+
+  let filtered = viewerProducts;
+  if (cat) filtered = filtered.filter(p => p.category === cat);
+  if (q) filtered = filtered.filter(p =>
+    (p.code || '').toLowerCase().includes(q) ||
+    (p.description || '').toLowerCase().includes(q)
+  );
+
+  $('viewerCount').textContent = filtered.length + ' productos' + (filtered.length !== viewerProducts.length ? ' (de ' + viewerProducts.length + ')' : '');
+
+  const tbody = $('viewerBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;">No se encontraron productos</td></tr>';
     return;
   }
-  if (!c.lastSync) {
-    $('syncIcon').textContent = '🔄';
-    $('syncLabel').textContent = 'Actualizar catálogo';
-    return;
-  }
-  const last = new Date(c.lastSync);
-  const ageMs = Date.now() - last.getTime();
-  const ageHours = Math.floor(ageMs / 3600000);
-  const ageDays = Math.floor(ageHours / 24);
-  let label;
-  if (ageHours < 1) {
-    label = 'Catálogo actualizado hoy';
-    $('syncIcon').textContent = '✓';
-  } else if (ageHours < 24) {
-    label = `Actualizado hace ${ageHours}h`;
-    $('syncIcon').textContent = '✓';
-  } else if (ageDays === 1) {
-    label = 'Actualizado ayer · click para actualizar';
-    $('syncIcon').textContent = '🔄';
-  } else {
-    label = `Actualizado hace ${ageDays} días · click para actualizar`;
-    $('syncIcon').textContent = '🔄';
-  }
-  $('syncLabel').textContent = label;
+
+  tbody.innerHTML = filtered.map(p => {
+    const code = p.code || '(sin código)';
+    const fr = freshness(p.days_old);
+    const dateLabel = p.last_update || 's/f';
+    return `
+      <tr>
+        <td>${code}</td>
+        <td>${p.category || ''}</td>
+        <td>${p.description || ''}</td>
+        <td class="right">${fmt(p.cost || 0)}</td>
+        <td class="right">${fmt(p.pvp35 || 0)}</td>
+        <td class="right">${fmt(p.pvp15 || 0)}</td>
+        <td>${dateLabel}</td>
+        <td style="text-align:center;"><span class="freshness ${fr}"></span>${p.days_old ?? '—'}</td>
+        <td>${p.supplier || ''}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
-// === AUTO-SYNC AL ABRIR ===
-function shouldAutoSync() {
-  const c = getConfig();
-  if (!c.driveUrl) return false;
-  if (location.protocol === 'file:') return false; // fetch bloqueado en archivos locales
-  if (!c.lastSync) return true;
-  const ageMs = Date.now() - new Date(c.lastSync).getTime();
-  return ageMs > 24 * 3600 * 1000; // 24 horas
-}
+window.openCatalogViewer = openCatalogViewer;
+window.closeCatalogViewer = closeCatalogViewer;
+window.renderViewerTable = renderViewerTable;
 
 // === RESET CATÁLOGO ===
 function resetCatalog() {
-  if (!confirm('¿Restaurar el catálogo original embebido y eliminar la configuración del Drive?')) return;
+  if (!confirm('¿Restaurar el catálogo desde la base de datos?')) return;
   localStorage.removeItem('custom_catalog');
-  const c = getConfig();
-  delete c.lastSync;
-  setConfig(c);
   location.reload();
 }
 
@@ -991,6 +689,18 @@ function enterApp(session) {
   currentSession = session;
   $('loginOverlay').classList.add('hidden');
   $('userChipName').textContent = session.nombre || session.user;
+
+  // Populate dropdown
+  const roleLabel = session.rol === 'admin' ? 'Administrador' : 'Vendedor';
+  const roleBadge = $('userChipRole');
+  if (roleBadge) roleBadge.textContent = roleLabel;
+  const ddName = $('dropdownName');
+  if (ddName) ddName.textContent = session.nombre || session.user;
+  const ddRole = $('dropdownRole');
+  if (ddRole) ddRole.textContent = roleLabel + ' · ' + (session.email || '');
+  const btnEditCatalog = $('btnEditCatalog');
+  if (btnEditCatalog) btnEditCatalog.style.display = session.rol === 'admin' ? 'block' : 'none';
+
   $('loginBtn').disabled = false;
   $('loginBtn').textContent = 'Ingresar';
   bootApp().catch(e => console.error('Boot error:', e));
@@ -1006,10 +716,11 @@ async function bootApp() {
     loadCustomCatalogIfExists();
   }
   renderCategories();
-  updateSyncStatus();
 
   $('search').addEventListener('input', renderCatalog);
   $('categoryFilter').addEventListener('change', renderCatalog);
+  $('viewerSearch').addEventListener('input', renderViewerTable);
+  $('viewerCategory').addEventListener('change', renderViewerTable);
   document.querySelectorAll('.quote-panel input, .quote-panel textarea').forEach(el => {
     el.addEventListener('change', saveDraft);
   });
@@ -1031,15 +742,220 @@ async function bootApp() {
   renderCart();
   syncPrintView();
   applyEmpresaHeader();
-
-  // Auto-sync diaria del catálogo (solo si hay URL y no es local)
-  if (shouldAutoSync()) {
-    setTimeout(() => syncCatalog(true), 1500);
-  }
 }
 
 // El encabezado del PDF es fijo (logo GEMESEG + teléfono), no requiere lógica.
 function applyEmpresaHeader() {}
+
+// === CATALOG EDITOR (admin only) ===
+let editorProducts = [];
+let editorChanges = {}; // { idx: { field: newValue } }
+let editorDeleted = new Set();
+
+function openCatalogEditor() {
+  if (!isAdmin()) { toast('Acceso solo para administradores', 'danger'); return; }
+  $('catalogEditorModal').classList.add('open');
+  loadEditorProducts();
+}
+
+function closeCatalogEditor() {
+  if (Object.keys(editorChanges).size > 0 || editorDeleted.size > 0) {
+    if (!confirm('Hay cambios sin guardar. ¿Cerrar de todos modos?')) return;
+  }
+  $('catalogEditorModal').classList.remove('open');
+  editorProducts = [];
+  editorChanges = {};
+  editorDeleted = new Set();
+}
+
+async function loadEditorProducts() {
+  $('editorBody').innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;">Cargando...</td></tr>';
+  try {
+    const { data, error } = await supabase.from('products').select('*').order('category');
+    if (error) throw error;
+    editorProducts = data || [];
+    editorChanges = {};
+    editorDeleted = new Set();
+
+    // Populate category filter
+    const cats = [...new Set(editorProducts.map(p => p.category))].sort();
+    const sel = $('editorCategory');
+    sel.innerHTML = '<option value="">Todas las categorías</option>';
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c.length > 50 ? c.slice(0, 50) + '…' : c;
+      sel.appendChild(opt);
+    });
+
+    renderEditorTable();
+  } catch (e) {
+    $('editorBody').innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:red;">Error: ' + e.message + '</td></tr>';
+  }
+}
+
+function renderEditorTable() {
+  const q = $('editorSearch').value.toLowerCase().trim();
+  const cat = $('editorCategory').value;
+
+  let filtered = editorProducts.map((p, idx) => ({ ...p, _idx: idx }));
+  if (cat) filtered = filtered.filter(p => p.category === cat);
+  if (q) filtered = filtered.filter(p =>
+    (p.code || '').toLowerCase().includes(q) ||
+    (p.description || '').toLowerCase().includes(q)
+  );
+
+  $('editorCount').textContent = filtered.length + ' productos' + (filtered.length !== editorProducts.length ? ' (de ' + editorProducts.length + ')' : '');
+
+  const tbody = $('editorBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;">No se encontraron productos</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => {
+    const idx = p._idx;
+    const ch = editorChanges[idx] || {};
+    const isDel = editorDeleted.has(idx);
+    const rowClass = isDel ? 'row-deleted' : (Object.keys(ch).length > 0 ? 'row-modified' : '');
+    const g = (field) => ch[field] !== undefined ? ch[field] : (p[field] ?? '');
+    return `
+      <tr class="${rowClass}" data-idx="${idx}">
+        <td><input value="${escAttr(g('code'))}" onchange="editorField(${idx},'code',this.value)"></td>
+        <td><input value="${escAttr(g('category'))}" onchange="editorField(${idx},'category',this.value)"></td>
+        <td><input value="${escAttr(g('description'))}" onchange="editorField(${idx},'description',this.value)"></td>
+        <td><input type="number" step="0.01" value="${g('cost')}" onchange="editorField(${idx},'cost',parseFloat(this.value)||0)"></td>
+        <td><input type="number" step="0.01" value="${g('pvp35')}" onchange="editorField(${idx},'pvp35',parseFloat(this.value)||0)"></td>
+        <td><input type="number" step="0.01" value="${g('pvp15')}" onchange="editorField(${idx},'pvp15',parseFloat(this.value)||0)"></td>
+        <td><input type="date" value="${g('last_update') || ''}" onchange="editorField(${idx},'last_update',this.value||null)"></td>
+        <td><input type="number" value="${g('days_old') ?? ''}" onchange="editorField(${idx},'days_old',this.value?parseInt(this.value):null)"></td>
+        <td><input value="${escAttr(g('supplier'))}" onchange="editorField(${idx},'supplier',this.value)"></td>
+        <td style="text-align:center;"><input type="checkbox" ${g('is_service') ? 'checked' : ''} onchange="editorField(${idx},'is_service',this.checked)"></td>
+        <td><button class="del-btn" onclick="editorToggleDelete(${idx})" title="${isDel ? 'Restaurar' : 'Eliminar'}">${isDel ? '↩' : '✕'}</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function escAttr(s) { return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+window.editorField = function(idx, field, value) {
+  if (!editorChanges[idx]) editorChanges[idx] = {};
+  editorChanges[idx][field] = value;
+  const row = document.querySelector(`tr[data-idx="${idx}"]`);
+  if (row && !editorDeleted.has(idx)) row.classList.add('row-modified');
+};
+
+window.editorToggleDelete = function(idx) {
+  if (editorDeleted.has(idx)) {
+    editorDeleted.delete(idx);
+  } else {
+    const p = editorProducts[idx];
+    const label = (p.code || p.description || 'este producto').slice(0, 60);
+    if (!confirm('¿Eliminar "' + label + '"?\n\nSe marcará para eliminación. Los cambios se aplican al guardar.')) return;
+    editorDeleted.add(idx);
+  }
+  renderEditorTable();
+};
+
+window.addNewProduct = function() {
+  const newIdx = editorProducts.length;
+  editorProducts.push({
+    id: null,
+    code: '',
+    category: $('editorCategory').value || '',
+    description: '',
+    cost: 0,
+    pvp35: 0,
+    pvp15: 0,
+    last_update: null,
+    days_old: null,
+    supplier: '',
+    is_service: false,
+    unit: '',
+  });
+  editorChanges[newIdx] = { code: '', category: $('editorCategory').value || '', description: '', cost: 0, pvp35: 0, pvp15: 0 };
+  renderEditorTable();
+  // Scroll to bottom
+  const container = $('editorTable').parentElement;
+  container.scrollTop = container.scrollHeight;
+};
+
+window.saveCatalogEdits = async function() {
+  if (!isAdmin()) { toast('Solo admin puede guardar', 'danger'); return; }
+
+  const btn = document.querySelector('#catalogEditorModal .btn-primary');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  try {
+    // 1. Delete marked rows
+    for (const idx of editorDeleted) {
+      const p = editorProducts[idx];
+      if (p.id) {
+        const { error } = await supabase.from('products').delete().eq('id', p.id);
+        if (error) throw error;
+      }
+    }
+
+    // 2. Update existing rows with changes
+    const updates = [];
+    for (const [idxStr, changes] of Object.entries(editorChanges)) {
+      const idx = parseInt(idxStr);
+      const p = editorProducts[idx];
+      if (editorDeleted.has(idx)) continue;
+      if (p.id) {
+        updates.push({ id: p.id, ...changes });
+      }
+    }
+
+    // Batch updates
+    for (const u of updates) {
+      const { id, ...fields } = u;
+      const { error } = await supabase.from('products').update(fields).eq('id', id);
+      if (error) throw error;
+    }
+
+    // 3. Insert new rows (no id)
+    const inserts = [];
+    for (const [idxStr, changes] of Object.entries(editorChanges)) {
+      const idx = parseInt(idxStr);
+      const p = editorProducts[idx];
+      if (editorDeleted.has(idx)) continue;
+      if (!p.id) {
+        inserts.push({
+          code: (changes.code ?? p.code) || null,
+          category: changes.category ?? p.category,
+          description: changes.description ?? p.description,
+          cost: (changes.cost ?? p.cost) || 0,
+          pvp35: (changes.pvp35 ?? p.pvp35) || 0,
+          pvp15: (changes.pvp15 ?? p.pvp15) || 0,
+          last_update: (changes.last_update ?? p.last_update) || null,
+          days_old: changes.days_old ?? p.days_old ?? null,
+          supplier: (changes.supplier ?? p.supplier) || '',
+          is_service: (changes.is_service ?? p.is_service) || false,
+          unit: p.unit || '',
+        });
+      }
+    }
+    if (inserts.length > 0) {
+      const { error } = await supabase.from('products').insert(inserts);
+      if (error) throw error;
+    }
+
+    toast(`✓ Guardado: ${updates.length} editados, ${inserts.length} nuevos, ${editorDeleted.size} eliminados`, 'success');
+    await loadEditorProducts(); // Reload
+  } catch (e) {
+    toast('Error al guardar: ' + e.message, 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Guardar cambios';
+  }
+};
+
+window.openCatalogEditor = openCatalogEditor;
+window.closeCatalogEditor = closeCatalogEditor;
+window.renderEditorTable = renderEditorTable;
 
 // === INIT ===
 // Inicialización manejada por src/main.js
@@ -1052,16 +968,11 @@ window.closeSavedModal = closeSavedModal;
 window.newQuote = newQuote;
 window.saveQuote = saveQuote;
 window.loadDraft = loadDraft;
-window.openDriveModal = openDriveModal;
-window.closeDriveModal = closeDriveModal;
-window.switchSyncTab = switchSyncTab;
-window.importLocalCsv = importLocalCsv;
-window.testAndSaveUrl = testAndSaveUrl;
 window.resetCatalog = resetCatalog;
 window.addToCart = addToCart;
 window.updateQty = updateQty;
 window.removeItem = removeItem;
 window.loadSaved = loadSaved;
 window.deleteSaved = deleteSaved;
-window.cycleStatus = cycleStatus;
+window.changeStatus = changeStatus;
 window.applyHistoryFilters = applyHistoryFilters;

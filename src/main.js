@@ -43,8 +43,19 @@ window.addEventListener('DOMContentLoaded', async () => {
     ? `<img src="${logoApp}" alt="GEMESEG" class="logo-img logo-img-print">`
     : FALLBACK_LOGIN;
 
+  // User dropdown toggle
+  const userChipToggle = document.getElementById('userChipToggle');
+  const userDropdown = document.getElementById('userDropdown');
+  if (userChipToggle && userDropdown) {
+    userChipToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userDropdown.classList.toggle('open');
+    });
+    document.addEventListener('click', () => userDropdown.classList.remove('open'));
+    userDropdown.addEventListener('click', (e) => e.stopPropagation());
+  }
+
   document.getElementById('loginBtn').addEventListener('click', doLogin);
-  document.getElementById('logoutBtn').addEventListener('click', logout);
   document.getElementById('loginPass').addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
   });
@@ -100,6 +111,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (el) el.addEventListener('input', () => window.applyHistoryFilters?.());
     if (el) el.addEventListener('change', () => window.applyHistoryFilters?.());
   });
+
+  // Catalog editor filter listeners
+  ['editorSearch', 'editorCategory'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => renderEditorTableSafe());
+    if (el) el.addEventListener('change', () => renderEditorTableSafe());
+  });
+  function renderEditorTableSafe() { try { renderEditorTable(); } catch(e) {} }
 
   const session = await validateSession();
   if (session) {
