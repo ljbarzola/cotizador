@@ -9,15 +9,17 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Instalar cliente de PostgreSQL
-        run: sudo apt-get install postgresql-client
+    - name: Instalar cliente de PostgreSQL 17
+      run: | 
+        sudo apt-get install -y postgresql-common
+          yes | sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+          sudo apt-get install -y postgresql-client-17
+    - name: Hacer el dump (Copia) de la base de datos
+      run: pg_dump "${{ secrets.SUPABASE_DB_URL }}" > backup_$(date +'%Y-%m-%d').sql
 
-      - name: Hacer el dump (Copia) de la base de datos
-        run: pg_dump "${{ secrets.SUPABASE_DB_URL }}" > backup_$(date +'%Y-%m-%d').sql
-
-      - name: Guardar el backup como Artefacto en GitHub
-        uses: actions/upload-artifact@v4
-        with:
-          name: database-backup
-          path: '*.sql'
-          retention-days: 30 # GitHub guardará el archivo por 30 días
+    - name: Guardar el backup como Artefacto en GitHub
+      uses: actions/upload-artifact@v4
+      with:
+        name: database-backup
+        path: '*.sql'
+        retention-days: 30 # GitHub guardará el archivo por 30 días
