@@ -310,14 +310,32 @@
   </div>
 </div>
 
-<!-- MODAL: COTIZACIONES GUARDADAS -->
+<!-- MODAL: HISTORIAL DE COTIZACIONES -->
 <div class="modal-backdrop" id="savedModal">
-  <div class="modal">
+  <div class="modal" style="max-width:800px;">
     <div class="modal-header">
-      <h2>📂 Cotizaciones guardadas</h2>
+      <h2>📂 Historial de cotizaciones</h2>
       <button class="modal-close" onclick="closeSavedModal()">✕</button>
     </div>
-    <div class="modal-body" id="savedModalBody"></div>
+    <div class="modal-body">
+      <div class="history-filters" id="historyFilters">
+        <input type="text" id="filterClient" placeholder="Buscar cliente...">
+        <input type="text" id="filterVendor" placeholder="Buscar vendedor...">
+        <input type="date" id="filterDateFrom" title="Desde fecha">
+        <input type="date" id="filterDateTo" title="Hasta fecha">
+        <select id="filterStatus">
+          <option value="">Todos los estados</option>
+          <option value="borrador">Borrador</option>
+          <option value="enviada">Enviada</option>
+          <option value="vista">Vista</option>
+          <option value="aceptada">Aceptada</option>
+          <option value="rechazada">Rechazada</option>
+          <option value="vencida">Vencida</option>
+        </select>
+      </div>
+      <div class="history-stats" id="historyStats"></div>
+      <div id="historyList"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeSavedModal()">Cerrar</button>
     </div>

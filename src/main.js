@@ -94,6 +94,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // History filter listeners
+  ['filterClient', 'filterVendor', 'filterDateFrom', 'filterDateTo', 'filterStatus'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => window.applyHistoryFilters?.());
+    if (el) el.addEventListener('change', () => window.applyHistoryFilters?.());
+  });
+
   const session = await validateSession();
   if (session) {
     window._enterApp(session);

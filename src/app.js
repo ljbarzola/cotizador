@@ -41,7 +41,31 @@ async function loadCatalogFromDB() {
 let currentMargin = 35;
 let cart = [];
 let currentSession = null;
-let currentQuoteId = null; // ID de la cotizacion cargada desde DB
+let currentQuoteId = null;
+let historyQuotesCache = []; // cache para filtros locales
+
+const STATUS_LABELS = {
+  borrador: 'Borrador',
+  enviada: 'Enviada',
+  vista: 'Vista',
+  aceptada: 'Aceptada',
+  rechazada: 'Rechazada',
+  vencida: 'Vencida',
+};
+
+function getStatusLabel(s) { return STATUS_LABELS[s] || s; }
+function statusBadge(s) { return `<span class="status-badge status-${s}">${getStatusLabel(s)}</span>`; }
+
+function quoteTotal(q) {
+  const items = q.items || [];
+  return items.reduce((s, c) => {
+    const item = CATALOG[c.catalogIdx];
+    if (!item) return s;
+    return s + (q.margin === 35 ? item.pvp35 : item.pvp15) * c.qty;
+  }, 0) * 1.15;
+}
+
+function isAdmin() { return currentSession?.rol === 'admin'; }
 
 // ====== CONFIGURACIÓN GEMESEG ======
 // Autenticación manejada por Supabase (ver src/modules/auth.js)
@@ -310,17 +334,19 @@ async function saveQuote() {
       client: data.client,
       margin: data.margin,
       items: data.items,
+      status: 'borrador',
       updated_at: new Date().toISOString(),
     };
 
     if (currentQuoteId) {
-      // Actualizar cotizacion existente
       row.id = currentQuoteId;
-      const { error } = await supabase.from('saved_quotes').update(row).eq('id', currentQuoteId);
+      const { error } = await supabase.from('saved_quotes').update({
+        cot_num: row.cot_num, cot_date: row.cot_date, client: row.client,
+        margin: row.margin, items: row.items, updated_at: row.updated_at,
+      }).eq('id', currentQuoteId);
       if (error) throw error;
       toast('✓ Cotización actualizada: ' + data.cotNum, 'success');
     } else {
-      // Verificar si ya existe una cotizacion con ese numero
       const { data: existing } = await supabase
         .from('saved_quotes')
         .select('id')
@@ -329,19 +355,19 @@ async function saveQuote() {
         .maybeSingle();
 
       if (existing) {
-        // Preguntar si actualizar o crear nueva
         const action = confirm(
           'Ya existe una cotización "' + data.cotNum + '".\n\n' +
           '¿Deseas ACTUALIZAR la existente o CREAR una nueva?'
         );
         if (action) {
-          // Actualizar
-          const { error } = await supabase.from('saved_quotes').update(row).eq('id', existing.id);
+          const { error } = await supabase.from('saved_quotes').update({
+            cot_num: row.cot_num, cot_date: row.cot_date, client: row.client,
+            margin: row.margin, items: row.items, updated_at: row.updated_at,
+          }).eq('id', existing.id);
           if (error) throw error;
           currentQuoteId = existing.id;
           toast('✓ Cotización actualizada: ' + data.cotNum, 'success');
         } else {
-          // Crear nueva con numero differente
           data.cotNum = generateCotNumber();
           $('cotNum').value = data.cotNum;
           row.cot_num = data.cotNum;
@@ -350,7 +376,6 @@ async function saveQuote() {
           toast('✓ Cotización nueva guardada: ' + data.cotNum, 'success');
         }
       } else {
-        // Crear nueva
         const { error } = await supabase.from('saved_quotes').insert(row);
         if (error) throw error;
         toast('✓ Cotización guardada: ' + data.cotNum, 'success');
@@ -363,57 +388,129 @@ async function saveQuote() {
 }
 
 async function openSavedModal() {
-  const body = $('savedModalBody');
   const userId = currentSession?.userId;
+  if (!userId) { toast('No hay sesión activa', 'danger'); return; }
 
-  if (!userId) {
-    body.innerHTML = '<div class="empty-state">No hay sesión activa.</div>';
-    $('savedModal').classList.add('open');
-    return;
-  }
-
-  body.innerHTML = '<div class="empty-state">Cargando...</div>';
+  $('historyList').innerHTML = '<div class="empty-state">Cargando...</div>';
+  $('historyStats').innerHTML = '';
   $('savedModal').classList.add('open');
 
   try {
-    const { data: saved, error } = await supabase
-      .from('saved_quotes')
-      .select('*')
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false });
+    let query = supabase.from('saved_quotes').select('*');
 
-    if (error) throw error;
-
-    if (!saved || saved.length === 0) {
-      body.innerHTML = '<div class="empty-state"><div class="icon">📂</div>No hay cotizaciones guardadas todavía.</div>';
-      return;
+    // Admin ve todo, vendedor solo lo suyo
+    if (!isAdmin()) {
+      query = query.eq('user_id', userId);
     }
 
-    body.innerHTML = '<ul class="saved-list">' + saved.map((q) => {
-      const items = q.items || [];
-      const subtotal = items.reduce((s, c) => {
-        const item = CATALOG[c.catalogIdx];
-        if (!item) return s;
-        return s + (q.margin === 35 ? item.pvp35 : item.pvp15) * c.qty;
-      }, 0);
-      const total = subtotal * 1.15;
-      const client = q.client || {};
-      const d = new Date(q.updated_at || q.saved_at);
-      return `
-        <li class="saved-item">
-          <div class="saved-item-info">
-            <div class="saved-cliente">${client.name || '(sin nombre)'}</div>
-            <div class="saved-meta">${q.cot_num || '(sin número)'} · ${items.length} ítems · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', {hour:'2-digit',minute:'2-digit'})}</div>
-          </div>
-          <div class="saved-item-actions">
-            <button class="btn btn-ghost" onclick="loadSaved('${q.id}')">Cargar</button>
-            <button class="btn btn-danger" onclick="deleteSaved('${q.id}')">Eliminar</button>
-          </div>
-        </li>
-      `;
-    }).join('') + '</ul>';
+    const { data: saved, error } = await query.order('updated_at', { ascending: false });
+    if (error) throw error;
+
+    historyQuotesCache = saved || [];
+    renderHistoryList(historyQuotesCache);
   } catch (e) {
-    body.innerHTML = '<div class="empty-state">Error al cargar: ' + e.message + '</div>';
+    $('historyList').innerHTML = '<div class="empty-state">Error al cargar: ' + e.message + '</div>';
+  }
+}
+
+function renderHistoryList(quotes) {
+  const list = $('historyList');
+  const stats = $('historyStats');
+
+  // Stats por estado
+  const counts = {};
+  quotes.forEach(q => { counts[q.status] = (counts[q.status] || 0) + 1; });
+  const total = quotes.reduce((s, q) => s + quoteTotal(q), 0);
+
+  stats.innerHTML = `
+    <span class="history-stat"><span class="dot" style="background:#6b7280"></span>${counts.borrador || 0} borrador</span>
+    <span class="history-stat"><span class="dot" style="background:#f59e0b"></span>${counts.enviada || 0} enviada</span>
+    <span class="history-stat"><span class="dot" style="background:#3b82f6"></span>${counts.vista || 0} vista</span>
+    <span class="history-stat"><span class="dot" style="background:#10b981"></span>${counts.aceptada || 0} aceptada</span>
+    <span class="history-stat"><span class="dot" style="background:#ef4444"></span>${counts.rechazada || 0} rechazada</span>
+    <span class="history-stat"><span class="dot" style="background:#d97706"></span>${counts.vencida || 0} vencida</span>
+    <span style="margin-left:auto;font-weight:600;">Total: ${fmt(total)}</span>
+  `;
+
+  if (quotes.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">📂</div>No hay cotizaciones con estos filtros.</div>';
+    return;
+  }
+
+  list.innerHTML = quotes.map(q => {
+    const client = q.client || {};
+    const d = new Date(q.updated_at || q.saved_at);
+    const total = quoteTotal(q);
+    const status = q.status || 'borrador';
+    return `
+      <div class="history-item">
+        <div class="history-item-info">
+          <div class="history-item-client">${client.name || '(sin nombre)'}</div>
+          <div class="history-item-meta">${q.cot_num || '(sin número)'} · ${q.items?.length || 0} ítems · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', {hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        ${statusBadge(status)}
+        <div class="history-item-actions">
+          <button onclick="loadSaved('${q.id}')">Cargar</button>
+          <button class="btn-status" onclick="cycleStatus('${q.id}', '${status}')">Cambiar estado</button>
+          <button style="color:var(--danger);border-color:var(--danger);" onclick="deleteSaved('${q.id}')">Eliminar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function applyHistoryFilters() {
+  const clientQ = $('filterClient').value.toLowerCase().trim();
+  const vendorQ = $('filterVendor').value.toLowerCase().trim();
+  const dateFrom = $('filterDateFrom').value;
+  const dateTo = $('filterDateTo').value;
+  const status = $('filterStatus').value;
+
+  let filtered = historyQuotesCache.filter(q => {
+    const client = q.client || {};
+    if (clientQ && !(client.name || '').toLowerCase().includes(clientQ)) return false;
+    if (status && q.status !== status) return false;
+    if (dateFrom) {
+      const d = q.cot_date || (q.updated_at || '').slice(0, 10);
+      if (d && d < dateFrom) return false;
+    }
+    if (dateTo) {
+      const d = q.cot_date || (q.updated_at || '').slice(0, 10);
+      if (d && d > dateTo) return false;
+    }
+    return true;
+  });
+
+  renderHistoryList(filtered);
+}
+
+const STATUS_ORDER = ['borrador', 'enviada', 'vista', 'aceptada', 'rechazada', 'vencida'];
+
+async function cycleStatus(id, current) {
+  const idx = STATUS_ORDER.indexOf(current);
+  const nextIdx = (idx + 1) % STATUS_ORDER.length;
+  const next = STATUS_ORDER[nextIdx];
+  const label = STATUS_LABELS[next];
+
+  // Confirmar cambio
+  const ok = confirm('Cambiar estado a "' + label + '"?');
+  if (!ok) return;
+
+  try {
+    const { error } = await supabase.from('saved_quotes').update({
+      status: next,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id);
+    if (error) throw error;
+
+    // Actualizar cache
+    const q = historyQuotesCache.find(q => q.id === id);
+    if (q) q.status = next;
+
+    applyHistoryFilters();
+    toast('✓ Estado cambiado a: ' + label, 'success');
+  } catch (e) {
+    toast('Error al cambiar estado: ' + e.message, 'danger');
   }
 }
 
@@ -445,12 +542,13 @@ async function loadSaved(id) {
 }
 
 async function deleteSaved(id) {
-  if (!confirm('¿Eliminar esta cotización guardada?')) return;
+  if (!confirm('¿Eliminar esta cotización?')) return;
   try {
     const { error } = await supabase.from('saved_quotes').delete().eq('id', id);
     if (error) throw error;
     if (currentQuoteId === id) currentQuoteId = null;
-    openSavedModal();
+    historyQuotesCache = historyQuotesCache.filter(q => q.id !== id);
+    applyHistoryFilters();
     toast('Cotización eliminada');
   } catch (e) {
     toast('Error al eliminar: ' + e.message, 'danger');
@@ -965,3 +1063,5 @@ window.updateQty = updateQty;
 window.removeItem = removeItem;
 window.loadSaved = loadSaved;
 window.deleteSaved = deleteSaved;
+window.cycleStatus = cycleStatus;
+window.applyHistoryFilters = applyHistoryFilters;
