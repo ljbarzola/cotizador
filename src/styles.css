@@ -128,9 +128,38 @@
 
   .main {
     display: grid;
-    grid-template-columns: 1fr 1.2fr;
+    grid-template-columns: 1fr 6px 1.2fr;
     gap: 0;
     overflow: hidden;
+  }
+
+  /* === PANEL DIVIDER === */
+  .panel-divider {
+    width: 6px;
+    cursor: col-resize;
+    background: var(--border);
+    transition: background 0.15s;
+    position: relative;
+    z-index: 10;
+  }
+  .panel-divider:hover,
+  .panel-divider.active {
+    background: var(--accent);
+  }
+  .panel-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 32px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 1px;
+  }
+  .panel-divider:hover::after,
+  .panel-divider.active::after {
+    background: rgba(255,255,255,0.5);
   }
 
   /* === PANEL CATÁLOGO === */
@@ -757,6 +786,7 @@
   /* === RESPONSIVE === */
   @media (max-width: 900px) {
     .main { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; }
+    .panel-divider { display: none; }
     .app { height: auto; min-height: 100vh; }
     .catalog-panel { border-right: none; border-bottom: 1px solid var(--border); max-height: 50vh; }
     .form-grid { grid-template-columns: 1fr; }
@@ -792,7 +822,7 @@
   /* === PRINT === */
   @media print {
     body { background: white; }
-    .topbar, .catalog-panel, .actions-bar, .quote-section[data-no-print], .modal-backdrop { display: none !important; }
+    .topbar, .catalog-panel, .panel-divider, .actions-bar, .quote-section[data-no-print], .modal-backdrop { display: none !important; }
     .app, .main, .quote-panel { display: block; height: auto; overflow: visible; }
     .quote-scroll { padding: 0; overflow: visible; }
     .print-only { display: block !important; }

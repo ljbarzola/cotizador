@@ -62,6 +62,38 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Panel divider resize
+  const divider = document.getElementById('panelDivider');
+  const main = document.querySelector('.main');
+  if (divider && main) {
+    let isDragging = false;
+
+    divider.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      isDragging = true;
+      divider.classList.add('active');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const rect = main.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const totalWidth = rect.width;
+      const pct = Math.min(Math.max((x / totalWidth) * 100, 20), 80);
+      main.style.gridTemplateColumns = pct + 'fr 6px ' + (100 - pct) + 'fr';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      divider.classList.remove('active');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  }
+
   const session = await validateSession();
   if (session) {
     window._enterApp(session);
