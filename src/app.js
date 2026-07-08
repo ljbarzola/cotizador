@@ -41,6 +41,7 @@ async function loadCatalogFromDB() {
 let currentMargin = 35;
 let cart = [];
 let currentSession = null;
+let currentQuoteId = null; // ID de la cotizacion cargada desde DB
 
 // ====== CONFIGURACIÓN GEMESEG ======
 // Autenticación manejada por Supabase (ver src/modules/auth.js)
@@ -280,11 +281,14 @@ function saveDraft() {
 function loadDraft() {
   const raw = localStorage.getItem('quote_draft');
   if (!raw) { toast('No hay borrador guardado', 'danger'); return; }
-  try { loadQuoteData(JSON.parse(raw)); toast('Borrador cargado'); }
-  catch(e) { toast('Error al cargar borrador', 'danger'); }
+  try {
+    currentQuoteId = null;
+    loadQuoteData(JSON.parse(raw));
+    toast('Borrador cargado');
+  } catch(e) { toast('Error al cargar borrador', 'danger'); }
 }
 
-function saveQuote() {
+async function saveQuote() {
   const data = buildQuoteData();
   if (!data.client.name || cart.length === 0) {
     toast('Llena el cliente y agrega al menos un ítem', 'danger');
@@ -294,66 +298,169 @@ function saveQuote() {
     data.cotNum = generateCotNumber();
     $('cotNum').value = data.cotNum;
   }
-  const saved = JSON.parse(localStorage.getItem('saved_quotes') || '[]');
-  saved.unshift(data);
-  localStorage.setItem('saved_quotes', JSON.stringify(saved.slice(0, 100)));
-  toast('✓ Cotización guardada: ' + data.cotNum, 'success');
+
+  const userId = currentSession?.userId;
+  if (!userId) { toast('Error: no hay sesión activa', 'danger'); return; }
+
+  try {
+    const row = {
+      user_id: userId,
+      cot_num: data.cotNum,
+      cot_date: data.cotDate || null,
+      client: data.client,
+      margin: data.margin,
+      items: data.items,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (currentQuoteId) {
+      // Actualizar cotizacion existente
+      row.id = currentQuoteId;
+      const { error } = await supabase.from('saved_quotes').update(row).eq('id', currentQuoteId);
+      if (error) throw error;
+      toast('✓ Cotización actualizada: ' + data.cotNum, 'success');
+    } else {
+      // Verificar si ya existe una cotizacion con ese numero
+      const { data: existing } = await supabase
+        .from('saved_quotes')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('cot_num', data.cotNum)
+        .maybeSingle();
+
+      if (existing) {
+        // Preguntar si actualizar o crear nueva
+        const action = confirm(
+          'Ya existe una cotización "' + data.cotNum + '".\n\n' +
+          '¿Deseas ACTUALIZAR la existente o CREAR una nueva?'
+        );
+        if (action) {
+          // Actualizar
+          const { error } = await supabase.from('saved_quotes').update(row).eq('id', existing.id);
+          if (error) throw error;
+          currentQuoteId = existing.id;
+          toast('✓ Cotización actualizada: ' + data.cotNum, 'success');
+        } else {
+          // Crear nueva con numero differente
+          data.cotNum = generateCotNumber();
+          $('cotNum').value = data.cotNum;
+          row.cot_num = data.cotNum;
+          const { error } = await supabase.from('saved_quotes').insert(row);
+          if (error) throw error;
+          toast('✓ Cotización nueva guardada: ' + data.cotNum, 'success');
+        }
+      } else {
+        // Crear nueva
+        const { error } = await supabase.from('saved_quotes').insert(row);
+        if (error) throw error;
+        toast('✓ Cotización guardada: ' + data.cotNum, 'success');
+      }
+    }
+  } catch (e) {
+    console.error('Error guardando cotización:', e);
+    toast('Error al guardar: ' + e.message, 'danger');
+  }
 }
 
-function openSavedModal() {
-  const saved = JSON.parse(localStorage.getItem('saved_quotes') || '[]');
+async function openSavedModal() {
   const body = $('savedModalBody');
-  if (saved.length === 0) {
-    body.innerHTML = '<div class="empty-state"><div class="icon">📂</div>No hay cotizaciones guardadas todavía.</div>';
-  } else {
-    body.innerHTML = '<ul class="saved-list">' + saved.map((q, idx) => {
-      const subtotal = q.items.reduce((s, c) => {
+  const userId = currentSession?.userId;
+
+  if (!userId) {
+    body.innerHTML = '<div class="empty-state">No hay sesión activa.</div>';
+    $('savedModal').classList.add('open');
+    return;
+  }
+
+  body.innerHTML = '<div class="empty-state">Cargando...</div>';
+  $('savedModal').classList.add('open');
+
+  try {
+    const { data: saved, error } = await supabase
+      .from('saved_quotes')
+      .select('*')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!saved || saved.length === 0) {
+      body.innerHTML = '<div class="empty-state"><div class="icon">📂</div>No hay cotizaciones guardadas todavía.</div>';
+      return;
+    }
+
+    body.innerHTML = '<ul class="saved-list">' + saved.map((q) => {
+      const items = q.items || [];
+      const subtotal = items.reduce((s, c) => {
         const item = CATALOG[c.catalogIdx];
         if (!item) return s;
         return s + (q.margin === 35 ? item.pvp35 : item.pvp15) * c.qty;
       }, 0);
       const total = subtotal * 1.15;
-      const d = new Date(q.savedAt);
+      const client = q.client || {};
+      const d = new Date(q.updated_at || q.saved_at);
       return `
         <li class="saved-item">
           <div class="saved-item-info">
-            <div class="saved-cliente">${q.client.name || '(sin nombre)'}</div>
-            <div class="saved-meta">${q.cotNum || '(sin número)'} · ${q.items.length} ítems · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', {hour:'2-digit',minute:'2-digit'})}</div>
+            <div class="saved-cliente">${client.name || '(sin nombre)'}</div>
+            <div class="saved-meta">${q.cot_num || '(sin número)'} · ${items.length} ítems · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', {hour:'2-digit',minute:'2-digit'})}</div>
           </div>
           <div class="saved-item-actions">
-            <button class="btn btn-ghost" onclick="loadSaved(${idx})">Cargar</button>
-            <button class="btn btn-danger" onclick="deleteSaved(${idx})">Eliminar</button>
+            <button class="btn btn-ghost" onclick="loadSaved('${q.id}')">Cargar</button>
+            <button class="btn btn-danger" onclick="deleteSaved('${q.id}')">Eliminar</button>
           </div>
         </li>
       `;
     }).join('') + '</ul>';
+  } catch (e) {
+    body.innerHTML = '<div class="empty-state">Error al cargar: ' + e.message + '</div>';
   }
-  $('savedModal').classList.add('open');
 }
 
 function closeSavedModal() {
   $('savedModal').classList.remove('open');
 }
 
-function loadSaved(idx) {
-  const saved = JSON.parse(localStorage.getItem('saved_quotes') || '[]');
-  loadQuoteData(saved[idx]);
-  closeSavedModal();
-  toast('✓ Cotización cargada');
+async function loadSaved(id) {
+  try {
+    const { data, error } = await supabase
+      .from('saved_quotes')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    currentQuoteId = data.id;
+    loadQuoteData({
+      cotNum: data.cot_num,
+      cotDate: data.cot_date,
+      client: data.client,
+      margin: data.margin,
+      items: data.items,
+    });
+    closeSavedModal();
+    toast('✓ Cotización cargada: ' + data.cot_num);
+  } catch (e) {
+    toast('Error al cargar: ' + e.message, 'danger');
+  }
 }
 
-function deleteSaved(idx) {
+async function deleteSaved(id) {
   if (!confirm('¿Eliminar esta cotización guardada?')) return;
-  const saved = JSON.parse(localStorage.getItem('saved_quotes') || '[]');
-  saved.splice(idx, 1);
-  localStorage.setItem('saved_quotes', JSON.stringify(saved));
-  openSavedModal();
-  toast('Cotización eliminada');
+  try {
+    const { error } = await supabase.from('saved_quotes').delete().eq('id', id);
+    if (error) throw error;
+    if (currentQuoteId === id) currentQuoteId = null;
+    openSavedModal();
+    toast('Cotización eliminada');
+  } catch (e) {
+    toast('Error al eliminar: ' + e.message, 'danger');
+  }
 }
 
 function newQuote() {
   if (cart.length > 0 && !confirm('¿Limpiar todo y empezar nueva cotización? El borrador actual se perderá.')) return;
   cart = [];
+  currentQuoteId = null;
   ['cotNum','cotDate','clientName','clientRuc','clientAddress','clientContact','clientPhone','clientEmail'].forEach(id => $(id).value = '');
   $('cotNum').value = generateCotNumber();
   $('cotDate').value = new Date().toISOString().split('T')[0];
@@ -853,3 +960,8 @@ window.switchSyncTab = switchSyncTab;
 window.importLocalCsv = importLocalCsv;
 window.testAndSaveUrl = testAndSaveUrl;
 window.resetCatalog = resetCatalog;
+window.addToCart = addToCart;
+window.updateQty = updateQty;
+window.removeItem = removeItem;
+window.loadSaved = loadSaved;
+window.deleteSaved = deleteSaved;
