@@ -4,16 +4,16 @@ Herramienta web para crear cotizaciones profesionales de productos y servicios d
 
 ## Que es este sistema?
 
-Aplicacion web para el equipo de ventas de GEMESEG. Permite buscar productos, armar cotizaciones, calcular precios con IVA, y generar PDFs listos para entregar al cliente. Los datos se almacenan en Supabase (base de datos en la nube).
+Aplicacion web para el equipo de ventas de GEMESEG. Permite buscar productos en un catalogo sincronizado desde Google Sheets, armar cotizaciones, calcular precios con IVA, y generar PDFs listos para entregar al cliente. Los datos se almacenan en Supabase (base de datos en la nube).
 
 ## Funcionalidades
 
 - **Login seguro**: Autenticacion con Supabase Auth. Usuarios: admin y vendedor.
-- **Catalogo desde base de datos**: Productos cargados en Supabase, con busqueda por codigo/descripcion y filtro por categorias.
-- **Visor de catalogo**: Tabla de solo lectura visible para todos los usuarios (boton "Catalogo" en la barra superior).
-- **Editor de catalogo**: Solo administradores pueden editar, agregar o eliminar productos (desde el dropdown de usuario).
-- **Doble esquema de precios**: Precio con instalacion (35%) o solo equipo (15%).
-- **Carrito de cotizacion**: Agregar productos, cantidades, eliminar items, totales con IVA 15%.
+- **Catalogo desde Google Sheets**: 3 pestanas del Google Sheet se sincronizan automaticamente a 3 tablas Supabase (equipos, materiales, servicios).
+- **Visor de catalogo**: Tabla de solo lectura visible para todos los usuarios, con busqueda y filtro por subcategoria.
+- **Editor de catalogo**: Solo administradores pueden editar, agregar o eliminar productos.
+- **Sistema de precios dinamico**: Margen de proveedor por producto, margen de instalacion global, IVA 15%.
+- **Carrito de cotizacion**: Agregar productos, cantidades, eliminar items, configurar margen por item.
 - **Guardado en la nube**: Cotizaciones se guardan en Supabase (RLS: admin ve todo, vendedor solo lo suyo).
 - **Historial de cotizaciones**: Filtros por cliente, fecha y estado. Cambio de estado con dropdown.
 - **Estados de cotizacion**: Borrador, Enviada, Vista, Aceptada, Rechazada, Vencida.
@@ -25,23 +25,25 @@ Aplicacion web para el equipo de ventas de GEMESEG. Permite buscar productos, ar
 
 1. Abrir la aplicacion en el navegador
 2. Iniciar sesion con usuario y clave (ej: `sistemas@gemeseg.com`)
-3. Buscar y agregar productos al carrito
-4. Completar datos del cliente
-5. Seleccionar modalidad de venta (con/sin instalacion)
-6. Guardar cotizacion o imprimir como PDF
+3. Sincronizar catalogo desde Google Sheets (boton de refresh)
+4. Buscar y agregar productos al carrito
+5. Completar datos del cliente
+6. Seleccionar modalidad de venta (con/sin instalacion)
+7. Guardar cotizacion o imprimir como PDF
 
 ## Stack tecnico
 
 - **Frontend**: HTML5 + CSS3 + JavaScript ES6+ (SPA vanilla)
 - **Bundler**: Vite
 - **Base de datos**: Supabase (PostgreSQL + Auth + RLS)
+- **Datos**: Google Sheets como fuente, sincronizados via CSV export
 - **Hosting**: GitHub Pages (deploy automatico)
 
 ## Desarrollo local
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # http://localhost:5174/cotizador/
 ```
 
 ## Despliegue

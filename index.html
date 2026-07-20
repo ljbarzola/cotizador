@@ -70,17 +70,34 @@
     <section class="catalog-panel" data-no-print>
       <div class="catalog-header">
         <div class="catalog-search">
-          <input type="text" id="search" placeholder="Buscar por código o descripción..." autocomplete="off">
-          <select id="categoryFilter">
+          <input type="text" id="search" placeholder="Buscar por código, modelo o descripción..." autocomplete="off">
+        </div>
+        <div class="catalog-filters">
+          <select id="categoryFilter" class="catalog-select">
             <option value="">Todas las categorías</option>
+          </select>
+          <select id="subcategoryFilter" class="catalog-select">
+            <option value="">Todas las subcategorías</option>
           </select>
         </div>
         <div class="catalog-stats">
+          <label class="page-size-label">Mostrar
+            <select id="pageSizeSelect" class="page-size-select" onchange="changePageSize(this.value)">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="9999">Todos</option>
+            </select>
+            resultados
+          </label>
           <span id="catalogCount">— ítems</span>
           <span>🟢 ≤30d  🟡 30-180d  🔴 +180d/sin fecha</span>
         </div>
       </div>
       <div class="catalog-list" id="catalogList"></div>
+      <div class="catalog-pagination" id="catalogPagination"></div>
     </section>
 
     <!-- DIVIDER RESIZABLE -->
@@ -164,31 +181,6 @@
           <div class="row"><span class="label">Email:</span> <span id="printClientEmail">—</span></div>
         </div>
 
-        <!-- MODALIDAD -->
-        <div class="quote-section" data-no-print>
-          <div class="quote-section-header"><h2>⚙️ Modalidad de venta (define el margen)</h2></div>
-          <div class="quote-section-body">
-            <div class="modality">
-              <label>
-                <input type="radio" name="modality" value="35" checked onchange="setModality(35)">
-                <div class="modality-card">
-                  <div class="title">Con instalación</div>
-                  <div class="margin">35%</div>
-                  <div class="desc">Incluye servicios de instalación y configuración</div>
-                </div>
-              </label>
-              <label>
-                <input type="radio" name="modality" value="15" onchange="setModality(15)">
-                <div class="modality-card">
-                  <div class="title">Solo venta de equipo</div>
-                  <div class="margin">15%</div>
-                  <div class="desc">Cliente compra equipo, instala por su cuenta</div>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-
         <!-- ITEMS -->
         <div class="quote-section">
           <div class="quote-section-header">
@@ -206,10 +198,17 @@
           </div>
         </div>
 
+        <!-- CONFIGURACIÓN DE MÁRGENES -->
+        <div class="quote-section" data-no-print>
+          <div class="quote-section-header"><h2>⚙️ Configuración de márgenes</h2></div>
+          <div class="quote-section-body">
+            <div id="marginConfigSection"></div>
+          </div>
+        </div>
+
         <!-- TOTALES -->
         <div class="totals" id="totals">
-          <div class="totals-row"><span>Subtotal</span><span id="subtotalView">$0.00</span></div>
-          <div class="totals-row"><span>IVA 15%</span><span id="ivaView">$0.00</span></div>
+          <div id="totalsBreakdown"></div>
           <div class="totals-row total"><span>TOTAL</span><span class="accent" id="totalView">$0.00</span></div>
         </div>
 
@@ -295,26 +294,55 @@
     </div>
     <div class="modal-body" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:12px 16px;">
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="viewerSearch" placeholder="Buscar código o descripción..." style="flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+        <input type="text" id="viewerSearch" placeholder="Buscar código, modelo o descripción..." style="flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
         <select id="viewerCategory" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
           <option value="">Todas las categorías</option>
         </select>
+        <select id="viewerSubcategory" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+          <option value="">Todas las subcategorías</option>
+        </select>
         <span id="viewerCount" style="font-size:11px;color:var(--muted);"></span>
+        <button class="btn btn-ghost" id="btnSyncCatalog" onclick="openSyncPanel()" style="font-size:12px;padding:7px 14px;border-color:var(--border);color:var(--text);display:none;">🔄 Sincronizar Sheet</button>
         <button class="btn btn-ghost" id="btnGoToEditor" onclick="closeCatalogViewer();openCatalogEditor();" style="font-size:12px;padding:7px 14px;border-color:var(--border);color:var(--text);display:none;">✏️ Editar catálogo</button>
       </div>
+
+      <!-- PANEL DE SINCRONIZACIÓN -->
+      <div id="syncPanel" style="display:none;margin-bottom:12px;border:2px solid var(--primary);border-radius:8px;overflow:hidden;">
+        <div style="background:var(--primary);color:white;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:600;font-size:13px;">🔄 Sincronizar desde Google Sheets</span>
+          <button onclick="closeSyncPanel()" style="background:rgba(255,255,255,0.15);color:white;border:none;width:24px;height:24px;border-radius:4px;cursor:pointer;font-size:14px;">✕</button>
+        </div>
+        <div style="padding:12px 14px;background:#f9fafb;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <span style="font-size:12px;color:var(--muted);">Fuente:</span>
+            <a href="https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo/edit" target="_blank" style="font-size:12px;color:var(--primary-mid);text-decoration:underline;">📎 Abrir Google Sheet</a>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+            <button class="btn btn-primary" id="btnStartSync" onclick="startSync()" style="font-size:12px;padding:7px 14px;">▶ Sincronizar</button>
+            <button class="btn btn-ghost" id="btnStopSync" onclick="stopSync()" style="font-size:12px;padding:7px 14px;border-color:var(--danger);color:var(--danger);display:none;">⏹ Detener</button>
+            <span id="syncPanelStatus" style="font-size:12px;color:var(--muted);"></span>
+          </div>
+          <div id="syncLogContainer" style="background:#1f2937;border-radius:6px;max-height:250px;overflow-y:auto;font-family:ui-monospace,monospace;font-size:11px;">
+            <div id="syncLogEntries" style="padding:8px 10px;color:#9ca3af;">Esperando inicio de sincronización...</div>
+          </div>
+          <div id="syncPanelSummary" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+        </div>
+      </div>
+
+      <!-- TABLA DE PRODUCTOS -->
       <div style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;">
         <table class="editor-table viewer-table" id="viewerTable">
           <thead>
             <tr>
               <th style="width:100px;">Código</th>
-              <th style="width:180px;">Categoría</th>
+              <th style="width:120px;">Subcategoría</th>
               <th>Descripción</th>
               <th style="width:70px;">Costo</th>
-              <th style="width:70px;">PVP 35%</th>
-              <th style="width:70px;">PVP 15%</th>
-              <th style="width:90px;">Última act.</th>
-              <th style="width:55px;">Días</th>
-              <th style="width:90px;">Proveedor</th>
+              <th style="width:50px;">Gan.</th>
+              <th style="width:50px;">Inst.</th>
+              <th style="width:70px;">PVP</th>
+              <th style="width:60px;">IVA</th>
+              <th style="width:75px;">Total</th>
             </tr>
           </thead>
           <tbody id="viewerBody"></tbody>
@@ -336,7 +364,7 @@
     </div>
     <div class="modal-body" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:12px 16px;">
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="editorSearch" placeholder="Buscar código o descripción..." style="flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+        <input type="text" id="editorSearch" placeholder="Buscar código, modelo o descripción..." style="flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
         <select id="editorCategory" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
           <option value="">Todas las categorías</option>
         </select>
@@ -349,7 +377,8 @@
           <thead>
             <tr>
               <th style="width:100px;">Código</th>
-              <th style="width:180px;">Categoría</th>
+              <th style="width:140px;">Categoría</th>
+              <th style="width:120px;">Subcategoría</th>
               <th>Descripción</th>
               <th style="width:70px;">Costo</th>
               <th style="width:70px;">PVP 35%</th>
