@@ -138,8 +138,8 @@ function marginBadge(item) {
 }
 
 function installBadge(item) {
-  if (item.hasInstalacion) return '<span class="install-required">✅ Requiere</span>';
-  return '<span class="install-not-required">—</span>';
+  if (item.hasInstalacion) return '<span class="install-required">🟩 Requiere</span>';
+  return '<span class="install-not-required">⬛ No aplica</span>';
 }
 
 // === RENDER CATÁLOGO ===
@@ -399,8 +399,8 @@ function renderCart() {
 
     const installCell = item.hasInstalacion
       ? (c.installActive
-        ? `<span class="install-active">✅ ${fmt(pricing.instalacionPrice * c.qty)}</span>`
-        : '<span class="install-pending">⬜</span>')
+        ? `<span class="install-active">🟩 ${fmt(pricing.instalacionPrice * c.qty)}</span>`
+        : '<span class="install-pending">⬛</span>')
       : '<span style="color:var(--muted);">—</span>';
 
     html += `<tr>
@@ -494,7 +494,7 @@ function renderMarginConfig() {
   installHtml += '<h4>🔧 Ganancia por instalación</h4>';
   installHtml += '<div class="install-toggle-group">';
   installHtml += `<span class="margin-subsection-count">${installCount} ítem(s) con flag</span>`;
-  installHtml += `<button class="install-master-toggle ${installationEnabled ? 'active' : ''}" onclick="toggleInstallationGlobal()">${installationEnabled ? '✅ Instalación ON' : ' ❌ Instalación OFF'}</button>`;
+  installHtml += `<button class="install-master-toggle ${installationEnabled ? 'active' : ''}" onclick="toggleInstallationGlobal()">${installationEnabled ? '🟩 Instalación ON' : ' ⬛ Instalación OFF'}</button>`;
   installHtml += '</div>';
   installHtml += '</div>';
 
