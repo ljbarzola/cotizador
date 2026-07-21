@@ -20,43 +20,16 @@ function csvUrl(sheetName) {
   return `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
 }
 
-// CSV parser que maneja campos multi-línea entre comillas
-function parseCsv(text) {
+// CSV parser unificado: maneja multi-línea, comas dentro de comillas, y "" escapado
+function parseCsvRows(text) {
   const rows = [];
+  let fields = [];
   let current = '';
   let inQuote = false;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch === '"') {
       if (inQuote && i + 1 < text.length && text[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuote = !inQuote;
-        current += '"';
-      }
-      continue;
-    }
-    if (ch === '\n' && !inQuote) {
-      rows.push(current);
-      current = '';
-      continue;
-    }
-    if (ch === '\r') continue;
-    current += ch;
-  }
-  if (current) rows.push(current);
-  return rows;
-}
-
-function splitCsvLine(line) {
-  const fields = [];
-  let current = '';
-  let inQuote = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuote && i + 1 < line.length && line[i + 1] === '"') {
         current += '"';
         i++;
       } else {
@@ -69,10 +42,21 @@ function splitCsvLine(line) {
       current = '';
       continue;
     }
+    if (ch === '\n' && !inQuote) {
+      fields.push(current.trim());
+      rows.push(fields);
+      fields = [];
+      current = '';
+      continue;
+    }
+    if (ch === '\r') continue;
     current += ch;
   }
-  fields.push(current.trim());
-  return fields;
+  if (current || fields.length > 0) {
+    fields.push(current.trim());
+    rows.push(fields);
+  }
+  return rows;
 }
 
 function num(v) {
@@ -263,173 +247,150 @@ function compareRows(oldRow, newRow, fields) {
 
 export async function syncFromGoogleSheets(onProgress, signal) {
   clearSyncLog();
-  const results = { inserted: 0, updated: 0, failed: 0, skipped: 0, errors: [], sheets: {} };
+  const results = { inserted: 0, updated: 0, failed: 0, skipped: 0, unchanged: 0, errors: [], sheets: {} };
   let aborted = false;
 
-  // Detectar columnas existentes por tabla
+  // Detectar columnas existentes por tabla (1 query por tabla)
   const tableColumns = {};
   for (const sheet of SHEETS) {
     const cols = await getTableColumns(sheet.table);
-    if (cols) {
-      tableColumns[sheet.table] = cols;
-      log(`${sheet.table}: ${cols.length} columnas detectadas → [${cols.join(', ')}]`);
-    } else {
-      log(`${sheet.table}: no se pudo detectar esquema, se escribirán todos los campos`, 'warn');
-    }
+    if (cols) tableColumns[sheet.table] = cols;
   }
 
   for (const sheet of SHEETS) {
     if (signal && signal.aborted) { aborted = true; break; }
 
-    const sheetLog = { downloaded: 0, parsed: 0, inserted: 0, updated: 0, failed: 0, skipped: 0, errors: [] };
+    const sheetLog = { downloaded: 0, parsed: 0, inserted: 0, updated: 0, failed: 0, unchanged: 0 };
     results.sheets[sheet.name] = sheetLog;
 
     try {
       if (signal && signal.aborted) { aborted = true; break; }
       if (onProgress) onProgress(`Descargando ${sheet.name}...`);
-      log(`Iniciando: ${sheet.name}`);
 
       const resp = await fetch(csvUrl(sheet.name));
       if (signal && signal.aborted) { aborted = true; break; }
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       let text = await resp.text();
       if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-      const rawLines = parseCsv(text);
-      sheetLog.downloaded = rawLines.length - 1;
 
-      if (rawLines.length < 2) { log(`${sheet.name}: vacía`, 'error'); continue; }
+      const csvRows = parseCsvRows(text);
+      if (csvRows.length < 2) { log(`${sheet.name}: vacía`, 'error'); continue; }
+      sheetLog.downloaded = csvRows.length - 1;
 
-      const headerFields = splitCsvLine(rawLines[0]);
+      const headerFields = csvRows[0];
       const headerMapConfig = sheet.table === 'equipos' ? EQUIPOS_HEADER_MAP
         : sheet.table === 'materiales' ? MATERIALES_HEADER_MAP
         : SERVICIOS_HEADER_MAP;
 
       const posToDbField = [];
-      const unmappedHeaders = [];
       for (let i = 0; i < headerFields.length; i++) {
         const normalized = headerFields[i].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-        const dbField = headerMapConfig[normalized];
-        posToDbField.push(dbField || null);
-        if (!dbField && normalized) unmappedHeaders.push(`"${headerFields[i]}"→"${normalized}"`);
-      }
-
-      const mappedHeaders = posToDbField.filter(Boolean);
-      log(`${sheet.name}: header tiene ${headerFields.length} columnas, ${mappedHeaders.length} mapeadas → [${mappedHeaders.join(', ')}]`);
-      if (unmappedHeaders.length > 0) {
-        log(`${sheet.name}: ⚠️ Sin mapear: ${unmappedHeaders.join(', ')}`, 'warn');
+        posToDbField.push(headerMapConfig[normalized] || null);
       }
 
       const builder = sheet.table === 'equipos' ? buildEquipo
         : sheet.table === 'materiales' ? buildMaterial
         : buildServicio;
 
-      const rows = [];
-      for (let i = 1; i < rawLines.length; i++) {
+      const csvItems = [];
+      for (let i = 1; i < csvRows.length; i++) {
         if (signal && signal.aborted) { aborted = true; break; }
-        const rawFields = splitCsvLine(rawLines[i]);
-        if (rawFields.length < 2 || !rawFields[0]) continue;
-
-        const fields = rawFields;
+        const fields = csvRows[i];
+        if (fields.length < 2 || !fields[0]) continue;
 
         const mapped = {};
         for (let j = 0; j < fields.length; j++) {
-          if (posToDbField[j]) {
-            mapped[posToDbField[j]] = fields[j];
-          }
+          if (posToDbField[j]) mapped[posToDbField[j]] = fields[j];
         }
-
-        if (i <= 3 || sheet.table === 'servicios') {
-          log(`${sheet.name} FILA ${i} RAW fields [${fields.length}]: ${JSON.stringify(fields)}`, 'info');
-          log(`${sheet.name} FILA ${i} MAPPED: ${JSON.stringify(mapped)}`, 'info');
-        }
-
-        if (!mapped.source_id) {
-          log(`${sheet.name} fila ${i}: source_id vacío, saltada`, 'warn');
-          sheetLog.failed++;
-          continue;
-        }
+        if (!mapped.source_id) continue;
 
         try {
-          const built = builder(mapped);
-          if (i <= 3 || sheet.table === 'servicios') {
-            log(`${sheet.name} FILA ${i} BUILT: ${JSON.stringify(built)}`, 'info');
-          }
-          rows.push(built);
+          csvItems.push(builder(mapped));
         } catch (e) {
-          log(`${sheet.name} fila ${i} (${mapped.source_id}): ${e.message}`, 'error');
+          log(`${mapped.source_id}: ${e.message}`, 'error');
           sheetLog.failed++;
         }
       }
 
       if (aborted) break;
-      sheetLog.parsed = rows.length;
-      log(`${sheet.name}: ${rows.length} filas válidas`);
+      sheetLog.parsed = csvItems.length;
 
-      for (const row of rows) {
+      // 1 query: cargar todos los source_id existentes
+      if (onProgress) onProgress(`Comparando ${sheet.name}...`);
+      const { data: existingRows, error: fetchErr } = await supabase
+        .from(sheet.table)
+        .select('id, source_id');
+      if (fetchErr) throw new Error(`Lectura ${sheet.table}: ${fetchErr.message}`);
+
+      const existingMap = {};
+      for (const r of (existingRows || [])) existingMap[r.source_id] = r;
+
+      const toInsert = [];
+      const toUpdate = [];
+
+      for (const csvRow of csvItems) {
+        const existing = existingMap[csvRow.source_id];
+        if (existing) {
+          const { data: fullExisting } = await supabase
+            .from(sheet.table).select('*').eq('id', existing.id).maybeSingle();
+          if (fullExisting) {
+            const changes = compareRows(fullExisting, csvRow, Object.keys(csvRow));
+            if (changes.length > 0) {
+              toUpdate.push({ id: existing.id, source_id: csvRow.source_id, changes, newRow: csvRow });
+            } else {
+              sheetLog.unchanged++;
+            }
+          }
+        } else {
+          toInsert.push(csvRow);
+        }
+      }
+
+      if (toInsert.length > 0) {
+        if (onProgress) onProgress(`Insertando ${toInsert.length} nuevos en ${sheet.name}...`);
+        const validInserts = toInsert.map(r => filterRowToColumns(r, tableColumns[sheet.table]));
+        const { error } = await supabase.from(sheet.table).insert(validInserts);
+        if (error) {
+          log(`${sheet.name}: error insertando ${toInsert.length} filas: ${error.message}`, 'error');
+          sheetLog.failed += toInsert.length;
+        } else {
+          sheetLog.inserted = toInsert.length;
+          for (const r of toInsert) log(`  + ${r.source_id} nuevo`, 'info');
+        }
+      }
+
+      for (const { id, source_id, changes, newRow } of toUpdate) {
         if (signal && signal.aborted) { aborted = true; break; }
-        try {
-          const validRow = filterRowToColumns(row, tableColumns[sheet.table]);
-          if (row === rows[0] || sheet.table === 'servicios') {
-            log(`${sheet.name} FILA ${row.source_id} VALID ROW: ${JSON.stringify(validRow)}`, 'info');
-          }
-          const { data: existing } = await supabase
-            .from(sheet.table)
-            .select('*')
-            .eq('source_id', row.source_id)
-            .maybeSingle();
-
-          if (existing) {
-            const changes = compareRows(existing, validRow, Object.keys(validRow));
-            if (changes.length === 0) {
-              sheetLog.unchanged = (sheetLog.unchanged || 0) + 1;
-              results.unchanged = (results.unchanged || 0) + 1;
-              continue;
-            }
-            const { error } = await supabase.from(sheet.table).update(validRow).eq('id', existing.id);
-            if (error) {
-              log(`${sheet.table} ${row.source_id} UPDATE FAIL: ${error.message}`, 'error');
-              sheetLog.failed++;
-              sheetLog.errors.push(`${row.source_id}: ${error.message}`);
-              results.failed++;
-            } else {
-              sheetLog.updated++;
-              results.updated++;
-              log(`~ ${row.source_id} CAMBIOS: ${changes.join(' | ')}`, 'info');
-            }
-          } else {
-            const { error } = await supabase.from(sheet.table).insert(validRow);
-            if (error) {
-              log(`${sheet.table} ${row.source_id} INSERT FAIL: ${error.message}`, 'error');
-              sheetLog.failed++;
-              sheetLog.errors.push(`${row.source_id}: ${error.message}`);
-              results.failed++;
-            } else {
-              sheetLog.inserted++;
-              results.inserted++;
-            }
-          }
-        } catch (e) {
-          log(`${sheet.table} ${row.source_id} EXCEPCIÓN: ${e.message}`, 'error');
+        const validRow = filterRowToColumns(newRow, tableColumns[sheet.table]);
+        const { error } = await supabase.from(sheet.table).update(validRow).eq('id', id);
+        if (error) {
+          log(`  ${source_id} ERROR: ${error.message}`, 'error');
           sheetLog.failed++;
-          results.failed++;
+        } else {
+          sheetLog.updated++;
+          log(`  ${source_id} → ${changes.join(', ')}`, 'info');
         }
       }
 
       if (aborted) break;
-      const unchanged = sheetLog.unchanged || 0;
-      log(`${sheet.name} OK: +${sheetLog.inserted} ~${sheetLog.updated} =${unchanged} ✕${sheetLog.failed}`);
+      log(`${sheet.name}: +${sheetLog.inserted} ~${sheetLog.updated} =${sheetLog.unchanged} ✕${sheetLog.failed}`);
 
     } catch (e) {
-      log(`${sheet.name} ERROR GENERAL: ${e.message}`, 'error');
+      log(`${sheet.name}: ${e.message}`, 'error');
       results.errors.push(`${sheet.name}: ${e.message}`);
     }
+
+    results.inserted += sheetLog.inserted;
+    results.updated += sheetLog.updated;
+    results.unchanged += sheetLog.unchanged;
+    results.failed += sheetLog.failed;
   }
 
   if (aborted) {
-    log('=== SINCRONIZACIÓN DETENIDA POR EL USUARIO ===', 'warn');
+    log('Detenido por el usuario', 'warn');
     results.aborted = true;
   } else {
-    log(`=== RESUMEN: +${results.inserted} ~${results.updated} =${results.unchanged || 0} ✕${results.failed} ===`);
+    log(`RESUMEN: +${results.inserted} nuevos ~${results.updated} actualizados =${results.unchanged} sin cambio ✕${results.failed} errores`);
   }
   return results;
 }
