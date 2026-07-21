@@ -33,6 +33,7 @@ function parseCsv(text) {
         i++;
       } else {
         inQuote = !inQuote;
+        current += '"';
       }
       continue;
     }
@@ -328,20 +329,7 @@ export async function syncFromGoogleSheets(onProgress, signal) {
         const rawFields = splitCsvLine(rawLines[i]);
         if (rawFields.length < 2 || !rawFields[0]) continue;
 
-        // Servicios: el campo Descripcion (pos 4) puede contener comas que
-        // splitCsvLine no maneja correctamente. Si hay mas de 8 campos,
-        // reensamblar: los primeros 4 no tienen comas, los ultimos 3 son numeros/vacios.
-        let fields = rawFields;
-        if (sheet.table === 'servicios' && rawFields.length > 8) {
-          const FIRST = 4;
-          const LAST = 3;
-          const descParts = rawFields.slice(FIRST, rawFields.length - LAST);
-          fields = [
-            ...rawFields.slice(0, FIRST),
-            descParts.join(', '),
-            ...rawFields.slice(rawFields.length - LAST),
-          ];
-        }
+        const fields = rawFields;
 
         const mapped = {};
         for (let j = 0; j < fields.length; j++) {
