@@ -958,6 +958,25 @@
   }
   .help-section-content ol li { margin-bottom: 4px; }
 
+  /* === USER MANAGEMENT === */
+  #usersTable tbody tr:hover { background: #f9fafb; }
+  #usersTable td { font-size: 12px; }
+  #createUserForm .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  #createUserForm .field input,
+  #createUserForm .field select {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+  }
+
   .tpl-preview-header {
     margin-bottom: 16px;
     padding-bottom: 12px;
@@ -1599,6 +1618,12 @@
     /* Badges compactos */
     .margin-badge { font-size: 9px; padding: 1px 5px; }
     .install-active, .install-pending { font-size: 10px; }
+
+    /* === USER MANAGEMENT MOBILE === */
+    #usersTable { min-width: 400px; font-size: 11px; }
+    #usersTable th { font-size: 9px; padding: 4px 5px; }
+    #usersTable td { padding: 4px 5px; font-size: 11px; }
+    #createUserForm .form-grid { grid-template-columns: 1fr !important; }
 
     /* === TOTALES === */
     .totals { padding: 8px 10px; }

@@ -1235,6 +1235,8 @@ function enterApp(session) {
   if (ddRole) ddRole.textContent = roleLabel + ' · ' + (session.email || '');
   const btnEditCatalog = $('btnEditCatalog');
   if (btnEditCatalog) btnEditCatalog.style.display = session.rol === 'admin' ? 'block' : 'none';
+  const btnUserManagement = $('btnUserManagement');
+  if (btnUserManagement) btnUserManagement.style.display = session.rol === 'admin' ? 'inline-block' : 'none';
   $('loginBtn').disabled = false;
   $('loginBtn').textContent = 'Ingresar';
   bootApp().catch(e => { toast('Error al iniciar: ' + e.message, 'danger'); });
@@ -1709,6 +1711,181 @@ function downloadTemplatePdf(id) {
   downloadTemplate(id || _currentPreviewTemplateId);
 }
 
+// === USER MANAGEMENT ===
+let _usersCache = [];
+
+async function openUserManagement() {
+  $('userManagementModal').classList.add('open');
+  $('usersTableBody').innerHTML = '';
+  $('usersLoading').style.display = 'block';
+  $('createUserForm').style.display = 'none';
+  await loadUsers();
+}
+
+function closeUserManagement() {
+  $('userManagementModal').classList.remove('open');
+}
+
+async function loadUsers() {
+  $('usersLoading').style.display = 'block';
+  $('usersTableBody').innerHTML = '';
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('nombre', { ascending: true });
+    if (error) throw error;
+    _usersCache = data || [];
+    renderUsersTable();
+  } catch (e) {
+    $('usersTableBody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:16px;">Error: ${esc(e.message)}</td></tr>`;
+  }
+  $('usersLoading').style.display = 'none';
+}
+
+function renderUsersTable() {
+  const tbody = $('usersTableBody');
+  if (!_usersCache.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">No hay usuarios registrados</td></tr>';
+    $('userManagementCount').textContent = '0 usuarios';
+    return;
+  }
+  $('userManagementCount').textContent = _usersCache.length + ' usuario' + (_usersCache.length !== 1 ? 's' : '');
+  tbody.innerHTML = _usersCache.map(u => {
+    const rolBadge = u.rol === 'admin'
+      ? '<span class="margin-badge margin-supplier">Admin</span>'
+      : '<span class="margin-badge margin-none">Vendedor</span>';
+    const estadoBadge = u.activo === false
+      ? '<span class="margin-badge" style="background:#fee2e2;color:#991b1b;">Inactivo</span>'
+      : '<span class="margin-badge" style="background:#d1fae5;color:#065f46;">Activo</span>';
+    const isCurrent = currentSession && currentSession.userId === u.id;
+    return `<tr style="${isCurrent ? 'background:#f0f9ff;' : ''}">
+      <td style="font-weight:500;">${esc(u.nombre || '—')}</td>
+      <td style="color:var(--muted);font-size:11px;">${esc(u.email || u.correo || '—')}</td>
+      <td>${rolBadge}</td>
+      <td class="center">${estadoBadge}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="toggleUserActive('${u.id}', ${u.activo !== false})" style="font-size:10px;padding:3px 8px;" title="${u.activo !== false ? 'Desactivar' : 'Activar'}">
+            ${u.activo !== false ? '🔴 Off' : '🟢 On'}
+          </button>
+          ${u.rol !== 'admin' ? `<button class="btn btn-ghost" onclick="promoteUser('${u.id}')" style="font-size:10px;padding:3px 8px;" title="Hacer admin">⭐</button>` : ''}
+          ${u.rol === 'admin' && !isCurrent ? `<button class="btn btn-ghost" onclick="demoteUser('${u.id}')" style="font-size:10px;padding:3px 8px;" title="Quitar admin">⬇️</button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function showCreateUserForm() {
+  $('createUserForm').style.display = 'block';
+  $('newUserEmail').value = '';
+  $('newUserPassword').value = '';
+  $('createUserError').style.display = 'none';
+  $('newUserEmail').focus();
+}
+
+function hideCreateUserForm() {
+  $('createUserForm').style.display = 'none';
+}
+
+async function createUser() {
+  const email = $('newUserEmail').value.trim();
+  const password = $('newUserPassword').value;
+  const errEl = $('createUserError');
+
+  if (!email || !password) {
+    errEl.textContent = 'Ingresa email y contraseña';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = $('btnCreateUser');
+  btn.disabled = true;
+  btn.textContent = 'Creando...';
+  errEl.style.display = 'none';
+
+  try {
+    const name = email.split('@')[0];
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { nombre: name, rol: 'vendedor' }
+      }
+    });
+    if (error) throw error;
+
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        email,
+        nombre: name,
+        rol: 'vendedor',
+        activo: true
+      }, { onConflict: 'id' });
+    }
+
+    toast('✅ Usuario creado: ' + email, 'success');
+    hideCreateUserForm();
+    await loadUsers();
+  } catch (e) {
+    let msg = e.message || 'Error al crear usuario';
+    if (msg.includes('already registered')) msg = 'Este email ya está registrado';
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Crear usuario';
+  }
+}
+
+async function toggleUserActive(userId, currentlyActive) {
+  const action = currentlyActive ? 'desactivar' : 'activar';
+  if (!await showConfirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} este usuario?`, `${action.charAt(0).toUpperCase() + action.slice(1)} usuario`, action.charAt(0).toUpperCase() + action.slice(1))) return;
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ activo: !currentlyActive })
+      .eq('id', userId);
+    if (error) throw error;
+    toast(currentlyActive ? '🔴 Usuario desactivado' : '🟢 Usuario activado', 'success');
+    await loadUsers();
+  } catch (e) {
+    toast('⚠️ Error: ' + e.message, 'danger');
+  }
+}
+
+async function promoteUser(userId) {
+  if (!await showConfirm('¿Promover a administrador?', 'Promover usuario', 'Promover')) return;
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ rol: 'admin' })
+      .eq('id', userId);
+    if (error) throw error;
+    toast('⭐ Ahora es administrador', 'success');
+    await loadUsers();
+  } catch (e) {
+    toast('⚠️ Error: ' + e.message, 'danger');
+  }
+}
+
+async function demoteUser(userId) {
+  if (!await showConfirm('¿Quitar rol de administrador?', 'Degradar usuario', 'Degradar')) return;
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ rol: 'vendedor' })
+      .eq('id', userId);
+    if (error) throw error;
+    toast('⬇️ Ahora es vendedor', 'success');
+    await loadUsers();
+  } catch (e) {
+    toast('⚠️ Error: ' + e.message, 'danger');
+  }
+}
+
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = s || '';
@@ -1763,3 +1940,11 @@ window.openHelpModal = openHelpModal;
 window.closeHelpModal = closeHelpModal;
 window.toggleHelpSection = toggleHelpSection;
 window.updateItemMargin = updateItemMargin;
+window.openUserManagement = openUserManagement;
+window.closeUserManagement = closeUserManagement;
+window.showCreateUserForm = showCreateUserForm;
+window.hideCreateUserForm = hideCreateUserForm;
+window.createUser = createUser;
+window.toggleUserActive = toggleUserActive;
+window.promoteUser = promoteUser;
+window.demoteUser = demoteUser;

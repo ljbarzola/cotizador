@@ -51,6 +51,7 @@
       <button class="btn btn-ghost" onclick="openSavedModal()">📂 Historial</button>
       <button class="btn btn-ghost" onclick="openHelpModal()">❓ Ayuda</button>
       <button class="btn btn-ghost" onclick="openTemplatesModal()">📋 Plantillas</button>
+      <button class="btn btn-ghost" id="btnUserManagement" onclick="openUserManagement()" style="display:none;">👥 Usuarios</button>
       <div class="user-chip" id="userChip">
         <div class="user-chip-info" id="userChipToggle" style="cursor:pointer;">
           <span id="userChipName">—</span>
@@ -650,6 +651,62 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeHelpModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: GESTIÓN DE USUARIOS (solo admin) -->
+<div class="modal-backdrop" id="userManagementModal">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-header">
+      <h2>👥 Gestión de usuarios</h2>
+      <button class="modal-close" onclick="closeUserManagement()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-primary" onclick="showCreateUserForm()" style="font-size:12px;padding:7px 14px;">+ Nuevo usuario</button>
+        <span id="userManagementCount" style="font-size:11px;color:var(--muted);"></span>
+      </div>
+
+      <!-- FORM CREAR USUARIO -->
+      <div id="createUserForm" style="display:none;margin-bottom:16px;padding:12px;background:#f9fafb;border:1px solid var(--border);border-radius:8px;">
+        <div style="font-weight:600;font-size:13px;margin-bottom:10px;">Crear nuevo usuario</div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="field">
+            <label>Email</label>
+            <input type="text" id="newUserEmail" placeholder="usuario@gemeseg.com">
+          </div>
+          <div class="field">
+            <label>Contraseña</label>
+            <input type="password" id="newUserPassword" placeholder="Contraseña">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn btn-primary" onclick="createUser()" id="btnCreateUser">Crear usuario</button>
+          <button class="btn btn-ghost" onclick="hideCreateUserForm()">Cancelar</button>
+        </div>
+        <div id="createUserError" style="color:var(--danger);font-size:12px;margin-top:8px;display:none;"></div>
+      </div>
+
+      <!-- TABLA USUARIOS -->
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+        <table class="items-table" id="usersTable">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th style="width:100px;">Rol</th>
+              <th style="width:80px;">Estado</th>
+              <th style="width:120px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+      <div id="usersLoading" style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">Cargando usuarios...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeUserManagement()">Cerrar</button>
     </div>
   </div>
 </div>
