@@ -19,6 +19,7 @@ async function loadCatalogFromDB() {
     }
   } catch (e) {
     console.warn('No se pudo cargar catálogo desde DB:', e.message);
+    toast('⚠️ Error al cargar catálogo: ' + e.message, 'warning');
   }
   return false;
 }
@@ -31,7 +32,7 @@ let historyQuotesCache = [];
 
 // Mapa de márgenes por proveedor: { "Sisegusa": 35, "Sin proveedor": 35, ... }
 let supplierMargins = {};
-const DEFAULT_SUPPLIER_MARGIN = 35;
+const DEFAULT_SUPPLIER_MARGIN = 15;
 const DEFAULT_INSTALL_MARGIN = 35;
 let installationMarginPct = DEFAULT_INSTALL_MARGIN;
 let installationEnabled = false;
@@ -92,8 +93,9 @@ function quoteTotal(q) {
   return items.reduce((s, c) => {
     const item = CATALOG[c.catalogIdx];
     if (!item) return s;
+    const effectiveMargin = c.customMargin ?? getSupplierMargin(item.supplier);
     const pricing = calcItemPrice(item, {
-      supplierMargin: getSupplierMargin(item.supplier),
+      supplierMargin: effectiveMargin,
       installMargin: installationMarginPct,
       techCost: c.techCost ?? 0,
       installActive: c.installActive ?? false,
@@ -184,7 +186,7 @@ function renderCatalog() {
 
     return `
       <div class="cat-item">
-        <div class="cat-item-info">
+        <div class="cat-item-info" onclick="openProductDetail(${realIdx})" style="cursor:pointer;">
           <div class="cat-item-code">${code} ${modelLabel}</div>
           <div class="cat-item-desc">${item.description}</div>
           <div class="cat-item-meta">
@@ -295,6 +297,7 @@ function addToCart(idx) {
       qty: item.unit ? (parseFloat(item.unit) || 1) : 1,
       installActive: false,
       techCost: 0,
+      customMargin: null,
     });
   }
   renderCatalog();
@@ -318,6 +321,12 @@ function removeItem(idx) {
   saveDraft();
 }
 
+function updateItemMargin(idx, val) {
+  cart[idx].customMargin = parseFloat(val) || null;
+  clearTimeout(window._marginRenderTimer);
+  window._marginRenderTimer = setTimeout(() => { renderCart(); saveDraft(); }, 300);
+}
+
 function toggleInstall(idx) {
   cart[idx].installActive = !cart[idx].installActive;
   renderCart();
@@ -333,14 +342,14 @@ function updateTechCost(idx, val) {
 function updateSupplierMarginGlobal(supplier, val) {
   const key = supplier || 'Sin proveedor';
   supplierMargins[key] = parseFloat(val) || 0;
-  renderCart();
-  saveDraft();
+  clearTimeout(window._marginRenderTimer);
+  window._marginRenderTimer = setTimeout(() => { renderCart(); saveDraft(); }, 300);
 }
 
 function updateInstallationMargin(val) {
   installationMarginPct = parseFloat(val) || 0;
-  renderCart();
-  saveDraft();
+  clearTimeout(window._marginRenderTimer);
+  window._marginRenderTimer = setTimeout(() => { renderCart(); saveDraft(); }, 300);
 }
 
 function toggleInstallationGlobal() {
@@ -374,18 +383,19 @@ function renderCart() {
   html += '<table class="items-table"><thead><tr>';
   html += '<th class="item-num">#</th>';
   html += '<th>Descripción</th>';
-  html += '<th class="right" style="width:75px;">Precio</th>';
-  html += '<th class="center" style="width:55px;">Cant</th>';
-  html += '<th class="right" style="width:65px;">+Margen</th>';
-  html += '<th class="right" style="width:75px;">PVP</th>';
-  html += '<th class="center" style="width:55px;">Inst.</th>';
-  html += '<th style="width:30px;"></th>';
+  html += '<th class="right" style="width:60px;">Costo</th>';
+  html += '<th class="center" style="width:42px;">Cant</th>';
+  html += '<th class="right" style="width:50px;">Margen</th>';
+  html += '<th class="right" style="width:60px;">PVP</th>';
+  html += '<th class="center" style="width:40px;">Inst</th>';
+  html += '<th style="width:28px;"></th>';
   html += '</tr></thead><tbody>';
 
   cart.forEach((c, idx) => {
     const item = CATALOG[c.catalogIdx];
+    const effectiveMargin = c.customMargin ?? getSupplierMargin(item.supplier);
     const pricing = calcItemPrice(item, {
-      supplierMargin: getSupplierMargin(item.supplier),
+      supplierMargin: effectiveMargin,
       installMargin: installationMarginPct,
       techCost: c.techCost,
       installActive: c.installActive,
@@ -393,9 +403,12 @@ function renderCart() {
 
     const lineTotal = pricing.total * c.qty;
     const badges = marginBadge(item);
-    const marginCell = pricing.gananciaProveedor > 0
-      ? `<span class="supplier-detail">${fmt(pricing.gananciaProveedor * c.qty)}</span>`
-      : '<span style="color:var(--muted);">—</span>';
+    let marginCell;
+    if (pricing.gananciaProveedor > 0) {
+      marginCell = `<span class="supplier-detail">${fmt(pricing.gananciaProveedor * c.qty)}</span>`;
+    } else {
+      marginCell = '<span style="color:var(--muted);">—</span>';
+    }
 
     const installCell = item.hasInstalacion
       ? (c.installActive
@@ -405,8 +418,8 @@ function renderCart() {
 
     html += `<tr>
       <td class="item-num">${idx + 1}</td>
-      <td class="item-desc">
-        ${item.description}
+      <td class="item-desc item-desc-click" onclick="openCartItemDetail(${idx})" title="Ver detalle">
+        <span class="item-desc-text">${item.description}</span>
         <div class="item-badges">${badges}</div>
         <small>${item.sourceId || ''}${item.supplier ? ' · ' + item.supplier : ''}</small>
       </td>
@@ -457,20 +470,31 @@ function renderMarginConfig() {
     supplierKeys.forEach(supplier => {
       const items = supplierGroups[supplier];
       const margin = getSupplierMargin(supplier);
+      const isSinProveedor = supplier === 'Sin proveedor';
 
       supplierHtml += `<div class="supplier-group">`;
       supplierHtml += `<div class="supplier-group-header">`;
       supplierHtml += `<span class="supplier-name">${supplier} <span class="supplier-count">${items.length} ítem(s)</span></span>`;
-      supplierHtml += `<div class="supplier-margin-input"><input type="number" min="0" max="100" step="1" value="${margin}" onchange="updateSupplierMarginGlobal('${supplier.replace(/'/g, "\\'")}', this.value)"><span>%</span></div>`;
+      if (isSinProveedor) {
+        supplierHtml += `<span class="supplier-hint">Margen individual por item ↓</span>`;
+      } else {
+        supplierHtml += `<div class="supplier-margin-input"><input type="number" min="0" max="100" step="1" value="${margin}" oninput="updateSupplierMarginGlobal('${supplier.replace(/'/g, "\\'")}', this.value)"><span>%</span></div>`;
+      }
       supplierHtml += `</div>`;
 
-      items.forEach(({ item }) => {
-        const pricing = calcItemPrice(item, { supplierMargin: margin });
+      items.forEach(({ item, cartItem }) => {
+        const effectiveMargin = isSinProveedor ? (cartItem.customMargin ?? margin) : margin;
+        const pricing = calcItemPrice(item, { supplierMargin: effectiveMargin });
         const hasGanancia = item.hasGanancia;
-        supplierHtml += `<div class="supplier-group-item${hasGanancia ? ' sgi-active' : ''}">`;
+        const hasCustom = cartItem.customMargin != null;
+        const cartIdx = cart.indexOf(cartItem);
+        supplierHtml += `<div class="supplier-group-item${hasGanancia ? ' sgi-active' : ''}${hasCustom ? ' sgi-custom' : ''}">`;
         supplierHtml += `<span class="sgi-code">${item.sourceId || ''}</span>`;
-        supplierHtml += `<span class="sgi-desc">${item.description.slice(0, 45)}${item.description.length > 45 ? '…' : ''}</span>`;
-        supplierHtml += `<span class="sgi-cost">${fmt(item.cost)} → <strong>${fmt(pricing.priceBeforeIva)}</strong>${hasGanancia ? ' <span class="sgi-margin">+' + margin + '%</span>' : ' <span class="sgi-no-margin">sin ganancia</span>'}</span>`;
+        supplierHtml += `<span class="sgi-desc">${item.description.slice(0, 35)}${item.description.length > 35 ? '…' : ''}</span>`;
+        if (isSinProveedor && hasGanancia) {
+          supplierHtml += `<div class="supplier-margin-input sgi-margin-inline"><input type="number" min="0" max="100" step="1" value="${effectiveMargin}" oninput="updateItemMargin(${cartIdx}, this.value)"><span>%</span></div>`;
+        }
+        supplierHtml += `<span class="sgi-cost">${fmt(item.cost)} → <strong>${fmt(pricing.priceBeforeIva)}</strong>${hasGanancia ? ' <span class="sgi-margin">+' + effectiveMargin + '%</span>' : ' <span class="sgi-no-margin">sin ganancia</span>'}</span>`;
         supplierHtml += `</div>`;
       });
 
@@ -549,8 +573,9 @@ function renderTotals() {
 
   cart.forEach(c => {
     const item = CATALOG[c.catalogIdx];
+    const effectiveMargin = c.customMargin ?? getSupplierMargin(item.supplier);
     const pricing = calcItemPrice(item, {
-      supplierMargin: getSupplierMargin(item.supplier),
+      supplierMargin: effectiveMargin,
       installMargin: installationMarginPct,
       techCost: c.techCost,
       installActive: c.installActive,
@@ -667,7 +692,7 @@ async function saveQuote() {
       const { data: existing } = await supabase.from('saved_quotes')
         .select('id').eq('user_id', userId).eq('cot_num', data.cotNum).maybeSingle();
       if (existing) {
-        if (confirm('Ya existe "' + data.cotNum + '". ¿Actualizar la existente?')) {
+        if (await showConfirm('Ya existe "' + data.cotNum + '". ¿Actualizar la existente?', 'Cotización duplicada', 'Actualizar')) {
           const { error } = await supabase.from('saved_quotes').update({
             cot_num: row.cot_num, cot_date: row.cot_date, client: row.client,
             supplier_margins: row.supplier_margins, install_margin: row.install_margin,
@@ -691,7 +716,6 @@ async function saveQuote() {
       }
     }
   } catch (e) {
-    console.error('Error guardando:', e);
     toast('Error al guardar: ' + e.message, 'danger');
   }
 }
@@ -806,7 +830,7 @@ async function loadSaved(id) {
 }
 
 async function deleteSaved(id) {
-  if (!confirm('¿Eliminar esta cotización?')) return;
+  if (!await showConfirm('¿Eliminar esta cotización?', 'Eliminar cotización', 'Eliminar')) return;
   try {
     const { error } = await supabase.from('saved_quotes').delete().eq('id', id);
     if (error) throw error;
@@ -817,8 +841,8 @@ async function deleteSaved(id) {
   } catch (e) { toast('Error: ' + e.message, 'danger'); }
 }
 
-function newQuote() {
-  if (cart.length > 0 && !confirm('¿Limpiar todo y empezar nueva cotización?')) return;
+async function newQuote() {
+  if (cart.length > 0 && !await showConfirm('¿Limpiar todo y empezar nueva cotización?', 'Nueva cotización', 'Crear')) return;
   cart = [];
   currentQuoteId = null;
   supplierMargins = {};
@@ -1009,9 +1033,9 @@ function openCatalogEditor() {
   loadEditorProducts();
 }
 
-function closeCatalogEditor() {
+async function closeCatalogEditor() {
   if (Object.keys(editorChanges).size > 0 || editorDeleted.size > 0) {
-    if (!confirm('Hay cambios sin guardar. ¿Cerrar?')) return;
+    if (!await showConfirm('Hay cambios sin guardar. ¿Cerrar?', 'Cambios sin guardar', 'Cerrar')) return;
   }
   $('catalogEditorModal').classList.remove('open');
   editorProducts = []; editorChanges = {}; editorDeleted = new Set();
@@ -1103,9 +1127,9 @@ window.editorField = function(idx, field, value) {
   if (row && !editorDeleted.has(idx)) row.classList.add('row-modified');
 };
 
-window.editorToggleDelete = function(idx) {
+window.editorToggleDelete = async function(idx) {
   if (editorDeleted.has(idx)) { editorDeleted.delete(idx); }
-  else { const p = editorProducts[idx]; if (!confirm('¿Eliminar "' + (p.producto || p.source_id || '').slice(0, 60) + '"?')) return; editorDeleted.add(idx); }
+  else { const p = editorProducts[idx]; if (!await showConfirm('¿Eliminar "' + (p.producto || p.source_id || '').slice(0, 60) + '"?', 'Eliminar producto', 'Eliminar')) return; editorDeleted.add(idx); }
   renderEditorTable();
 };
 
@@ -1160,11 +1184,6 @@ async function bootApp() {
   const withGanancia = CATALOG.filter(i => i.hasGanancia).length;
   const withInstalacion = CATALOG.filter(i => i.hasInstalacion).length;
   const suppliers = [...new Set(CATALOG.map(i => i.supplier).filter(Boolean))];
-  console.log(`[BOOT] Catálogo: ${totalItems} ítems, ${withGanancia} con ganancia, ${withInstalacion} con instalación`);
-  console.log(`[BOOT] Proveedores: ${suppliers.join(', ') || 'ninguno'}`);
-  console.log(`[BOOT] Muestra de flags (primeros 5):`, CATALOG.slice(0, 5).map(i => ({
-    id: i.sourceId, desc: i.description?.slice(0, 30), ganancia: i.hasGanancia, instalacion: i.hasInstalacion, supplier: i.supplier
-  })));
 
   $('search').addEventListener('input', () => { catalogPage = 1; renderCatalog(); });
   $('categoryFilter').addEventListener('change', () => { catalogPage = 1; renderSubcategories($('categoryFilter').value); renderCatalog(); });
@@ -1201,7 +1220,7 @@ function loadCustomCatalogIfExists() {
   try { const custom = JSON.parse(raw); if (custom.length > 0) { CATALOG.length = 0; custom.forEach(i => CATALOG.push(i)); return true; } } catch(e) {}
   return false;
 }
-function resetCatalog() { if (!confirm('¿Restaurar catálogo desde DB?')) return; localStorage.removeItem('custom_catalog'); location.reload(); }
+async function resetCatalog() { if (!await showConfirm('¿Restaurar catálogo desde DB?', 'Restaurar catálogo', 'Restaurar')) return; localStorage.removeItem('custom_catalog'); location.reload(); }
 
 function enterApp(session) {
   currentSession = session;
@@ -1218,11 +1237,491 @@ function enterApp(session) {
   if (btnEditCatalog) btnEditCatalog.style.display = session.rol === 'admin' ? 'block' : 'none';
   $('loginBtn').disabled = false;
   $('loginBtn').textContent = 'Ingresar';
-  bootApp().catch(e => console.error('Boot error:', e));
+  bootApp().catch(e => { toast('Error al iniciar: ' + e.message, 'danger'); });
 }
 window._enterApp = enterApp;
 
+// === CUSTOM CONFIRM MODAL ===
+let _confirmResolve = null;
+function showConfirm(message, title, okLabel) {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    $('confirmTitle').textContent = title || 'Confirmar';
+    $('confirmMessage').textContent = message;
+    $('confirmOkBtn').textContent = okLabel || 'Aceptar';
+    $('confirmModal').classList.add('open');
+  });
+}
+function resolveConfirm(result) {
+  $('confirmModal').classList.remove('open');
+  if (_confirmResolve) { _confirmResolve(result); _confirmResolve = null; }
+}
+
+// === PRODUCT DETAIL MODAL ===
+function openProductDetail(idx) {
+  const item = CATALOG[idx];
+  if (!item) return;
+  const price = calcItemPrice(item);
+  const fmt2 = v => '$' + (v || 0).toFixed(2);
+  const nl2br = s => esc(s).replace(/\n/g, '<br>');
+
+  let html = `<div class="detail-grid">
+    <div class="detail-row"><span class="label">Código:</span><span class="value" style="font-family:ui-monospace,monospace;">${esc(item.sourceId)}</span></div>`;
+  if (item.model) html += `<div class="detail-row"><span class="label">Modelo:</span><span class="value">${esc(item.model)}</span></div>`;
+  html += `<div class="detail-row" style="grid-column:1/-1;"><span class="label">Descripción:</span><span class="value" style="font-weight:600;">${esc(item.description)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">Categoría:</span><span class="value">${esc(item.category)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">Subcategoría:</span><span class="value">${esc(item.subcategory)}</span></div>`;
+  if (item.supplier) html += `<div class="detail-row"><span class="label">Proveedor:</span><span class="value">${esc(item.supplier)}</span></div>`;
+  if (item.unit) html += `<div class="detail-row"><span class="label">Unidad:</span><span class="value">${esc(item.unit)}</span></div>`;
+  if (item.observations) {
+    const label = item.isService ? 'Descripción detallada:' : 'Observaciones:';
+    html += `<div class="detail-obs" style="grid-column:1/-1;"><span class="label">${label}</span><div class="detail-obs-text">${nl2br(item.observations)}</div></div>`;
+  }
+  if (item.lastUpdate) html += `<div class="detail-row"><span class="label">Última act.:</span><span class="value">${esc(item.lastUpdate)}</span></div>`;
+
+  html += `<div class="detail-divider"></div>`;
+  html += `<div class="detail-row"><span class="label">Costo base:</span><span class="value">${fmt2(price.baseCost)}</span></div>`;
+  if (price.gananciaProveedor > 0) html += `<div class="detail-row"><span class="label">Ganancia proveedor:</span><span class="value">${fmt2(price.gananciaProveedor)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">IVA (15%):</span><span class="value">${fmt2(price.iva)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">PVP (con IVA):</span><span class="value" style="font-weight:700;color:var(--primary);font-size:14px;">${fmt2(price.subtotalEquipo)}</span></div>`;
+  if (price.hasInstalacion) html += `<div class="detail-row"><span class="label">Requiere instalación:</span><span class="value">🟩 Sí</span></div>`;
+  if (price.hasGanancia) html += `<div class="detail-row"><span class="label">Tiene ganancia:</span><span class="value">Sí</span></div>`;
+  html += `</div>`;
+
+  $('productDetailBody').innerHTML = html;
+  $('productDetailModal').classList.add('open');
+}
+function closeProductDetail() {
+  $('productDetailModal').classList.remove('open');
+}
+
+function openCartItemDetail(idx) {
+  const c = cart[idx];
+  if (!c) return;
+  const item = CATALOG[c.catalogIdx];
+  if (!item) return;
+  const effectiveMargin = c.customMargin ?? getSupplierMargin(item.supplier);
+  const pricing = calcItemPrice(item, {
+    supplierMargin: effectiveMargin,
+    installMargin: installationMarginPct,
+    techCost: c.techCost,
+    installActive: c.installActive,
+  });
+  const fmt2 = v => '$' + (v || 0).toFixed(2);
+  const nl2br = s => esc(s).replace(/\n/g, '<br>');
+
+  let html = `<div class="detail-grid">
+    <div class="detail-row"><span class="label">Código:</span><span class="value" style="font-family:ui-monospace,monospace;">${esc(item.sourceId)}</span></div>`;
+  if (item.model) html += `<div class="detail-row"><span class="label">Modelo:</span><span class="value">${esc(item.model)}</span></div>`;
+  html += `<div class="detail-row" style="grid-column:1/-1;"><span class="label">Descripción:</span><span class="value" style="font-weight:600;">${esc(item.description)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">Categoría:</span><span class="value">${esc(item.category)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">Subcategoría:</span><span class="value">${esc(item.subcategory)}</span></div>`;
+  if (item.supplier) html += `<div class="detail-row"><span class="label">Proveedor:</span><span class="value">${esc(item.supplier)}</span></div>`;
+  if (!item.supplier) html += `<div class="detail-row"><span class="label">Proveedor:</span><span class="value" style="color:#d97706;">Sin proveedor</span></div>`;
+  if (item.observations) {
+    const label = item.isService ? 'Descripción detallada:' : 'Observaciones:';
+    html += `<div class="detail-obs" style="grid-column:1/-1;"><span class="label">${label}</span><div class="detail-obs-text">${nl2br(item.observations)}</div></div>`;
+  }
+
+  html += `<div class="detail-divider"></div>`;
+  html += `<div class="detail-row"><span class="label">Costo base:</span><span class="value">${fmt2(pricing.baseCost)}</span></div>`;
+  if (item.hasGanancia) html += `<div class="detail-row"><span class="label">Margen (${effectiveMargin}%):</span><span class="value">${fmt2(pricing.gananciaProveedor)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">IVA (15%):</span><span class="value">${fmt2(pricing.iva)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">PVP unitario:</span><span class="value" style="font-weight:700;color:var(--primary);">${fmt2(pricing.priceBeforeIva)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">Cantidad:</span><span class="value">${c.qty}</span></div>`;
+  html += `<div class="detail-row"><span class="label">Subtotal:</span><span class="value" style="font-weight:700;color:var(--primary);font-size:14px;">${fmt2(pricing.total * c.qty)}</span></div>`;
+  if (item.hasInstalacion) {
+    html += `<div class="detail-row"><span class="label">Instalación:</span><span class="value">${c.installActive ? '🟩 Activa' : '⬛ Inactiva'}</span></div>`;
+    if (c.installActive) {
+      html += `<div class="detail-row"><span class="label">Costo técnico:</span><span class="value">${fmt2(c.techCost)}</span></div>`;
+      html += `<div class="detail-row"><span class="label">Margen instalación (${installationMarginPct}%):</span><span class="value">${fmt2(pricing.gananciaInstalacion)}</span></div>`;
+      html += `<div class="detail-row"><span class="label">Instalación total:</span><span class="value" style="font-weight:600;">${fmt2(pricing.instalacionPrice * c.qty)}</span></div>`;
+    }
+  }
+  html += `</div>`;
+
+  $('productDetailBody').innerHTML = html;
+  $('productDetailModal').classList.add('open');
+}
+
+// === HELP MODAL ===
+function openHelpModal() {
+  $('helpModal').classList.add('open');
+}
+function closeHelpModal() {
+  $('helpModal').classList.remove('open');
+}
+function toggleHelpSection(btn) {
+  const content = btn.nextElementSibling;
+  const arrow = btn.querySelector('.help-arrow');
+  const isOpen = content.style.display === 'block';
+  content.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
+}
+
+// === TEMPLATES ===
+let _currentPreviewTemplateId = null;
+
+function openTemplatesModal() {
+  $('templatesModal').classList.add('open');
+  renderTemplateList();
+}
+function closeTemplatesModal() {
+  $('templatesModal').classList.remove('open');
+}
+
+function filterTemplates() {
+  renderTemplateList();
+}
+
+function renderTemplateList() {
+  const search = ($('tplSearch')?.value || '').toLowerCase();
+  const type = $('tplType')?.value || '';
+  const industry = $('tplIndustry')?.value || '';
+  let templates = window.getAllTemplates ? window.getAllTemplates() : [];
+  if (search) templates = templates.filter(t => t.name.toLowerCase().includes(search) || t.description.toLowerCase().includes(search));
+  if (type) templates = templates.filter(t => t.clientType === type);
+  if (industry) templates = templates.filter(t => t.industry === industry);
+
+  const list = $('templateList');
+  if (!list) return;
+  if (!templates.length) {
+    list.innerHTML = '<div class="tpl-empty">No se encontraron plantillas con los filtros seleccionados.</div>';
+    return;
+  }
+
+  const typeLabels = { pequeña: 'Pequeña', mediana: 'Mediana', grande: 'Grande' };
+  const industryLabels = { banco: 'Banco', comercio: 'Comercio', oficina: 'Oficina', industrial: 'Industrial', salud: 'Salud' };
+
+  list.innerHTML = templates.map(t => {
+    const isSample = t.id.startsWith('tpl-small-') || t.id.startsWith('tpl-medium-') || t.id.startsWith('tpl-large-');
+    return `
+    <div class="tpl-card" onclick="openTemplatePreview('${t.id}')">
+      <div class="tpl-card-header">
+        <div class="tpl-card-title">${esc(t.name)}</div>
+        <div class="tpl-card-actions" onclick="event.stopPropagation()">
+          <button onclick="openTemplatePreview('${t.id}')" title="Vista previa">👁️</button>
+          <button onclick="loadTemplateDirect('${t.id}')" title="Cargar plantilla">📥</button>
+          <button onclick="downloadTemplate('${t.id}')" title="Descargar copia">🖨️</button>
+          <button onclick="deleteTemplateConfirm('${t.id}')" title="Eliminar" style="color:var(--danger)">🗑️</button>
+        </div>
+      </div>
+      <div class="tpl-card-desc">${esc(t.description)}</div>
+      <div class="tpl-card-meta">
+        <span class="tpl-badge tpl-badge-type">${typeLabels[t.clientType] || t.clientType}</span>
+        <span class="tpl-badge tpl-badge-industry">${industryLabels[t.industry] || t.industry}</span>
+        <span class="tpl-badge tpl-badge-items">${t.items.length} productos</span>
+        ${isSample ? '<span class="tpl-badge tpl-badge-items" style="background:#e0e7ff;color:#3730a3;">Ejemplo</span>' : '<span class="tpl-badge tpl-badge-custom">Personalizada</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openTemplatePreview(id) {
+  const tpl = window.getTemplate(id);
+  if (!tpl) return;
+  _currentPreviewTemplateId = id;
+  $('tplPreviewTitle').textContent = tpl.name;
+
+  const typeLabels = { pequeña: 'Pequeña', mediana: 'Mediana', grande: 'Grande' };
+  const industryLabels = { banco: 'Banco', comercio: 'Comercio', oficina: 'Oficina', industrial: 'Industrial', salud: 'Salud' };
+
+  const tplSupplierMargins = tpl.supplierMargins || {};
+  const tplInstallMargin = tpl.installMargin ?? installationMarginPct;
+
+  function getTplSupplierMargin(supplier) {
+    const key = supplier || 'Sin proveedor';
+    return tplSupplierMargins[key] ?? DEFAULT_SUPPLIER_MARGIN;
+  }
+
+  let html = `<div class="tpl-preview-header">
+    <h3>${esc(tpl.name)}</h3>
+    <p>${esc(tpl.description)}</p>
+  </div>`;
+
+  html += `<div class="tpl-preview-client">
+    <div><span class="label">Cliente:</span> <span class="value">${esc(tpl.client.name)}</span></div>
+    <div><span class="label">RUC:</span> <span class="value">${esc(tpl.client.ruc)}</span></div>
+    <div><span class="label">Dirección:</span> <span class="value">${esc(tpl.client.address)}</span></div>
+    <div><span class="label">Contacto:</span> <span class="value">${esc(tpl.client.contact)}</span></div>
+    <div><span class="label">Teléfono:</span> <span class="value">${esc(tpl.client.phone)}</span></div>
+    <div><span class="label">Email:</span> <span class="value">${esc(tpl.client.email)}</span></div>
+    <div><span class="label">Tamaño:</span> <span class="value">${typeLabels[tpl.clientType] || tpl.clientType}</span></div>
+    <div><span class="label">Industria:</span> <span class="value">${industryLabels[tpl.industry] || tpl.industry}</span></div>
+  </div>`;
+
+  html += `<table class="tpl-preview-table"><thead><tr>
+    <th>#</th><th>ID</th><th>Descripción</th><th>Cant.</th><th>Costo U.</th><th>PVP U.</th><th>Subtotal</th><th>Instalación</th>
+  </tr></thead><tbody>`;
+
+  let totalEquipos = 0;
+  let totalIVA = 0;
+  let totalInstCost = 0;
+  let totalInstProfit = 0;
+
+  tpl.items.forEach((item, i) => {
+    const catItem = CATALOG.find(c => c.sourceId === item.sourceId);
+    if (!catItem) return;
+    const qty = item.qty || 1;
+
+    const pricing = calcItemPrice(catItem, {
+      supplierMargin: getTplSupplierMargin(catItem.supplier),
+      installMargin: tplInstallMargin,
+      techCost: item.techCost || 0,
+      installActive: item.installActive || false,
+    });
+
+    const pvpUnit = pricing.subtotalEquipo / qty;
+    totalEquipos += pricing.subtotalEquipo * qty - pricing.iva * qty;
+    totalIVA += pricing.iva * qty;
+    if (item.installActive && pricing.instalacionPrice > 0) {
+      totalInstCost += (item.techCost || 0) * qty;
+      totalInstProfit += pricing.gananciaInstalacion * qty;
+    }
+
+    let installInfo = '—';
+    if (item.installActive && pricing.instalacionPrice > 0) {
+      installInfo = `🟩 $${pricing.instalacionPrice.toFixed(2)}/u`;
+    } else if (item.installActive) {
+      installInfo = '🟩 Sí';
+    }
+
+    html += `<tr>
+      <td>${i + 1}</td>
+      <td style="font-family:ui-monospace,monospace;font-size:11px;">${esc(catItem.sourceId)}</td>
+      <td>${esc(catItem.description)}</td>
+      <td>${qty}</td>
+      <td>$${catItem.cost.toFixed(2)}</td>
+      <td>$${pricing.subtotalEquipo.toFixed(2)}</td>
+      <td>$${(pricing.subtotalEquipo * qty).toFixed(2)}</td>
+      <td>${installInfo}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+
+  const grandTotal = totalEquipos + totalIVA + totalInstCost + totalInstProfit;
+  html += `<div class="tpl-preview-totals">
+    <div class="tpl-preview-total-row"><span>Equipos/Materiales:</span><span>$${totalEquipos.toFixed(2)}</span></div>
+    <div class="tpl-preview-total-row"><span>IVA (15%):</span><span>$${totalIVA.toFixed(2)}</span></div>`;
+  if (totalInstCost > 0) {
+    html += `<div class="tpl-preview-total-row"><span>Costo instalación:</span><span>$${totalInstCost.toFixed(2)}</span></div>`;
+    html += `<div class="tpl-preview-total-row"><span>Margen instalación (${tplInstallMargin}%):</span><span>$${totalInstProfit.toFixed(2)}</span></div>`;
+  }
+  html += `<div class="tpl-preview-total-row tpl-preview-total-final"><span>Total:</span><span>$${grandTotal.toFixed(2)}</span></div>
+  </div>`;
+
+  $('tplPreviewBody').innerHTML = html;
+  $('templatePreviewModal').classList.add('open');
+}
+
+function closeTemplatePreview() {
+  $('templatePreviewModal').classList.remove('open');
+  _currentPreviewTemplateId = null;
+}
+
+function loadTemplateFromPreview() {
+  if (!_currentPreviewTemplateId) return;
+  loadTemplateDirect(_currentPreviewTemplateId);
+  closeTemplatePreview();
+  closeTemplatesModal();
+}
+
+async function loadTemplateDirect(id) {
+  const tpl = window.getTemplate(id);
+  if (!tpl) return;
+  if (cart.length > 0 && !await showConfirm('Esto reemplazará la cotización actual. ¿Continuar?', 'Cargar plantilla', 'Cargar')) return;
+
+  // Fill client fields
+  $('clientName').value = tpl.client.name || '';
+  $('clientRuc').value = tpl.client.ruc || '';
+  $('clientAddress').value = tpl.client.address || '';
+  $('clientContact').value = tpl.client.contact || '';
+  $('clientPhone').value = tpl.client.phone || '';
+  $('clientEmail').value = tpl.client.email || '';
+
+  // Resolve template items to cart (skip missing silently)
+  cart = [];
+  for (const ti of tpl.items) {
+    const catIdx = CATALOG.findIndex(c => c.sourceId === ti.sourceId);
+    if (catIdx >= 0) {
+      cart.push({ catalogIdx: catIdx, qty: ti.qty || 1, installActive: ti.installActive || false, techCost: ti.techCost || 0 });
+    }
+  }
+
+  // Restore margins
+  if (tpl.supplierMargins) supplierMargins = { ...tpl.supplierMargins };
+  if (tpl.installMargin != null) installationMarginPct = tpl.installMargin;
+  if (tpl.installationEnabled != null) installationEnabled = tpl.installationEnabled;
+
+  renderCatalog();
+  renderCart();
+  renderMarginConfig();
+  saveDraft();
+  toast('✅ Plantilla cargada: ' + tpl.name, 'success');
+  closeTemplatesModal();
+}
+
+function downloadTemplate(id) {
+  const tpl = window.getTemplate(id);
+  if (!tpl) return;
+
+  closeTemplatePreview();
+
+  const origName = $('clientName').value;
+  const origRuc = $('clientRuc').value;
+  const origAddr = $('clientAddress').value;
+  const origContact = $('clientContact').value;
+  const origPhone = $('clientPhone').value;
+  const origEmail = $('clientEmail').value;
+  const origCotNum = $('cotNum').value;
+  const origCotDate = $('cotDate').value;
+  const origCart = [...cart];
+  const origMargins = { ...supplierMargins };
+  const origInstallMargin = installationMarginPct;
+  const origInstallEnabled = installationEnabled;
+
+  $('clientName').value = tpl.client.name || '';
+  $('clientRuc').value = tpl.client.ruc || '';
+  $('clientAddress').value = tpl.client.address || '';
+  $('clientContact').value = tpl.client.contact || '';
+  $('clientPhone').value = tpl.client.phone || '';
+  $('clientEmail').value = tpl.client.email || '';
+  $('cotNum').value = 'PLANTILLA-' + tpl.id.replace('tpl-', '').toUpperCase();
+  $('cotDate').value = new Date().toISOString().slice(0, 10);
+
+  cart = [];
+  for (const ti of tpl.items) {
+    const catIdx = CATALOG.findIndex(c => c.sourceId === ti.sourceId);
+    if (catIdx >= 0) {
+      cart.push({ catalogIdx: catIdx, qty: ti.qty || 1, installActive: ti.installActive || false, techCost: ti.techCost || 0 });
+    }
+  }
+  if (tpl.supplierMargins) supplierMargins = { ...tpl.supplierMargins };
+  if (tpl.installMargin != null) installationMarginPct = tpl.installMargin;
+  if (tpl.installationEnabled != null) installationEnabled = tpl.installationEnabled;
+
+  renderCart();
+  renderMarginConfig();
+  syncPrintView();
+
+  setTimeout(() => {
+    window.print();
+
+    $('clientName').value = origName;
+    $('clientRuc').value = origRuc;
+    $('clientAddress').value = origAddr;
+    $('clientContact').value = origContact;
+    $('clientPhone').value = origPhone;
+    $('clientEmail').value = origEmail;
+    $('cotNum').value = origCotNum;
+    $('cotDate').value = origCotDate;
+    cart = origCart;
+    supplierMargins = origMargins;
+    installationMarginPct = origInstallMargin;
+    installationEnabled = origInstallEnabled;
+    renderCart();
+    renderMarginConfig();
+    syncPrintView();
+  }, 200);
+}
+
+// === SAVE AS TEMPLATE ===
+// === SAVE AS TEMPLATE MODAL ===
+let _saveTemplateResolve = null;
+function showSaveTemplateModal(defaultName) {
+  return new Promise(resolve => {
+    _saveTemplateResolve = resolve;
+    $('tplSaveName').value = defaultName || '';
+    $('tplSaveDesc').value = '';
+    $('tplSaveType').value = 'mediana';
+    $('tplSaveIndustry').value = 'comercio';
+    $('saveTemplateModal').classList.add('open');
+    setTimeout(() => $('tplSaveName').focus(), 100);
+  });
+}
+function resolveSaveTemplate(save) {
+  $('saveTemplateModal').classList.remove('open');
+  if (!_saveTemplateResolve) return;
+  if (save) {
+    const name = $('tplSaveName').value.trim();
+    const desc = $('tplSaveDesc').value.trim();
+    const type = $('tplSaveType').value;
+    const industry = $('tplSaveIndustry').value;
+    _saveTemplateResolve({ name, desc, type, industry });
+  } else {
+    _saveTemplateResolve(null);
+  }
+  _saveTemplateResolve = null;
+}
+
+async function saveCurrentAsTemplate() {
+  if (cart.length === 0) { toast('⚠️ Agrega productos primero', 'warning'); return; }
+  const clientName = $('clientName').value.trim();
+  if (!clientName) { toast('⚠️ Ingresa el nombre del cliente', 'warning'); return; }
+
+  const result = await showSaveTemplateModal(clientName + ' - ');
+  if (!result || !result.name) return;
+
+  const items = cart.map(c => ({
+    sourceId: CATALOG[c.catalogIdx]?.sourceId || '',
+    qty: c.qty,
+    installActive: c.installActive,
+    techCost: c.techCost,
+  })).filter(it => it.sourceId);
+
+  if (!items.length) { toast('⚠️ No se pudieron resolver los productos', 'warning'); return; }
+
+  const tpl = {
+    id: 'tpl-' + Date.now(),
+    name: result.name,
+    description: result.desc,
+    clientType: result.type,
+    industry: result.industry,
+    client: {
+      name: $('clientName').value.trim(),
+      ruc: $('clientRuc').value.trim(),
+      address: $('clientAddress').value.trim(),
+      contact: $('clientContact').value.trim(),
+      phone: $('clientPhone').value.trim(),
+      email: $('clientEmail').value.trim(),
+    },
+    items,
+    supplierMargins: { ...supplierMargins },
+    installMargin: installationMarginPct,
+    installationEnabled,
+    isTemplate: true,
+  };
+
+  window.saveTemplate(tpl);
+  toast('✅ Plantilla guardada: ' + result.name, 'success');
+  renderTemplateList();
+}
+
+async function deleteTemplateConfirm(id) {
+  if (!await showConfirm('¿Eliminar esta plantilla?', 'Eliminar plantilla', 'Eliminar')) return;
+  window.deleteTemplate(id);
+  toast('🗑️ Plantilla eliminada', 'success');
+  renderTemplateList();
+}
+
+function downloadTemplatePdf(id) {
+  downloadTemplate(id || _currentPreviewTemplateId);
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
 // === EXPORTS ===
+window.showConfirm = showConfirm;
+window.resolveConfirm = resolveConfirm;
+window.resolveSaveTemplate = resolveSaveTemplate;
+window.openProductDetail = openProductDetail;
+window.openCartItemDetail = openCartItemDetail;
+window.closeProductDetail = closeProductDetail;
 window.setModality = setModality;
 window.updateSupplierMarginGlobal = updateSupplierMarginGlobal;
 window.updateInstallationMargin = updateInstallationMargin;
@@ -1249,3 +1748,18 @@ window.startSync = startSync;
 window.stopSync = stopSync;
 window.goToPage = goToPage;
 window.changePageSize = changePageSize;
+window.openTemplatesModal = openTemplatesModal;
+window.closeTemplatesModal = closeTemplatesModal;
+window.filterTemplates = filterTemplates;
+window.openTemplatePreview = openTemplatePreview;
+window.closeTemplatePreview = closeTemplatePreview;
+window.loadTemplateFromPreview = loadTemplateFromPreview;
+window.loadTemplateDirect = loadTemplateDirect;
+window.downloadTemplate = downloadTemplate;
+window.downloadTemplatePdf = downloadTemplatePdf;
+window.saveCurrentAsTemplate = saveCurrentAsTemplate;
+window.deleteTemplateConfirm = deleteTemplateConfirm;
+window.openHelpModal = openHelpModal;
+window.closeHelpModal = closeHelpModal;
+window.toggleHelpSection = toggleHelpSection;
+window.updateItemMargin = updateItemMargin;

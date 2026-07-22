@@ -19,7 +19,6 @@ export async function fetchUserProfile(userId) {
     .eq('id', userId)
     .single();
   if (error) {
-    console.error('Profile fetch error:', error.message, error);
     return null;
   }
   return data;
@@ -41,7 +40,6 @@ export async function doLogin() {
 
   try {
     const email = credential.includes('@') ? credential : credential + '@gemeseg.com';
-    console.log('Login attempt:', { email, passLength: pass.length });
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -49,7 +47,6 @@ export async function doLogin() {
     });
 
     if (error) {
-      console.error('Supabase auth error:', error);
       let msg = error.message || error.error_description || 'Error desconocido';
       if (msg === 'Invalid login credentials') {
         msg = 'Usuario o clave incorrectos. Verifica tus datos.';
@@ -60,8 +57,6 @@ export async function doLogin() {
       resetLoginBtn();
       return;
     }
-
-    console.log('Login OK, user:', data.user.id);
 
     const profile = await fetchUserProfile(data.user.id);
 
@@ -93,7 +88,6 @@ export async function doLogin() {
     window._enterApp?.(session);
     return session;
   } catch (e) {
-    console.error('Login exception:', e);
     showLoginError('Error de conexion. Verifica tu internet.');
     resetLoginBtn();
     return null;
@@ -138,8 +132,8 @@ export async function validateSession() {
   }
 }
 
-export function logout() {
-  if (!confirm('¿Cerrar sesión?')) return;
+export async function logout() {
+  if (!await showConfirm('¿Cerrar sesión?', 'Cerrar sesión', 'Salir')) return;
   supabase.auth.signOut();
   localStorage.removeItem('session');
   localStorage.removeItem('usuario_nombre');

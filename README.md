@@ -12,7 +12,7 @@ Aplicacion web para el equipo de ventas de GEMESEG. Permite buscar productos en 
 - **Catalogo desde Google Sheets**: 3 pestanas del Google Sheet se sincronizan automaticamente a 3 tablas Supabase (equipos, materiales, servicios).
 - **Visor de catalogo**: Tabla de solo lectura visible para todos los usuarios, con busqueda y filtro por subcategoria.
 - **Editor de catalogo**: Solo administradores pueden editar, agregar o eliminar productos.
-- **Sistema de precios dinamico**: Margen de proveedor por producto, margen de instalacion global, IVA 15%.
+- **Sistema de precios dinamico**: Margen de proveedor por producto (incluyendo productos sin proveedor), margen de instalacion global, IVA 15%.
 - **Carrito de cotizacion**: Agregar productos, cantidades, eliminar items, configurar margen por item.
 - **Guardado en la nube**: Cotizaciones se guardan en Supabase (RLS: admin ve todo, vendedor solo lo suyo).
 - **Historial de cotizaciones**: Filtros por cliente, fecha y estado. Cambio de estado con dropdown.
@@ -20,16 +20,20 @@ Aplicacion web para el equipo de ventas de GEMESEG. Permite buscar productos en 
 - **PDF profesional**: Logo GEMESEG, datos del cliente, tabla de productos, condiciones comerciales, firmas.
 - **Borrador automatico**: Se guarda en localStorage mientras se edita.
 - **Paneles redimensionables**: Divider draggable entre catalogo y cotizacion.
+- **Plantillas**: 3 plantillas de ejemplo + creacion de plantillas personalizadas. Cargar, vista previa, descargar PDF, eliminar.
+- **Modales custom**: Confirmaciones y formularios con modales propios (sin dialogs del navegador).
+- **Manual de usuario**: Guia integrada con 9 secciones que explica todas las funcionalidades.
+- **Responsive/Movil**: Adaptado para tablets y celulares con toggles de colapso, touch targets 44px, modales fullscreen.
 
 ## Como se usa?
 
 1. Abrir la aplicacion en el navegador
 2. Iniciar sesion con usuario y clave (ej: `sistemas@gemeseg.com`)
-3. Sincronizar catalogo desde Google Sheets (boton de refresh)
+3. Sincronizar catalogo desde Google Sheets (solo admin)
 4. Buscar y agregar productos al carrito
 5. Completar datos del cliente
-6. Seleccionar modalidad de venta (con/sin instalacion)
-7. Guardar cotizacion o imprimir como PDF
+6. Configurar margenes si es necesario
+7. Guardar cotizacion, usar como plantilla o imprimir como PDF
 
 ## Stack tecnico
 

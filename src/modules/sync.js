@@ -10,8 +10,6 @@ const SHEETS = [
 let syncLog = [];
 function log(msg, level = 'info') {
   syncLog.push({ ts: new Date().toLocaleTimeString(), level, msg });
-  if (level === 'error') console.error('[SYNC]', msg);
-  else console.log('[SYNC]', msg);
 }
 export function getSyncLog() { return syncLog; }
 export function clearSyncLog() { syncLog = []; }
@@ -187,11 +185,9 @@ async function getTableColumns(tableName) {
     const { data: rowData } = await supabase.from(tableName).select('*').eq('source_id', '___schema_probe___').maybeSingle();
     await supabase.from(tableName).delete().eq('source_id', '___schema_probe___');
     if (rowData) {
-      console.log(`[SYNC] Esquema de ${tableName} descubierto via dummy:`, Object.keys(rowData));
       return Object.keys(rowData);
     }
   } else {
-    console.warn(`[SYNC] Dummy insert falló para ${tableName}:`, insErr.message);
     await supabase.from(tableName).delete().eq('source_id', '___schema_probe___');
   }
   return null;
@@ -406,21 +402,11 @@ export async function loadAllProducts() {
     supabase.from('servicios').select('*'),
   ]);
 
-  if (eqRes.error) console.error('Error leyendo equipos:', eqRes.error.message);
-  if (mtRes.error) console.error('Error leyendo materiales:', mtRes.error.message);
-  if (svRes.error) console.error('Error leyendo servicios:', svRes.error.message);
-
-  console.log(`[LOAD] equipos=${eqRes.data?.length||0}, materiales=${mtRes.data?.length||0}, servicios=${svRes.data?.length||0}`);
+  if (eqRes.error) { console.error('Error leyendo equipos:', eqRes.error.message); toast('⚠️ Error leyendo equipos: ' + eqRes.error.message, 'warning'); }
+  if (mtRes.error) { console.error('Error leyendo materiales:', mtRes.error.message); toast('⚠️ Error leyendo materiales: ' + mtRes.error.message, 'warning'); }
+  if (svRes.error) { console.error('Error leyendo servicios:', svRes.error.message); toast('⚠️ Error leyendo servicios: ' + svRes.error.message, 'warning'); }
 
   if (eqRes.data && eqRes.data.length > 0) {
-    const sample = eqRes.data[0];
-    console.log(`[LOAD] Muestra equipo DB:`, JSON.stringify(sample, null, 2));
-    const hasGananciaCol = 'ganancia_flag' in sample;
-    const hasInstalacionCol = 'instalacion_flag' in sample;
-    console.log(`[LOAD] Columnas flags: ganancia_flag=${hasGananciaCol}, instalacion_flag=${hasInstalacionCol}`);
-  }
-
-  if (eqRes.data) {
     for (const r of eqRes.data) {
       catalog.push({
         _table: 'equipos', _id: r.id, sourceId: r.source_id || '',
@@ -469,9 +455,7 @@ export async function loadAllProducts() {
         isService: true, monthlyCost: mensual, annualCost: anual,
       });
       if (effectiveCost === 0 && (mensual > 0 || anual > 0 || unitario > 0)) {
-        console.error(`[LOAD] SERVICIO ${r.source_id} CÁLCULO FALLÓ: mensual=${r.costo_mensual}→${mensual}, anual=${r.costo_anual}→${anual}, unitario=${r.costo_unitario}→${unitario}`);
-      } else if (effectiveCost === 0) {
-        console.warn(`[LOAD] Servicio ${r.source_id} sin costo en DB: mensual=${mensual}, anual=${anual}, unitario=${unitario} — RAW: ${JSON.stringify({cm: r.costo_mensual, ca: r.costo_anual, cu: r.costo_unitario})}`);
+        toast('⚠️ Servicio ' + r.source_id + ' con costo inválido', 'warning');
       }
     }
   }

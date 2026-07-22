@@ -2,11 +2,14 @@ import './styles.css';
 import './app.js';
 
 import { doLogin, validateSession, logout } from './modules/auth.js';
+import { initQuote } from './modules/quote.js';
 
 window.doLogin = doLogin;
 window.logout = logout;
 
 window.addEventListener('DOMContentLoaded', async () => {
+  // Initialize quote/template module
+  initQuote();
   // Logo loading - two different logos
   const LOGO_LOGIN = '/cotizador/content/logo-gemeseg-back-white.png';
   const LOGO_APP = '/cotizador/content/logo-gemeseg-back-blue.png';
@@ -69,7 +72,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     toggleBtn.addEventListener('click', () => {
       const isPassword = passInput.type === 'password';
       passInput.type = isPassword ? 'text' : 'password';
-      toggleBtn.textContent = isPassword ? '🙈' : '👁️';
+      const eyeOpen = toggleBtn.querySelector('.eye-open');
+      const eyeClosed = toggleBtn.querySelector('.eye-closed');
+      if (eyeOpen && eyeClosed) {
+        eyeOpen.style.display = isPassword ? 'none' : '';
+        eyeClosed.style.display = isPassword ? '' : 'none';
+      }
     });
   }
 

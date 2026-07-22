@@ -80,17 +80,22 @@ Cotizador/
 4. **Visor de catalogo**: Modal de solo lectura (todos los usuarios). Busqueda + filtro por subcategoria.
 5. **Editor de catalogo**: Solo admin. Edicion inline, agregar/eliminar productos, batch save a Supabase.
 6. **Carrito**: Agregar items, cantidades, eliminar, totales con IVA 15%.
-7. **Sistema de precios**: Costo → supplier margin (% editable, default 35%) → IVA 15% → installation margin (global, default 35%). Servicios: costo directo + IVA.
+7. **Sistema de precios**: Costo → supplier margin (% editable, default 15%) → IVA 15% → installation margin (global, default 35%). Servicios: costo directo + IVA.
 8. **Cotizacion**: Numeracion automatica (COT-YYYYMMDD-NNN), guardado en Supabase.
 9. **Historial**: Filtros por cliente, fecha, estado. Dropdown para cambiar estado.
 10. **PDF**: Layout print-only con logo, tabla, condiciones, firmas.
 11. **Paneles redimensionables**: Divider draggable entre catalogo y cotizacion.
 12. **Borrador**: Se guarda automaticamente en localStorage.
+13. **Plantillas**: 3 ejemplos + guardado de plantillas personalizadas (localStorage). CRUD: crear, cargar, vista previa, descargar PDF, eliminar.
+14. **Modales custom**: Confirmar accion, guardar plantilla, detalle de producto (reemplazan dialogs nativos del navegador).
+15. **Manual de usuario**: Modal con 9 secciones colapsables que explica todas las funcionalidades.
+16. **Responsive/Movil**: 3 breakpoints (900px, 768px, 640px). Touch targets 44px, toggles de colapso para catálogo/cotización, grids responsive, modales fullscreen.
 
 ### Flujo de precios (confirmado)
 
 - **Servicios**: price = costo_mensual (o costo_anual/12 si mensual=0) + IVA 15%. Sin ganancia, sin instalacion.
-- **Equipos/Materiales**: costo → si Ganancia flag=1: +supplier margin (% editable, default 35%) → +IVA 15% (siempre) → si Instalacion flag=1 Y activa: +costo_tecnico + empresa margin (% global, default 35%). NO IVA on installation.
+- **Equipos/Materiales**: costo → si Ganancia flag=1: +supplier margin (% editable, default 15%) → +IVA 15% (siempre) → si Instalacion flag=1 Y activa: +costo_tecnico + empresa margin (% global, default 35%). NO IVA on installation.
+- **Margen por proveedor**: Cada proveedor tiene su propio %. Los productos sin proveedor ("Sin proveedor") tambien tienen un margen individual configurable.
 
 ### Sync (Google Sheets → Supabase)
 
