@@ -1770,12 +1770,14 @@ function renderUsersTable() {
       <td>${rolBadge}</td>
       <td class="center">${estadoBadge}</td>
       <td>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;">
-          <button class="btn btn-ghost" onclick="toggleUserActive('${u.id}', ${u.activo !== false})" style="font-size:10px;padding:3px 8px;" title="${u.activo !== false ? 'Desactivar' : 'Activar'}">
-            ${u.activo !== false ? '🔴 Off' : '🟢 On'}
+        <div style="display:flex;gap:3px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="editUserName('${u.id}', '${esc(u.nombre || '')}')" style="font-size:10px;padding:3px 6px;" title="Editar nombre">✏️</button>
+          <button class="btn btn-ghost" onclick="changeUserPassword('${u.id}', '${esc(u.email || u.correo || '')}')" style="font-size:10px;padding:3px 6px;" title="Cambiar contraseña">🔑</button>
+          <button class="btn btn-ghost" onclick="toggleUserActive('${u.id}', ${u.activo !== false})" style="font-size:10px;padding:3px 6px;" title="${u.activo !== false ? 'Desactivar' : 'Activar'}">
+            ${u.activo !== false ? '🔴' : '🟢'}
           </button>
-          ${u.rol !== 'admin' ? `<button class="btn btn-ghost" onclick="promoteUser('${u.id}')" style="font-size:10px;padding:3px 8px;" title="Hacer admin">⭐</button>` : ''}
-          ${u.rol === 'admin' && !isCurrent ? `<button class="btn btn-ghost" onclick="demoteUser('${u.id}')" style="font-size:10px;padding:3px 8px;" title="Quitar admin">⬇️</button>` : ''}
+          ${u.rol !== 'admin' ? `<button class="btn btn-ghost" onclick="promoteUser('${u.id}')" style="font-size:10px;padding:3px 6px;" title="Hacer admin">⭐</button>` : ''}
+          ${u.rol === 'admin' && !isCurrent ? `<button class="btn btn-ghost" onclick="demoteUser('${u.id}')" style="font-size:10px;padding:3px 6px;" title="Quitar admin">⬇️</button>` : ''}
         </div>
       </td>
     </tr>`;
@@ -1784,10 +1786,12 @@ function renderUsersTable() {
 
 function showCreateUserForm() {
   $('createUserForm').style.display = 'block';
+  $('newUserName').value = '';
   $('newUserEmail').value = '';
   $('newUserPassword').value = '';
+  $('newUserRole').value = 'vendedor';
   $('createUserError').style.display = 'none';
-  $('newUserEmail').focus();
+  $('newUserName').focus();
 }
 
 function hideCreateUserForm() {
@@ -1795,8 +1799,10 @@ function hideCreateUserForm() {
 }
 
 async function createUser() {
+  const name = $('newUserName').value.trim();
   const email = $('newUserEmail').value.trim();
   const password = $('newUserPassword').value;
+  const role = $('newUserRole').value;
   const errEl = $('createUserError');
 
   if (!email || !password) {
@@ -1811,12 +1817,12 @@ async function createUser() {
   errEl.style.display = 'none';
 
   try {
-    const name = email.split('@')[0];
+    const nombre = name || email.split('@')[0];
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { nombre: name, rol: 'vendedor' }
+        data: { nombre, rol: role }
       }
     });
     if (error) throw error;
@@ -1825,8 +1831,8 @@ async function createUser() {
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
         email,
-        nombre: name,
-        rol: 'vendedor',
+        nombre,
+        rol: role,
         activo: true
       }, { onConflict: 'id' });
       if (profileError) {
@@ -1894,6 +1900,41 @@ async function demoteUser(userId) {
   }
 }
 
+async function editUserName(userId, currentName) {
+  const newName = prompt('Nuevo nombre:', currentName);
+  if (newName === null || newName.trim() === '') return;
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ nombre: newName.trim() })
+      .eq('id', userId);
+    if (error) throw error;
+    toast('✅ Nombre actualizado', 'success');
+    await loadUsers();
+  } catch (e) {
+    toast('⚠️ Error: ' + e.message, 'danger');
+  }
+}
+
+async function changeUserPassword(userId, email) {
+  const newPassword = prompt(`Nueva contraseña para ${email}:`);
+  if (newPassword === null || newPassword.trim() === '') return;
+  try {
+    const { error } = await supabase.auth.admin.updateUserById(
+      userId,
+      { password: newPassword.trim() }
+    );
+    if (error) throw error;
+    toast('🔑 Contraseña actualizada', 'success');
+  } catch (e) {
+    let msg = e.message || 'Error al cambiar contraseña';
+    if (msg.includes('admin') || msg.includes('permission')) {
+      msg = 'Se requiere service_role key. Cambia la contraseña desde Supabase Dashboard → Authentication → Users';
+    }
+    toast('⚠️ ' + msg, 'danger');
+  }
+}
+
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = s || '';
@@ -1956,3 +1997,5 @@ window.createUser = createUser;
 window.toggleUserActive = toggleUserActive;
 window.promoteUser = promoteUser;
 window.demoteUser = demoteUser;
+window.editUserName = editUserName;
+window.changeUserPassword = changeUserPassword;

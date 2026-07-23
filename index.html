@@ -658,7 +658,7 @@
 
 <!-- MODAL: GESTIÓN DE USUARIOS (solo admin) -->
 <div class="modal-backdrop" id="userManagementModal">
-  <div class="modal" style="max-width:700px;">
+  <div class="modal" style="max-width:750px;">
     <div class="modal-header">
       <h2>👥 Gestión de usuarios</h2>
       <button class="modal-close" onclick="closeUserManagement()">✕</button>
@@ -674,12 +674,23 @@
         <div style="font-weight:600;font-size:13px;margin-bottom:10px;">Crear nuevo usuario</div>
         <div class="form-grid" style="grid-template-columns:1fr 1fr;">
           <div class="field">
+            <label>Nombre</label>
+            <input type="text" id="newUserName" placeholder="Nombre completo">
+          </div>
+          <div class="field">
             <label>Email</label>
             <input type="text" id="newUserEmail" placeholder="usuario@gemeseg.com">
           </div>
           <div class="field">
             <label>Contraseña</label>
             <input type="password" id="newUserPassword" placeholder="Contraseña">
+          </div>
+          <div class="field">
+            <label>Rol</label>
+            <select id="newUserRole">
+              <option value="vendedor">Vendedor</option>
+              <option value="admin">Administrador</option>
+            </select>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
@@ -690,15 +701,15 @@
       </div>
 
       <!-- TABLA USUARIOS -->
-      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">
-        <table class="items-table" id="usersTable">
+      <div style="border:1px solid var(--border);border-radius:6px;overflow-x:auto;">
+        <table class="items-table" id="usersTable" style="min-width:520px;">
           <thead>
             <tr>
               <th>Nombre</th>
               <th>Email</th>
-              <th style="width:100px;">Rol</th>
-              <th style="width:80px;">Estado</th>
-              <th style="width:120px;">Acciones</th>
+              <th style="width:90px;">Rol</th>
+              <th style="width:70px;">Estado</th>
+              <th style="width:140px;">Acciones</th>
             </tr>
           </thead>
           <tbody id="usersTableBody"></tbody>
