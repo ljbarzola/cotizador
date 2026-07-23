@@ -549,6 +549,8 @@
     letter-spacing: 0.4px;
     margin-bottom: 4px;
   }
+  .required { color: var(--danger); font-weight: 700; }
+  .field input[required]:invalid:not(:placeholder-shown) { border-color: var(--danger); }
   .field input,
   .field textarea,
   .field select {

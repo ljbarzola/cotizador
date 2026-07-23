@@ -660,8 +660,17 @@ function loadDraft() {
 
 async function saveQuote() {
   const data = buildQuoteData();
-  if (!data.client.name || cart.length === 0) {
-    toast('Llena el cliente y agrega al menos un ítem', 'danger');
+  if (!data.client.name || !data.client.ruc || !data.client.phone || !data.client.email) {
+    const missing = [];
+    if (!data.client.name) missing.push('Cliente');
+    if (!data.client.ruc) missing.push('RUC/Cédula');
+    if (!data.client.phone) missing.push('Teléfono');
+    if (!data.client.email) missing.push('Email');
+    toast('Campos obligatorios: ' + missing.join(', '), 'danger');
+    return;
+  }
+  if (cart.length === 0) {
+    toast('Agrega al menos un ítem a la cotización', 'danger');
     return;
   }
   if (!data.cotNum) {
@@ -1833,7 +1842,7 @@ async function createUser() {
     }
 
     if (data.user && !data.session) {
-      toast('✅ Usuario creado: ' + email + '. Necesita confirmar email para ingresar.', 'success');
+      toast('✅ Usuario creado: ' + email + '. Para que pueda ingresar sin confirmar email: Supabase Dashboard → Authentication → Settings → desactivar "Enable email confirmations"', 'success');
     } else {
       toast('✅ Usuario creado: ' + email, 'success');
     }
