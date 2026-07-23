@@ -59,4 +59,4 @@ WHERE tablename = 'profiles' AND schemaname = 'public'
 ORDER BY policyname;
 
 SELECT 'Usuarios:' AS info;
-SELECT id, email, nombre, rol, activo FROM public.profiles ORDER BY nombre;
+SELECT id, correo, nombre, rol, activo FROM public.profiles ORDER BY nombre;

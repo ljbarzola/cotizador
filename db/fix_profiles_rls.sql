@@ -158,4 +158,4 @@ WHERE routine_name IN ('is_admin', 'handle_new_user', 'prevent_role_escalation')
 AND routine_schema = 'public';
 
 SELECT '--- USUARIOS ---' AS info;
-SELECT id, email, nombre, rol, activo FROM public.profiles ORDER BY nombre;
+SELECT id, correo, nombre, rol, activo FROM public.profiles ORDER BY nombre;

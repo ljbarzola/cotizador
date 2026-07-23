@@ -20,7 +20,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, nombre, rol, activo)
+  INSERT INTO public.profiles (id, correo, nombre, rol, activo)
   VALUES (
     NEW.id,
     NEW.email,
@@ -35,7 +35,7 @@ BEGIN
     true
   )
   ON CONFLICT (id) DO UPDATE SET
-    email = EXCLUDED.email;
+    correo = EXCLUDED.correo;
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
   RAISE LOG 'handle_new_user error: %', SQLERRM;

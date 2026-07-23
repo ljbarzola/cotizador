@@ -1775,11 +1775,11 @@ function renderUsersTable() {
     const isCurrent = currentSession && currentSession.userId === u.id;
     return `<tr style="${isCurrent ? 'background:#f0f9ff;' : ''}">
       <td style="font-weight:500;">${esc(u.nombre || '—')}</td>
-      <td style="color:var(--muted);font-size:11px;">${esc(u.email || u.correo || '—')}</td>
+      <td style="color:var(--muted);font-size:11px;">${esc(u.correo || '—')}</td>
       <td>${rolBadge}</td>
       <td class="center">${estadoBadge}</td>
       <td>
-        <button class="btn btn-ghost" onclick='openEditUser(${JSON.stringify({id:u.id,nombre:u.nombre||"",email:u.email||u.correo||"",rol:u.rol||"vendedor",activo:u.activo!==false}).replace(/'/g,"&#39;")})' style="font-size:11px;padding:4px 10px;">✏️ Editar</button>
+        <button class="btn btn-ghost" onclick='openEditUser(${JSON.stringify({id:u.id,nombre:u.nombre||"",correo:u.correo||"",rol:u.rol||"vendedor",activo:u.activo!==false}).replace(/'/g,"&#39;")})' style="font-size:11px;padding:4px 10px;">✏️ Editar</button>
       </td>
     </tr>`;
   }).join('');
@@ -1831,7 +1831,7 @@ async function createUser() {
     if (data.user) {
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
-        email,
+        correo: email,
         nombre,
         rol: role,
         activo: true
@@ -1912,11 +1912,11 @@ async function demoteUser(userId) {
 function openEditUser(user) {
   $('editUserId').value = user.id;
   $('editUserName').value = user.nombre;
-  $('editUserEmail').value = user.email;
+  $('editUserEmail').value = user.correo;
   $('editUserPassword').value = '';
   $('editUserRole').value = user.rol;
   $('editUserActive').value = user.activo ? 'true' : 'false';
-  $('editUserTitle').textContent = 'Editar: ' + (user.nombre || user.email);
+  $('editUserTitle').textContent = 'Editar: ' + (user.nombre || user.correo);
   $('editUserError').style.display = 'none';
   $('editUserModal').classList.add('open');
 }

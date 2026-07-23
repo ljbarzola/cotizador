@@ -24,4 +24,4 @@ WHERE p.id IS NULL;
 
 -- 4. Todos los profiles
 SELECT '--- TODOS LOS PROFILES ---' AS info;
-SELECT id, email, nombre, rol, activo FROM public.profiles ORDER BY nombre;
+SELECT id, correo, nombre, rol, activo FROM public.profiles ORDER BY nombre;

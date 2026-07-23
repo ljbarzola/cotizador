@@ -13,7 +13,7 @@ LEFT JOIN public.profiles p ON p.id = au.id
 WHERE p.id IS NULL;
 
 -- 2. Insertar perfiles faltantes
-INSERT INTO public.profiles (id, email, nombre, rol, activo)
+INSERT INTO public.profiles (id, correo, nombre, rol, activo)
 SELECT
   au.id,
   au.email,
@@ -27,7 +27,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 3. Verificar resultado
 SELECT '--- TODOS LOS PERFILES ---' AS info;
-SELECT id, email, nombre, rol, activo FROM public.profiles ORDER BY nombre;
+SELECT id, correo, nombre, rol, activo FROM public.profiles ORDER BY nombre;
 
 SELECT '--- CONTEO ---' AS info;
 SELECT
