@@ -1225,7 +1225,9 @@ async function resetCatalog() { if (!await showConfirm('¿Restaurar catálogo de
 function enterApp(session) {
   currentSession = session;
   $('loginOverlay').classList.add('hidden');
-  $('userChipName').textContent = session.nombre || session.user;
+  const chipName = $('userChipName');
+  chipName.textContent = session.nombre || session.user;
+  chipName.classList.add('user-chip-name-full');
   const roleLabel = session.rol === 'admin' ? 'Administrador' : 'Vendedor';
   const roleBadge = $('userChipRole');
   if (roleBadge) roleBadge.textContent = roleLabel;

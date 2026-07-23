@@ -82,6 +82,7 @@
     position: relative;
   }
   .user-chip-info { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .user-chip-icon { font-size: 14px; line-height: 1; }
   .user-chip-role {
     font-size: 10px;
     padding: 1px 6px;
@@ -1531,7 +1532,8 @@
 
   @media (max-width: 768px) {
     .topbar-actions { flex-wrap: wrap; gap: 6px; }
-    .topbar-actions .btn { font-size: 12px; padding: 8px 10px; }
+    .topbar-actions .btn { font-size: 12px; padding: 8px 10px; white-space: nowrap; }
+    .user-chip-name-full { display: none; }
     .detail-grid { grid-template-columns: 1fr; }
     .tpl-preview-client { grid-template-columns: 1fr; }
     .margin-controls { grid-template-columns: 1fr; }
@@ -1548,9 +1550,12 @@
     .topbar { flex-direction: column; align-items: stretch; gap: 6px; padding: 8px 10px; }
     .brand { justify-content: center; font-size: 16px !important; }
     .topbar-actions { flex-wrap: wrap; justify-content: center; gap: 4px; }
-    .topbar-actions .btn { flex: 1; min-width: 0; font-size: 11px; padding: 6px 8px; }
+    .topbar-actions .btn { flex: 1; min-width: 0; font-size: 11px; padding: 6px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sync-status { order: 3; width: 100%; justify-content: center; }
     .user-chip { order: 2; }
+    .user-chip-name-full { display: none; }
+    .user-chip-role { display: none; }
+    .user-chip { padding: 4px 6px; gap: 4px; }
 
     /* App scrollea natural */
     .app { height: auto; }
@@ -1684,6 +1689,7 @@
 
     /* User chip */
     .user-chip-info { font-size: 11px; }
+    .user-chip-name-full { display: none; }
     .user-dropdown { min-width: 180px; }
   }
 
