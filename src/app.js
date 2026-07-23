@@ -1770,15 +1770,7 @@ function renderUsersTable() {
       <td>${rolBadge}</td>
       <td class="center">${estadoBadge}</td>
       <td>
-        <div style="display:flex;gap:3px;flex-wrap:wrap;">
-          <button class="btn btn-ghost" onclick="editUserName('${u.id}', '${esc(u.nombre || '')}')" style="font-size:10px;padding:3px 6px;" title="Editar nombre">✏️</button>
-          <button class="btn btn-ghost" onclick="changeUserPassword('${u.id}', '${esc(u.email || u.correo || '')}')" style="font-size:10px;padding:3px 6px;" title="Cambiar contraseña">🔑</button>
-          <button class="btn btn-ghost" onclick="toggleUserActive('${u.id}', ${u.activo !== false})" style="font-size:10px;padding:3px 6px;" title="${u.activo !== false ? 'Desactivar' : 'Activar'}">
-            ${u.activo !== false ? '🔴' : '🟢'}
-          </button>
-          ${u.rol !== 'admin' ? `<button class="btn btn-ghost" onclick="promoteUser('${u.id}')" style="font-size:10px;padding:3px 6px;" title="Hacer admin">⭐</button>` : ''}
-          ${u.rol === 'admin' && !isCurrent ? `<button class="btn btn-ghost" onclick="demoteUser('${u.id}')" style="font-size:10px;padding:3px 6px;" title="Quitar admin">⬇️</button>` : ''}
-        </div>
+        <button class="btn btn-ghost" onclick='openEditUser(${JSON.stringify({id:u.id,nombre:u.nombre||"",email:u.email||u.correo||"",rol:u.rol||"vendedor",activo:u.activo!==false}).replace(/'/g,"&#39;")})' style="font-size:11px;padding:4px 10px;">✏️ Editar</button>
       </td>
     </tr>`;
   }).join('');
@@ -1836,16 +1828,23 @@ async function createUser() {
         activo: true
       }, { onConflict: 'id' });
       if (profileError) {
-        console.warn('Profile upsert warning (trigger may have created it):', profileError.message);
+        console.warn('Profile upsert:', profileError.message);
       }
     }
 
-    toast('✅ Usuario creado: ' + email, 'success');
+    if (data.user && !data.session) {
+      toast('✅ Usuario creado: ' + email + '. Necesita confirmar email para ingresar.', 'success');
+    } else {
+      toast('✅ Usuario creado: ' + email, 'success');
+    }
     hideCreateUserForm();
     await loadUsers();
   } catch (e) {
     let msg = e.message || 'Error al crear usuario';
     if (msg.includes('already registered')) msg = 'Este email ya está registrado';
+    if (msg.includes('Unable to validate email address')) msg = 'Email no válido';
+    if (msg.includes('Password should be at least')) msg = 'La contraseña es muy corta (mínimo 6 caracteres)';
+    if (msg.includes('Signups not allowed')) msg = 'Registro deshabilitado. Actívalo en Supabase Dashboard → Authentication → Providers';
     errEl.textContent = msg;
     errEl.style.display = 'block';
   } finally {
@@ -1900,38 +1899,62 @@ async function demoteUser(userId) {
   }
 }
 
-async function editUserName(userId, currentName) {
-  const newName = prompt('Nuevo nombre:', currentName);
-  if (newName === null || newName.trim() === '') return;
+function openEditUser(user) {
+  $('editUserId').value = user.id;
+  $('editUserName').value = user.nombre;
+  $('editUserEmail').value = user.email;
+  $('editUserPassword').value = '';
+  $('editUserRole').value = user.rol;
+  $('editUserActive').value = user.activo ? 'true' : 'false';
+  $('editUserTitle').textContent = 'Editar: ' + (user.nombre || user.email);
+  $('editUserError').style.display = 'none';
+  $('editUserModal').classList.add('open');
+}
+
+function closeEditUser() {
+  $('editUserModal').classList.remove('open');
+}
+
+async function saveEditUser() {
+  const userId = $('editUserId').value;
+  const nombre = $('newUserName') ? $('editUserName').value.trim() : $('editUserName').value.trim();
+  const role = $('editUserRole').value;
+  const activo = $('editUserActive').value === 'true';
+  const newPassword = $('editUserPassword').value;
+  const errEl = $('editUserError');
+  const btn = $('btnSaveEditUser');
+
+  if (!nombre) {
+    errEl.textContent = 'El nombre es obligatorio';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  errEl.style.display = 'none';
+
   try {
     const { error } = await supabase
       .from('profiles')
-      .update({ nombre: newName.trim() })
+      .update({ nombre, rol: role, activo })
       .eq('id', userId);
     if (error) throw error;
-    toast('✅ Nombre actualizado', 'success');
+
+    if (newPassword) {
+      toast('⚠️ Para cambiar contraseña ve a Supabase Dashboard → Authentication → Users', 'warning');
+    } else {
+      toast('✅ Usuario actualizado', 'success');
+    }
+
+    closeEditUser();
     await loadUsers();
   } catch (e) {
-    toast('⚠️ Error: ' + e.message, 'danger');
-  }
-}
-
-async function changeUserPassword(userId, email) {
-  const newPassword = prompt(`Nueva contraseña para ${email}:`);
-  if (newPassword === null || newPassword.trim() === '') return;
-  try {
-    const { error } = await supabase.auth.admin.updateUserById(
-      userId,
-      { password: newPassword.trim() }
-    );
-    if (error) throw error;
-    toast('🔑 Contraseña actualizada', 'success');
-  } catch (e) {
-    let msg = e.message || 'Error al cambiar contraseña';
-    if (msg.includes('admin') || msg.includes('permission')) {
-      msg = 'Se requiere service_role key. Cambia la contraseña desde Supabase Dashboard → Authentication → Users';
-    }
-    toast('⚠️ ' + msg, 'danger');
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar';
   }
 }
 
@@ -1997,5 +2020,6 @@ window.createUser = createUser;
 window.toggleUserActive = toggleUserActive;
 window.promoteUser = promoteUser;
 window.demoteUser = demoteUser;
-window.editUserName = editUserName;
-window.changeUserPassword = changeUserPassword;
+window.openEditUser = openEditUser;
+window.closeEditUser = closeEditUser;
+window.saveEditUser = saveEditUser;
