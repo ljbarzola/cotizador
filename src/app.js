@@ -1854,6 +1854,7 @@ async function createUser() {
     if (msg.includes('Unable to validate email address')) msg = 'Email no válido';
     if (msg.includes('Password should be at least')) msg = 'La contraseña es muy corta (mínimo 6 caracteres)';
     if (msg.includes('Signups not allowed')) msg = 'Registro deshabilitado. Actívalo en Supabase Dashboard → Authentication → Providers';
+    if (msg.includes('500') || msg.includes('Internal Server Error')) msg = 'Error del servidor. Ejecuta fix_signup_triggers.sql en Supabase SQL Editor';
     errEl.textContent = msg;
     errEl.style.display = 'block';
   } finally {
