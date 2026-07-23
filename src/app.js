@@ -1739,6 +1739,9 @@ async function loadUsers() {
     if (error) throw error;
     _usersCache = data || [];
     renderUsersTable();
+    if (_usersCache.length === 0) {
+      toast('⚠️ No se encontraron usuarios. ¿Ejecutaste fix_profiles_rls.sql?', 'warning');
+    }
   } catch (e) {
     $('usersTableBody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:16px;">Error: ${esc(e.message)}</td></tr>`;
   }
