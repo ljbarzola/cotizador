@@ -1,147 +1,102 @@
-const STORAGE_KEY = 'quote_templates';
+import supabase from '../lib/supabase.js';
 
-/* ─── Sample Templates (3 with real sourceIds from catalog) ─── */
-function getSampleTemplates() {
-  return [
-    {
-      id: 'tpl-small-retail',
-      name: 'Comercio Pequeño - Alarma Básica',
-      description: 'Sistema de alarma para tiendas y comercios pequeños. Incluye panel central, sensores de puerta y movimiento.',
-      clientType: 'pequeña',
-      industry: 'comercio',
-      client: {
-        name: 'Mini Market San José',
-        ruc: '0992345678001',
-        address: 'Av. 25 de Julio Mz. 15 Lt. 8, Guayaquil',
-        contact: 'María López - Propietaria',
-        phone: '0991234567',
-        email: 'minimarket.sanjose@email.com',
-      },
-      items: [
-        { sourceId: 'DS-2CE70DF0T-MFS', qty: 4, installActive: true, techCost: 15 },
-        { sourceId: 'DS-2CE10DF0T-FS', qty: 2, installActive: true, techCost: 15 },
-        { sourceId: 'DS-2CE76U1T-ITPF', qty: 1, installActive: false, techCost: 0 },
-        { sourceId: 'SV-0005', qty: 1, installActive: false, techCost: 0 },
-      ],
-      supplierMargins: {},
-      installMargin: 35,
-      installationEnabled: true,
-      isTemplate: true,
-      createdAt: '2025-01-15T10:00:00Z',
-      updatedAt: '2025-01-15T10:00:00Z',
-    },
-    {
-      id: 'tpl-medium-office',
-      name: 'Oficina Mediana - Cámaras + Alarma',
-      description: 'Solución de seguridad para oficinas con cámaras Hikvision, DVR y sistema de alarma.',
-      clientType: 'mediana',
-      industry: 'oficina',
-      client: {
-        name: 'Constructora Horizonte S.A.',
-        ruc: '1790123456001',
-        address: 'Av. Amazonas N36-52 y Naciones Unidas, Quito',
-        contact: 'Carlos Mendoza - Jefe de Seguridad',
-        phone: '022345678',
-        email: 'cmendoza@horizonte.com',
-      },
-      items: [
-        { sourceId: 'DS-2CE70DF0T-MFS', qty: 4, installActive: true, techCost: 15 },
-        { sourceId: 'DS-2CE10DF0T-FS', qty: 4, installActive: true, techCost: 15 },
-        { sourceId: 'DS-2CE16K0T-EXLF', qty: 2, installActive: true, techCost: 15 },
-        { sourceId: 'EQ-0157', qty: 1, installActive: true, techCost: 30 },
-        { sourceId: 'EQ-0160', qty: 1, installActive: false, techCost: 0 },
-        { sourceId: 'MT-0001', qty: 2, installActive: false, techCost: 0 },
-        { sourceId: 'SV-0005', qty: 1, installActive: false, techCost: 0 },
-      ],
-      supplierMargins: {},
-      installMargin: 35,
-      installationEnabled: true,
-      isTemplate: true,
-      createdAt: '2025-02-10T14:30:00Z',
-      updatedAt: '2025-02-10T14:30:00Z',
-    },
-    {
-      id: 'tpl-large-bank',
-      name: 'Banco - Sistema Integral de Seguridad',
-      description: 'Solución completa para sucursales bancarias: cámaras IP, control de acceso y alarma perimetral.',
-      clientType: 'grande',
-      industry: 'banco',
-      client: {
-        name: 'Banco Pacífico S.A.',
-        ruc: '1790045678001',
-        address: 'Av. 9 de Octubre 1225 y Larga, Guayaquil',
-        contact: 'Ing. Roberto Dávila - Gerente de Operaciones',
-        phone: '042345678',
-        email: 'rdavila@bancopacifico.com',
-      },
-      items: [
-        { sourceId: 'DS-2CE76U1T-ITPF', qty: 8, installActive: true, techCost: 20 },
-        { sourceId: 'DS-2CE12KF3TP-DLS', qty: 4, installActive: true, techCost: 20 },
-        { sourceId: 'DS-2CE72DF0T-F', qty: 6, installActive: true, techCost: 15 },
-        { sourceId: 'DS-2CE10DF0T-FS', qty: 4, installActive: true, techCost: 15 },
-        { sourceId: 'EQ-0358', qty: 1, installActive: true, techCost: 50 },
-        { sourceId: 'EQ-0160', qty: 2, installActive: false, techCost: 0 },
-        { sourceId: 'MT-0001', qty: 3, installActive: false, techCost: 0 },
-        { sourceId: 'MT-0002', qty: 2, installActive: false, techCost: 0 },
-        { sourceId: 'SV-0005', qty: 1, installActive: false, techCost: 0 },
-      ],
-      supplierMargins: {},
-      installMargin: 35,
-      installationEnabled: true,
-      isTemplate: true,
-      createdAt: '2025-03-05T09:15:00Z',
-      updatedAt: '2025-03-05T09:15:00Z',
-    },
-  ];
-}
+let _templatesCache = null;
+let _templatesLoading = false;
 
-/* ─── localStorage CRUD ─── */
-function getAllTemplates() {
+/* ─── Load from Supabase ─── */
+async function fetchTemplates() {
+  if (_templatesLoading) return _templatesCache || [];
+  _templatesLoading = true;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const stored = raw ? JSON.parse(raw) : [];
-    const samples = getSampleTemplates();
-    const sampleIds = new Set(samples.map(t => t.id));
-    const custom = stored.filter(t => !sampleIds.has(t.id));
-    return [...samples, ...custom];
-  } catch {
-    return getSampleTemplates();
+    const { data, error } = await supabase
+      .from('templates')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    _templatesCache = (data || []).map(row => ({
+      id: row.id,
+      name: row.name,
+      description: row.description || '',
+      clientType: row.client_type || 'mediana',
+      industry: row.industry || 'comercio',
+      client: row.client || {},
+      items: row.items || [],
+      supplierMargins: row.supplier_margins || {},
+      installMargin: row.install_margin ?? 35,
+      installationEnabled: row.installation_enabled ?? false,
+      isSample: row.is_sample ?? false,
+      createdBy: row.created_by || null,
+      createdByName: row.created_by_name || '',
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  } catch (e) {
+    console.warn('Error loading templates:', e.message);
+    _templatesCache = [];
   }
+  _templatesLoading = false;
+  return _templatesCache || [];
 }
 
-function getTemplate(id) {
-  return getAllTemplates().find(t => t.id === id) || null;
+/* ─── CRUD ─── */
+async function getAllTemplates() {
+  if (!_templatesCache) await fetchTemplates();
+  return _templatesCache || [];
 }
 
-function saveTemplate(tpl) {
-  const all = getAllTemplates();
-  const idx = all.findIndex(t => t.id === tpl.id);
-  tpl.updatedAt = new Date().toISOString();
-  if (idx >= 0) {
-    all[idx] = tpl;
+async function getTemplate(id) {
+  const all = await getAllTemplates();
+  return all.find(t => t.id === id) || null;
+}
+
+async function saveTemplate(tpl, session) {
+  const now = new Date().toISOString();
+  const payload = {
+    name: tpl.name,
+    description: tpl.description || '',
+    client_type: tpl.clientType || 'mediana',
+    industry: tpl.industry || 'comercio',
+    client: tpl.client || {},
+    items: tpl.items || [],
+    supplier_margins: tpl.supplierMargins || {},
+    install_margin: tpl.installMargin ?? 35,
+    installation_enabled: tpl.installationEnabled ?? false,
+    is_sample: tpl.isSample ?? false,
+    updated_at: now,
+  };
+
+  if (tpl.id && !String(tpl.id).startsWith('tpl-')) {
+    payload.id = tpl.id;
+  }
+
+  if (session) {
+    payload.created_by = session.userId;
+    payload.created_by_name = session.nombre || session.user || '';
+  }
+
+  if (tpl.id && !String(tpl.id).startsWith('tpl-')) {
+    const { error } = await supabase.from('templates').update(payload).eq('id', tpl.id);
+    if (error) throw error;
   } else {
-    tpl.id = tpl.id || 'tpl-' + Date.now();
-    tpl.createdAt = tpl.createdAt || tpl.updatedAt;
-    all.push(tpl);
+    delete payload.id;
+    if (!payload.created_by) delete payload.created_by;
+    const { data, error } = await supabase.from('templates').insert(payload).select().single();
+    if (error) throw error;
+    tpl.id = data.id;
   }
-  const samples = getSampleTemplates();
-  const sampleIds = new Set(samples.map(t => t.id));
-  const toStore = all.filter(t => !sampleIds.has(t.id));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+
+  _templatesCache = null;
   return tpl;
 }
 
-function deleteTemplate(id) {
-  const all = getAllTemplates();
-  const filtered = all.filter(t => t.id !== id);
-  const samples = getSampleTemplates();
-  const sampleIds = new Set(samples.map(t => t.id));
-  const toStore = filtered.filter(t => !sampleIds.has(t.id));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+async function deleteTemplate(id) {
+  const { error } = await supabase.from('templates').delete().eq('id', id);
+  if (error) throw error;
+  _templatesCache = null;
   return true;
 }
 
-/* ─── Convert template items → cart items (resolve sourceId → catalogIdx) ─── */
+/* ─── Convert template items → cart items ─── */
 function resolveTemplateItems(templateItems, catalog) {
   const cart = [];
   const unmatched = [];
@@ -161,14 +116,14 @@ function resolveTemplateItems(templateItems, catalog) {
   return { cart, unmatched };
 }
 
-/* ─── Export to window ─── */
+/* ─── Export ─── */
 function initQuote() {
   window.getAllTemplates = getAllTemplates;
   window.getTemplate = getTemplate;
   window.saveTemplate = saveTemplate;
   window.deleteTemplate = deleteTemplate;
   window.resolveTemplateItems = resolveTemplateItems;
-  window.getSampleTemplates = getSampleTemplates;
+  window.refreshTemplates = () => { _templatesCache = null; return fetchTemplates(); };
 }
 
-export { initQuote, getAllTemplates, getTemplate, saveTemplate, deleteTemplate, resolveTemplateItems, getSampleTemplates };
+export { initQuote, getAllTemplates, getTemplate, saveTemplate, deleteTemplate, resolveTemplateItems };

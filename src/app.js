@@ -1387,11 +1387,11 @@ function filterTemplates() {
   renderTemplateList();
 }
 
-function renderTemplateList() {
+async function renderTemplateList() {
   const search = ($('tplSearch')?.value || '').toLowerCase();
   const type = $('tplType')?.value || '';
   const industry = $('tplIndustry')?.value || '';
-  let templates = window.getAllTemplates ? window.getAllTemplates() : [];
+  let templates = await (window.getAllTemplates ? window.getAllTemplates() : []);
   if (search) templates = templates.filter(t => t.name.toLowerCase().includes(search) || t.description.toLowerCase().includes(search));
   if (type) templates = templates.filter(t => t.clientType === type);
   if (industry) templates = templates.filter(t => t.industry === industry);
@@ -1407,7 +1407,9 @@ function renderTemplateList() {
   const industryLabels = { banco: 'Banco', comercio: 'Comercio', oficina: 'Oficina', industrial: 'Industrial', salud: 'Salud' };
 
   list.innerHTML = templates.map(t => {
-    const isSample = t.id.startsWith('tpl-small-') || t.id.startsWith('tpl-medium-') || t.id.startsWith('tpl-large-');
+    const isSample = t.isSample;
+    const canDelete = !isSample && (currentSession?.userId === t.createdBy || currentSession?.rol === 'admin');
+    const creatorInfo = t.createdByName ? `<span class="tpl-badge tpl-badge-items" style="background:#f3f4f6;color:#374151;"> por ${esc(t.createdByName)}</span>` : '';
     return `
     <div class="tpl-card" onclick="openTemplatePreview('${t.id}')">
       <div class="tpl-card-header">
@@ -1416,22 +1418,23 @@ function renderTemplateList() {
           <button onclick="openTemplatePreview('${t.id}')" title="Vista previa">👁️</button>
           <button onclick="loadTemplateDirect('${t.id}')" title="Cargar plantilla">📥</button>
           <button onclick="downloadTemplate('${t.id}')" title="Descargar copia">🖨️</button>
-          <button onclick="deleteTemplateConfirm('${t.id}')" title="Eliminar" style="color:var(--danger)">🗑️</button>
+          ${canDelete ? `<button onclick="deleteTemplateConfirm('${t.id}')" title="Eliminar" style="color:var(--danger)">🗑️</button>` : ''}
         </div>
       </div>
       <div class="tpl-card-desc">${esc(t.description)}</div>
       <div class="tpl-card-meta">
         <span class="tpl-badge tpl-badge-type">${typeLabels[t.clientType] || t.clientType}</span>
         <span class="tpl-badge tpl-badge-industry">${industryLabels[t.industry] || t.industry}</span>
-        <span class="tpl-badge tpl-badge-items">${t.items.length} productos</span>
+        <span class="tpl-badge tpl-badge-items">${(t.items || []).length} productos</span>
         ${isSample ? '<span class="tpl-badge tpl-badge-items" style="background:#e0e7ff;color:#3730a3;">Ejemplo</span>' : '<span class="tpl-badge tpl-badge-custom">Personalizada</span>'}
+        ${creatorInfo}
       </div>
     </div>`;
   }).join('');
 }
 
-function openTemplatePreview(id) {
-  const tpl = window.getTemplate(id);
+async function openTemplatePreview(id) {
+  const tpl = await window.getTemplate(id);
   if (!tpl) return;
   _currentPreviewTemplateId = id;
   $('tplPreviewTitle').textContent = tpl.name;
@@ -1541,7 +1544,7 @@ function loadTemplateFromPreview() {
 }
 
 async function loadTemplateDirect(id) {
-  const tpl = window.getTemplate(id);
+  const tpl = await window.getTemplate(id);
   if (!tpl) return;
   if (cart.length > 0 && !await showConfirm('Esto reemplazará la cotización actual. ¿Continuar?', 'Cargar plantilla', 'Cargar')) return;
 
@@ -1686,7 +1689,6 @@ async function saveCurrentAsTemplate() {
   if (!items.length) { toast('⚠️ No se pudieron resolver los productos', 'warning'); return; }
 
   const tpl = {
-    id: 'tpl-' + Date.now(),
     name: result.name,
     description: result.desc,
     clientType: result.type,
@@ -1706,14 +1708,14 @@ async function saveCurrentAsTemplate() {
     isTemplate: true,
   };
 
-  window.saveTemplate(tpl);
+  await window.saveTemplate(tpl, currentSession);
   toast('✅ Plantilla guardada: ' + result.name, 'success');
   renderTemplateList();
 }
 
 async function deleteTemplateConfirm(id) {
   if (!await showConfirm('¿Eliminar esta plantilla?', 'Eliminar plantilla', 'Eliminar')) return;
-  window.deleteTemplate(id);
+  await window.deleteTemplate(id);
   toast('🗑️ Plantilla eliminada', 'success');
   renderTemplateList();
 }
