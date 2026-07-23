@@ -1822,13 +1822,16 @@ async function createUser() {
     if (error) throw error;
 
     if (data.user) {
-      await supabase.from('profiles').upsert({
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
         email,
         nombre: name,
         rol: 'vendedor',
         activo: true
       }, { onConflict: 'id' });
+      if (profileError) {
+        console.warn('Profile upsert warning (trigger may have created it):', profileError.message);
+      }
     }
 
     toast('✅ Usuario creado: ' + email, 'success');
