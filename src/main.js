@@ -13,6 +13,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Logo loading - two different logos
   const LOGO_LOGIN = '/cotizador/content/logo-gemeseg-back-white.png';
   const LOGO_APP = '/cotizador/content/logo-gemeseg-back-blue.png';
+  const LOGO_PRINT = '/cotizador/content/logo-gemeseg-back-white.png';
   const FALLBACK_LOGIN = 'GE<span class="m">M</span>ESEG';
   const FALLBACK_APP = 'GE<span class="m">M</span>ESEG <span class="brand-sub">Tecnología</span>';
 
@@ -24,38 +25,39 @@ window.addEventListener('DOMContentLoaded', async () => {
     return null;
   }
 
-  const [logoLogin, logoApp] = await Promise.all([
+  const [logoLogin, logoApp, logoPrint] = await Promise.all([
     tryLoadLogo(LOGO_LOGIN),
     tryLoadLogo(LOGO_APP),
+    tryLoadLogo(LOGO_PRINT),
   ]);
 
   const loginLogo = document.getElementById('loginLogo');
   const topbarLogo = document.getElementById('topbarLogo');
   const printLogo = document.getElementById('printLogo');
 
-  if (loginLogo) loginLogo.innerHTML = logoLogin
-    ? `<img src="${logoLogin}" alt="GEMESEG" class="logo-img logo-img-login">`
-    : FALLBACK_LOGIN;
+  if (loginLogo)
+    loginLogo.innerHTML = logoLogin
+      ? `<img src="${logoLogin}" alt="GEMESEG" class="logo-img logo-img-login">`
+      : FALLBACK_LOGIN;
 
-  const appLogoHtml = logoApp
-    ? `<img src="${logoApp}" alt="GEMESEG" class="logo-img logo-img-topbar">`
-    : FALLBACK_APP;
+  const appLogoHtml = logoApp ? `<img src="${logoApp}" alt="GEMESEG" class="logo-img logo-img-topbar">` : FALLBACK_APP;
   if (topbarLogo) topbarLogo.innerHTML = appLogoHtml;
 
-  if (printLogo) printLogo.innerHTML = logoApp
-    ? `<img src="${logoApp}" alt="GEMESEG" class="logo-img logo-img-print">`
-    : FALLBACK_LOGIN;
+  if (printLogo)
+    printLogo.innerHTML = logoPrint
+      ? `<img src="${logoPrint}" alt="GEMESEG" class="logo-img logo-img-print">`
+      : FALLBACK_LOGIN;
 
   // User dropdown toggle
   const userChipToggle = document.getElementById('userChipToggle');
   const userDropdown = document.getElementById('userDropdown');
   if (userChipToggle && userDropdown) {
-    userChipToggle.addEventListener('click', (e) => {
+    userChipToggle.addEventListener('click', e => {
       e.stopPropagation();
       userDropdown.classList.toggle('open');
     });
     document.addEventListener('click', () => userDropdown.classList.remove('open'));
-    userDropdown.addEventListener('click', (e) => e.stopPropagation());
+    userDropdown.addEventListener('click', e => e.stopPropagation());
   }
 
   document.getElementById('loginBtn').addEventListener('click', doLogin);
@@ -87,7 +89,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (divider && main) {
     let isDragging = false;
 
-    divider.addEventListener('mousedown', (e) => {
+    divider.addEventListener('mousedown', e => {
       e.preventDefault();
       isDragging = true;
       divider.classList.add('active');
@@ -95,7 +97,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       document.body.style.userSelect = 'none';
     });
 
-    document.addEventListener('mousemove', (e) => {
+    document.addEventListener('mousemove', e => {
       if (!isDragging) return;
       const rect = main.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -126,7 +128,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (el) el.addEventListener('input', () => renderEditorTableSafe());
     if (el) el.addEventListener('change', () => renderEditorTableSafe());
   });
-  function renderEditorTableSafe() { try { renderEditorTable(); } catch(e) {} }
+  function renderEditorTableSafe() {
+    try {
+      window.renderEditorTable();
+    } catch (_e) {
+      /* editor not loaded yet */
+    }
+  }
 
   const session = await validateSession();
   if (session) {

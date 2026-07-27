@@ -1,808 +1,1314 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cotizador GEMESEG Tecnología</title>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/src/styles.css">
-</head>
-<body>
-<!-- LOGIN -->
-<div class="login-overlay" id="loginOverlay">
-  <div class="login-card">
-    <div class="login-logo" id="loginLogo"></div>
-    <div class="login-tagline">Cotizador · Tecnología</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Cotizador GEMESEG Tecnología</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <!-- LOGIN -->
+    <div class="login-overlay" id="loginOverlay">
+      <div class="login-card">
+        <div class="login-logo" id="loginLogo"></div>
+        <div class="login-tagline">Cotizador · Tecnología</div>
 
-    <div id="loginNormal">
-      <div class="login-error" id="loginError"></div>
-      <div class="login-field">
-        <label>Usuario</label>
-        <input type="text" id="loginUser" autocomplete="username" placeholder="tu usuario">
-      </div>
-      <div class="login-field" style="position:relative;">
-        <label>Clave</label>
-        <input type="password" id="loginPass" autocomplete="current-password" placeholder="tu clave" style="padding-right:44px;">
-        <button type="button" id="togglePass" class="eye-toggle" title="Mostrar/ocultar clave">
-          <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-        </button>
-      </div>
-      <button class="login-btn" id="loginBtn">Ingresar</button>
-      <div class="login-footer">
-        Acceso exclusivo para personal autorizado de GEMESEG.
+        <div id="loginNormal">
+          <div class="login-error" id="loginError"></div>
+          <div class="login-field">
+            <label>Usuario</label>
+            <input type="text" id="loginUser" autocomplete="username" placeholder="tu usuario" />
+          </div>
+          <div class="login-field" style="position: relative">
+            <label>Clave</label>
+            <input
+              type="password"
+              id="loginPass"
+              autocomplete="current-password"
+              placeholder="tu clave"
+              style="padding-right: 44px"
+            />
+            <button type="button" id="togglePass" class="eye-toggle" title="Mostrar/ocultar clave">
+              <svg
+                class="eye-icon eye-open"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg
+                class="eye-icon eye-closed"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                style="display: none"
+              >
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            </button>
+          </div>
+          <button class="login-btn" id="loginBtn">Ingresar</button>
+          <div class="login-footer">Acceso exclusivo para personal autorizado de GEMESEG.</div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="app">
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <h1 class="brand" id="topbarLogo"></h1>
-    <div class="topbar-actions">
-      <div class="sync-status" id="syncStatus" onclick="handleSyncClick()" title="Ver catálogo">
-        <span class="sync-icon" id="syncIcon">📦</span>
-        <span id="syncLabel">Catálogo</span>
-      </div>
-      <button class="btn btn-ghost" onclick="openSavedModal()">📂 Historial</button>
-      <button class="btn btn-ghost" onclick="openHelpModal()">❓ Ayuda</button>
-      <button class="btn btn-ghost" onclick="openTemplatesModal()">📋 Plantillas</button>
-      <button class="btn btn-ghost" id="btnUserManagement" onclick="openUserManagement()" style="display:none;">👥 Usuarios</button>
-      <div class="user-chip" id="userChip">
-        <div class="user-chip-info" id="userChipToggle" style="cursor:pointer;">
-          <span class="user-chip-icon">👤</span>
-          <span id="userChipName">—</span>
-          <span class="user-chip-role" id="userChipRole"></span>
-        </div>
-        <div class="user-dropdown" id="userDropdown">
-          <div class="user-dropdown-header">
-            <div class="user-dropdown-name" id="dropdownName">—</div>
-            <div class="user-dropdown-role" id="dropdownRole">—</div>
+    <div class="app">
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <h1 class="brand" id="topbarLogo"></h1>
+        <div class="topbar-actions">
+          <div class="sync-status" id="syncStatus" onclick="handleSyncClick()" title="Ver catálogo">
+            <span class="sync-icon" id="syncIcon">📦</span>
+            <span id="syncLabel">Catálogo</span>
           </div>
-          <div class="user-dropdown-divider"></div>
-          <button class="user-dropdown-item" id="btnEditCatalog" onclick="openCatalogEditor()" style="display:none;">📦 Editar catálogo</button>
-          <button class="user-dropdown-item user-dropdown-logout" onclick="logout()">🚪 Cerrar sesión</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- MAIN -->
-  <main class="main">
-    <!-- PANEL CATÁLOGO -->
-    <section class="catalog-panel" data-no-print>
-      <div class="catalog-header">
-        <div class="catalog-search">
-          <input type="text" id="search" placeholder="Buscar por código, modelo o descripción..." autocomplete="off">
-        </div>
-        <div class="catalog-filters">
-          <select id="categoryFilter" class="catalog-select">
-            <option value="">Todas las categorías</option>
-          </select>
-          <select id="subcategoryFilter" class="catalog-select">
-            <option value="">Todas las subcategorías</option>
-          </select>
-        </div>
-        <div class="catalog-stats">
-          <label class="page-size-label">Mostrar
-            <select id="pageSizeSelect" class="page-size-select" onchange="changePageSize(this.value)">
-              <option value="5">5</option>
-              <option value="10" selected>10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-              <option value="9999">Todos</option>
-            </select>
-            resultados
-          </label>
-          <span id="catalogCount">— ítems</span>
-          <span>🟢 ≤30d  🟡 30-180d  🔴 +180d/sin fecha</span>
-        </div>
-      </div>
-      <div class="catalog-list" id="catalogList"></div>
-      <div class="catalog-pagination" id="catalogPagination"></div>
-    </section>
-
-    <!-- DIVIDER RESIZABLE -->
-    <div class="panel-divider" id="panelDivider"></div>
-
-    <!-- PANEL COTIZACIÓN -->
-    <section class="quote-panel">
-      <div class="quote-scroll">
-        <!-- ENCABEZADO PRINT-ONLY -->
-        <div class="print-only print-header">
-          <div class="print-logo" id="printLogo"></div>
-          <div class="empresa-info">Tel: 0980147238</div>
-        </div>
-
-        <div class="print-only print-cot-info">
-          <div><span class="label">N° Cotización:</span> <strong id="printCotNum">—</strong></div>
-          <div><span class="label">Fecha emisión:</span> <strong id="printCotDate">—</strong></div>
-          <div><span class="label">Validez:</span> <strong>15 días</strong></div>
-        </div>
-
-        <!-- DATOS COTIZACIÓN -->
-        <div class="quote-section" data-no-print>
-          <div class="quote-section-header">
-            <h2>📄 Datos de la cotización</h2>
-            <span id="cotNumber" style="font-size:12px;color:var(--muted);font-family:ui-monospace,monospace;"></span>
-          </div>
-          <div class="quote-section-body">
-            <div class="form-grid">
-              <div class="field">
-                <label>N° Cotización</label>
-                <input type="text" id="cotNum" placeholder="COT-AAAAMMDD-001">
+          <button class="btn btn-ghost" onclick="openSavedModal()">📂 Historial</button>
+          <button class="btn btn-ghost" onclick="openHelpModal()">❓ Ayuda</button>
+          <button class="btn btn-ghost" onclick="openTemplatesModal()">📋 Plantillas</button>
+          <button class="btn btn-ghost" id="btnUserManagement" onclick="openUserManagement()" style="display: none">
+            👥 Usuarios
+          </button>
+          <div class="user-chip" id="userChip">
+            <div class="user-chip-info" id="userChipToggle" style="cursor: pointer">
+              <span class="user-chip-icon">👤</span>
+              <span id="userChipName">—</span>
+              <span class="user-chip-role" id="userChipRole"></span>
+            </div>
+            <div class="user-dropdown" id="userDropdown">
+              <div class="user-dropdown-header">
+                <div class="user-dropdown-name" id="dropdownName">—</div>
+                <div class="user-dropdown-role" id="dropdownRole">—</div>
               </div>
-              <div class="field">
-                <label>Fecha de emisión</label>
-                <input type="date" id="cotDate">
-              </div>
+              <div class="user-dropdown-divider"></div>
+              <button
+                class="user-dropdown-item"
+                id="btnEditCatalog"
+                onclick="openCatalogEditor()"
+                style="display: none"
+              >
+                📦 Editar catálogo
+              </button>
+              <button class="user-dropdown-item user-dropdown-logout" onclick="logout()">🚪 Cerrar sesión</button>
             </div>
           </div>
         </div>
+      </header>
 
-        <!-- DATOS CLIENTE -->
-        <div class="quote-section">
-          <div class="quote-section-header"><h2>👤 Datos del cliente</h2></div>
-          <div class="quote-section-body">
-            <div class="form-grid">
-              <div class="field" style="grid-column:1/-1;">
-                <label>Cliente / Razón social <span class="required">*</span></label>
-                <input type="text" id="clientName" placeholder="Nombre o razón social" required>
-              </div>
-              <div class="field">
-                <label>RUC / Cédula <span class="required">*</span></label>
-                <input type="text" id="clientRuc" placeholder="0991234567001" required>
-              </div>
-              <div class="field">
-                <label>Teléfono <span class="required">*</span></label>
-                <input type="text" id="clientPhone" placeholder="0991234567" required>
-              </div>
-              <div class="field" style="grid-column:1/-1;">
-                <label>Dirección</label>
-                <input type="text" id="clientAddress" placeholder="Av. principal y secundaria">
-              </div>
-              <div class="field">
-                <label>Persona de contacto</label>
-                <input type="text" id="clientContact" placeholder="Juan Pérez - Gerente">
-              </div>
-              <div class="field">
-                <label>Email <span class="required">*</span></label>
-                <input type="email" id="clientEmail" placeholder="cliente@empresa.com" required>
-              </div>
-            </div>
+      <!-- MAIN -->
+      <main class="main">
+        <!-- PANEL CATÁLOGO -->
+        <section class="catalog-panel" data-no-print>
+          <div class="catalog-tabs">
+            <button class="catalog-tab active" onclick="switchCatalogTab('items')">📋 Items</button>
+            <button class="catalog-tab" onclick="switchCatalogTab('kits')">📦 Kits</button>
           </div>
-        </div>
-
-        <!-- DATOS CLIENTE PRINT -->
-        <div class="print-only print-cliente">
-          <div class="row"><span class="label">Cliente:</span> <span id="printClientName">—</span></div>
-          <div class="row"><span class="label">RUC / Cédula:</span> <span id="printClientRuc">—</span></div>
-          <div class="row"><span class="label">Dirección:</span> <span id="printClientAddress">—</span></div>
-          <div class="row"><span class="label">Contacto:</span> <span id="printClientContact">—</span></div>
-          <div class="row"><span class="label">Teléfono:</span> <span id="printClientPhone">—</span></div>
-          <div class="row"><span class="label">Email:</span> <span id="printClientEmail">—</span></div>
-        </div>
-
-        <!-- ITEMS -->
-        <div class="quote-section">
-          <div class="quote-section-header">
-            <h2>🛒 Detalle de la cotización</h2>
-            <span id="itemsCount" style="font-size:12px;color:var(--muted);">0 ítems</span>
-          </div>
-          <div class="quote-section-body">
-            <div id="itemsContainer">
-              <div class="empty-state">
-                <div class="icon">🛒</div>
-                <div>Aún no hay productos en la cotización.</div>
-                <div style="margin-top:4px;font-size:11px;">Busca y agrega productos del catálogo (panel izquierdo)</div>
+          <div id="catalogItemsTab">
+            <div class="catalog-header">
+              <div class="catalog-search">
+                <input
+                  type="text"
+                  id="search"
+                  placeholder="Buscar por código, modelo o descripción..."
+                  autocomplete="off"
+                />
+              </div>
+              <div class="catalog-filters">
+                <select id="categoryFilter" class="catalog-select">
+                  <option value="">Todas las categorías</option>
+                </select>
+                <select id="subcategoryFilter" class="catalog-select">
+                  <option value="">Todas las subcategorías</option>
+                </select>
+              </div>
+              <div class="catalog-stats">
+                <label class="page-size-label"
+                  >Mostrar
+                  <select id="pageSizeSelect" class="page-size-select" onchange="changePageSize(this.value)">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="9999">Todos</option>
+                  </select>
+                  resultados
+                </label>
+                <span id="catalogCount">— ítems</span>
+                <span>🟢 ≤30d 🟡 30-180d 🔴 +180d/sin fecha</span>
               </div>
             </div>
+            <div class="catalog-list" id="catalogList"></div>
+            <div class="catalog-pagination" id="catalogPagination"></div>
           </div>
-        </div>
-
-        <!-- CONFIGURACIÓN DE MÁRGENES -->
-        <div class="quote-section" data-no-print>
-          <div class="quote-section-header"><h2>⚙️ Configuración de márgenes</h2></div>
-          <div class="quote-section-body">
-            <div id="marginConfigSection"></div>
+          <div id="catalogKitsTab" style="display: none">
+            <div class="catalog-header">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%">
+                <span style="font-size: 13px; color: var(--muted)">Crea y administra kits de productos</span>
+                <button class="btn btn-primary btn-sm" onclick="addNewKit()">+ Nuevo kit</button>
+              </div>
+            </div>
+            <div class="catalog-list" id="kitsCatalogList"></div>
           </div>
-        </div>
+        </section>
 
-        <!-- TOTALES -->
-        <div class="totals" id="totals">
-          <div id="totalsBreakdown"></div>
-          <div class="totals-row total"><span>TOTAL</span><span class="accent" id="totalView">$0.00</span></div>
-        </div>
+        <!-- DIVIDER RESIZABLE -->
+        <div class="panel-divider" id="panelDivider"></div>
 
-        <!-- ACCIONES -->
-        <div class="actions-bar" data-no-print>
-          <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
-          <button class="btn-save" onclick="saveQuote()">💾 Guardar cotización</button>
-          <button class="btn-save" onclick="saveCurrentAsTemplate()">📋 Guardar como plantilla</button>
-          <button class="btn-new-quote" onclick="newQuote()">🔄 Nueva cotización</button>
-        </div>
+        <!-- PANEL COTIZACIÓN -->
+        <section class="quote-panel">
+          <div class="quote-scroll">
+            <!-- ENCABEZADO PRINT-ONLY -->
+            <div class="print-only print-header">
+              <div class="print-logo" id="printLogo"></div>
+              <div class="empresa-info">Tel: 0980147238</div>
+              <div class="print-client-name" id="printHeaderClientName"></div>
+            </div>
 
-        <!-- CONDICIONES PRINT-ONLY -->
-        <div class="print-only print-condiciones">
-          <strong>CONDICIONES COMERCIALES</strong><br><br>
-          <strong>Validez de la oferta:</strong> 15 días calendario desde la fecha de emisión.<br>
-          <strong>Forma de pago:</strong> 50% anticipo, 50% contra entrega (configurable según monto).<br>
-          <strong>Plazo de entrega:</strong> Por confirmar al momento de la orden.<br>
-          <strong>Garantía equipos:</strong> 12 a 24 meses según fabricante.<br>
-          <strong>Garantía mano de obra:</strong> 90 días.<br>
-          <strong>IVA:</strong> 15% incluido en el total.<br>
-          <strong>Moneda:</strong> Dólares de los Estados Unidos (USD).
-        </div>
+            <div class="print-only print-cot-info">
+              <div><span class="label">N° Cotización:</span> <strong id="printCotNum">—</strong></div>
+              <div><span class="label">Fecha emisión:</span> <strong id="printCotDate">—</strong></div>
+              <div><span class="label">Validez:</span> <strong>15 días</strong></div>
+            </div>
 
-        <div class="print-only print-firma">
-          <div class="firma-block">
-            Emite la cotización<br>
-            <small>[Nombre del responsable]<br>[Cargo]</small>
+            <!-- DATOS COTIZACIÓN -->
+            <div class="quote-section" data-no-print>
+              <div class="quote-section-header">
+                <h2>📄 Datos de la cotización</h2>
+                <span
+                  id="cotNumber"
+                  style="font-size: 12px; color: var(--muted); font-family: ui-monospace, monospace"
+                ></span>
+              </div>
+              <div class="quote-section-body">
+                <div class="form-grid">
+                  <div class="field">
+                    <label>N° Cotización</label>
+                    <input type="text" id="cotNum" placeholder="COT-AAAAMMDD-001" />
+                  </div>
+                  <div class="field">
+                    <label>Fecha de emisión</label>
+                    <input type="date" id="cotDate" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DATOS CLIENTE -->
+            <div class="quote-section" data-no-print>
+              <div class="quote-section-header"><h2>👤 Datos del cliente</h2></div>
+              <div class="quote-section-body">
+                <div class="form-grid">
+                  <div class="field" style="grid-column: 1/-1">
+                    <label>Cliente / Razón social <span class="required">*</span></label>
+                    <input type="text" id="clientName" placeholder="Nombre o razón social" required />
+                  </div>
+                  <div class="field">
+                    <label>RUC / Cédula <span class="required">*</span></label>
+                    <input type="text" id="clientRuc" placeholder="0991234567001" required />
+                  </div>
+                  <div class="field">
+                    <label>Teléfono <span class="required">*</span></label>
+                    <input type="text" id="clientPhone" placeholder="0991234567" required />
+                  </div>
+                  <div class="field" style="grid-column: 1/-1">
+                    <label>Dirección</label>
+                    <input type="text" id="clientAddress" placeholder="Av. principal y secundaria" />
+                  </div>
+                  <div class="field">
+                    <label>Persona de contacto</label>
+                    <input type="text" id="clientContact" placeholder="Juan Pérez - Gerente" />
+                  </div>
+                  <div class="field">
+                    <label>Email <span class="required">*</span></label>
+                    <input type="email" id="clientEmail" placeholder="cliente@empresa.com" required />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DATOS CLIENTE PRINT -->
+            <div class="print-only print-cliente">
+              <div class="row"><span class="label">Cliente:</span> <span id="printClientName">—</span></div>
+              <div class="row"><span class="label">RUC / Cédula:</span> <span id="printClientRuc">—</span></div>
+              <div class="row"><span class="label">Dirección:</span> <span id="printClientAddress">—</span></div>
+              <div class="row"><span class="label">Contacto:</span> <span id="printClientContact">—</span></div>
+              <div class="row"><span class="label">Teléfono:</span> <span id="printClientPhone">—</span></div>
+              <div class="row"><span class="label">Email:</span> <span id="printClientEmail">—</span></div>
+            </div>
+
+            <!-- ITEMS -->
+            <div class="quote-section">
+              <div class="quote-section-header">
+                <h2>🛒 Detalle de la cotización</h2>
+                <span id="itemsCount" style="font-size: 12px; color: var(--muted)">0 ítems</span>
+              </div>
+              <div class="quote-section-body">
+                <div id="itemsContainer">
+                  <div class="empty-state">
+                    <div class="icon">🛒</div>
+                    <div>Aún no hay productos en la cotización.</div>
+                    <div style="margin-top: 4px; font-size: 11px">
+                      Busca y agrega productos del catálogo (panel izquierdo)
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CONFIGURACIÓN DE MÁRGENES -->
+            <div class="quote-section" data-no-print>
+              <div class="quote-section-header"><h2>⚙️ Configuración de márgenes</h2></div>
+              <div class="quote-section-body">
+                <div id="marginConfigSection"></div>
+              </div>
+            </div>
+
+            <!-- TOTALES -->
+            <div class="totals" id="totals">
+              <div id="totalsBreakdown"></div>
+              <div class="totals-row total"><span>TOTAL</span><span class="accent" id="totalView">$0.00</span></div>
+            </div>
+
+            <!-- DESCUENTO -->
+            <div class="quote-section" data-no-print>
+              <div class="quote-section-header">🏷️ Descuento</div>
+              <div class="discount-row">
+                <select id="discountType" onchange="updateDiscount()">
+                  <option value="none">Sin descuento</option>
+                  <option value="percent">Porcentaje (%)</option>
+                  <option value="fixed">Valor fijo ($)</option>
+                </select>
+                <input
+                  type="number"
+                  id="discountValue"
+                  min="0"
+                  step="any"
+                  value="0"
+                  placeholder="0"
+                  oninput="updateDiscount()"
+                  disabled
+                />
+                <span id="discountPreview" class="discount-preview"></span>
+              </div>
+            </div>
+
+            <!-- ACCIONES -->
+            <div class="actions-bar" data-no-print>
+              <button class="btn-print" onclick="doPrint()">🖨️ Imprimir / Guardar PDF</button>
+              <button class="btn-save" onclick="saveQuote()">💾 Guardar cotización</button>
+              <button class="btn-save" onclick="saveCurrentAsTemplate()">📋 Guardar como plantilla</button>
+              <button class="btn-new-quote" onclick="newQuote()">🔄 Nueva cotización</button>
+            </div>
+
+            <!-- CONDICIONES EDITABLES -->
+            <div class="quote-section" data-no-print>
+              <div class="quote-section-header">📝 Condiciones Comerciales</div>
+              <div class="quote-section-body">
+                <textarea
+                  id="quoteConditions"
+                  class="quote-conditions-input"
+                  rows="8"
+                  placeholder="Condiciones comerciales de la cotización..."
+                >
+Validez de la oferta: 15 días calendario desde la fecha de emisión.
+Forma de pago: 50% anticipo, 50% contra entrega (configurable según monto).
+Plazo de entrega: Por confirmar al momento de la orden.
+Garantía equipos: 12 a 24 meses según fabricante.
+Garantía mano de obra: 90 días.
+IVA: 15% incluido en el total.
+Moneda: Dólares de los Estados Unidos (USD).</textarea>
+                <label class="conditions-label">Notas</label>
+                <textarea
+                  id="quoteNotes"
+                  class="quote-conditions-input"
+                  rows="3"
+                  placeholder="Notas adicionales (opcional)..."
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- CONDICIONES PRINT-ONLY -->
+            <div class="print-only print-condiciones">
+              <strong>CONDICIONES COMERCIALES</strong><br /><br />
+              <span id="printConditions"></span>
+              <span id="printNotes" style="display: block; margin-top: 10px"></span>
+            </div>
+
+            <div class="print-only print-firma">
+              <div class="firma-block">
+                Emite la cotización<br />
+                <small id="printCotizadorName">[Nombre del responsable]</small><br />
+                <small id="printCotizadorRole">[Cargo]</small>
+              </div>
+              <div class="firma-block">
+                Acepta el cliente<br />
+                <small>Fecha: ___ / ___ / ______</small>
+              </div>
+            </div>
+
+            <div class="print-only print-legal">
+              Los precios están expresados en dólares de los Estados Unidos de América (USD). El IVA del 15% se muestra
+              desglosado al final. Esta cotización es válida por 15 días calendario desde la fecha de emisión. Los
+              precios pueden variar sin previo aviso debido a fluctuaciones del mercado y disponibilidad del proveedor.
+              La aceptación de esta cotización implica la conformidad con las condiciones aquí establecidas. Para
+              confirmar la orden, favor responder por escrito o firmar la cotización adjunta.
+            </div>
           </div>
-          <div class="firma-block">
-            Acepta el cliente<br>
-            <small>Fecha: ___ / ___ / ______</small>
-          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- MODAL: HISTORIAL DE COTIZACIONES -->
+    <div class="modal-backdrop" id="savedModal">
+      <div class="modal" style="max-width: 800px">
+        <div class="modal-header">
+          <h2>📂 Historial de cotizaciones</h2>
+          <button class="modal-close" onclick="closeSavedModal()">✕</button>
         </div>
-
-        <div class="print-only print-legal">
-          Los precios están expresados en dólares de los Estados Unidos de América (USD). El IVA del 15% se muestra desglosado al final.
-          Esta cotización es válida por 15 días calendario desde la fecha de emisión. Los precios pueden variar sin previo aviso debido a
-          fluctuaciones del mercado y disponibilidad del proveedor. La aceptación de esta cotización implica la conformidad con las
-          condiciones aquí establecidas. Para confirmar la orden, favor responder por escrito o firmar la cotización adjunta.
-        </div>
-      </div>
-    </section>
-  </main>
-</div>
-
-<!-- MODAL: HISTORIAL DE COTIZACIONES -->
-<div class="modal-backdrop" id="savedModal">
-  <div class="modal" style="max-width:800px;">
-    <div class="modal-header">
-      <h2>📂 Historial de cotizaciones</h2>
-      <button class="modal-close" onclick="closeSavedModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="history-filters" id="historyFilters">
-        <input type="text" id="filterClient" placeholder="Buscar cliente...">
-        <input type="text" id="filterVendor" placeholder="Buscar vendedor...">
-        <input type="date" id="filterDateFrom" title="Desde fecha">
-        <input type="date" id="filterDateTo" title="Hasta fecha">
-        <select id="filterStatus">
-          <option value="">Todos los estados</option>
-          <option value="borrador">Borrador</option>
-          <option value="enviada">Enviada</option>
-          <option value="vista">Vista</option>
-          <option value="aceptada">Aceptada</option>
-          <option value="rechazada">Rechazada</option>
-          <option value="vencida">Vencida</option>
-        </select>
-      </div>
-      <div class="history-stats" id="historyStats"></div>
-      <div id="historyList"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeSavedModal()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: VISOR DE CATÁLOGO (todos los usuarios) -->
-<div class="modal-backdrop" id="catalogViewerModal">
-  <div class="modal" style="max-width:95vw;height:90vh;display:flex;flex-direction:column;">
-    <div class="modal-header">
-      <h2>📦 Catálogo de productos</h2>
-      <button class="modal-close" onclick="closeCatalogViewer()">✕</button>
-    </div>
-    <div class="modal-body" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:12px 16px;">
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="viewerSearch" placeholder="Buscar código, modelo o descripción..." style="flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
-        <select id="viewerCategory" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
-          <option value="">Todas las categorías</option>
-        </select>
-        <select id="viewerSubcategory" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
-          <option value="">Todas las subcategorías</option>
-        </select>
-        <span id="viewerCount" style="font-size:11px;color:var(--muted);"></span>
-        <button class="btn btn-ghost" id="btnSyncCatalog" onclick="openSyncPanel()" style="font-size:12px;padding:7px 14px;border-color:var(--border);color:var(--text);display:none;">🔄 Sincronizar Sheet</button>
-        <button class="btn btn-ghost" id="btnGoToEditor" onclick="closeCatalogViewer();openCatalogEditor();" style="font-size:12px;padding:7px 14px;border-color:var(--border);color:var(--text);display:none;">✏️ Editar catálogo</button>
-      </div>
-
-      <!-- PANEL DE SINCRONIZACIÓN -->
-      <div id="syncPanel" style="display:none;margin-bottom:12px;border:2px solid var(--primary);border-radius:8px;overflow:hidden;">
-        <div style="background:var(--primary);color:white;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-weight:600;font-size:13px;">🔄 Sincronizar desde Google Sheets</span>
-          <button onclick="closeSyncPanel()" style="background:rgba(255,255,255,0.15);color:white;border:none;width:24px;height:24px;border-radius:4px;cursor:pointer;font-size:14px;">✕</button>
-        </div>
-        <div style="padding:12px 14px;background:#f9fafb;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            <span style="font-size:12px;color:var(--muted);">Fuente:</span>
-            <a href="https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo/edit" target="_blank" style="font-size:12px;color:var(--primary-mid);text-decoration:underline;">📎 Abrir Google Sheet</a>
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
-            <button class="btn btn-primary" id="btnStartSync" onclick="startSync()" style="font-size:12px;padding:7px 14px;">▶ Sincronizar</button>
-            <button class="btn btn-ghost" id="btnStopSync" onclick="stopSync()" style="font-size:12px;padding:7px 14px;border-color:var(--danger);color:var(--danger);display:none;">⏹ Detener</button>
-            <span id="syncPanelStatus" style="font-size:12px;color:var(--muted);"></span>
-          </div>
-          <div id="syncLogContainer" style="background:#1f2937;border-radius:6px;max-height:250px;overflow-y:auto;font-family:ui-monospace,monospace;font-size:11px;">
-            <div id="syncLogEntries" style="padding:8px 10px;color:#9ca3af;">Esperando inicio de sincronización...</div>
-          </div>
-          <div id="syncPanelSummary" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
-        </div>
-      </div>
-
-      <!-- TABLA DE PRODUCTOS -->
-      <div style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;">
-        <table class="editor-table viewer-table" id="viewerTable">
-          <thead>
-            <tr>
-              <th style="width:100px;">Código</th>
-              <th style="width:120px;">Subcategoría</th>
-              <th>Descripción</th>
-              <th style="width:70px;">Costo</th>
-              <th style="width:50px;">Gan.</th>
-              <th style="width:50px;">Inst.</th>
-              <th style="width:70px;">PVP</th>
-              <th style="width:60px;">IVA</th>
-              <th style="width:75px;">Total</th>
-            </tr>
-          </thead>
-          <tbody id="viewerBody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeCatalogViewer()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: EDITOR DE CATÁLOGO (solo admin) -->
-<div class="modal-backdrop" id="catalogEditorModal">
-  <div class="modal" style="max-width:95vw;height:90vh;display:flex;flex-direction:column;">
-    <div class="modal-header">
-      <h2>✏️ Editor de catálogo <span style="font-size:12px;font-weight:400;color:var(--muted);">(Admin)</span></h2>
-      <button class="modal-close" onclick="closeCatalogEditor()">✕</button>
-    </div>
-    <div class="modal-body" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:12px 16px;">
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="editorSearch" placeholder="Buscar código, modelo o descripción..." style="flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
-        <select id="editorCategory" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
-          <option value="">Todas las categorías</option>
-        </select>
-        <span id="editorCount" style="font-size:11px;color:var(--muted);"></span>
-        <button class="btn btn-primary" onclick="saveCatalogEdits()" style="font-size:12px;padding:7px 14px;">💾 Guardar cambios</button>
-        <button class="btn btn-ghost" onclick="addNewProduct()" style="font-size:12px;padding:7px 14px;border-color:var(--border);color:var(--text);">+ Nuevo producto</button>
-      </div>
-      <div style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;">
-        <table class="editor-table" id="editorTable">
-          <thead>
-            <tr>
-              <th style="width:100px;">Código</th>
-              <th style="width:140px;">Categoría</th>
-              <th style="width:120px;">Subcategoría</th>
-              <th>Descripción</th>
-              <th style="width:70px;">Costo</th>
-              <th style="width:50px;">Gan.</th>
-              <th style="width:50px;">Inst.</th>
-              <th style="width:90px;">Última act.</th>
-              <th style="width:90px;">Proveedor</th>
-              <th>Observaciones</th>
-              <th style="width:40px;"></th>
-            </tr>
-          </thead>
-          <tbody id="editorBody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeCatalogEditor()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: PLANTILLAS DE COTIZACIÓN -->
-<div class="modal-backdrop" id="templatesModal">
-  <div class="modal" style="max-width:900px;">
-    <div class="modal-header">
-      <h2>📋 Plantillas de cotización</h2>
-      <button class="modal-close" onclick="closeTemplatesModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="tpl-filters">
-        <input type="text" id="tplSearch" placeholder="Buscar plantilla..." oninput="filterTemplates()">
-        <select id="tplType" onchange="filterTemplates()">
-          <option value="">Todos los tamaños</option>
-          <option value="pequeña">Pequeña</option>
-          <option value="mediana">Mediana</option>
-          <option value="grande">Grande</option>
-        </select>
-        <select id="tplIndustry" onchange="filterTemplates()">
-          <option value="">Todas las industrias</option>
-          <option value="banco">Banco</option>
-          <option value="comercio">Comercio</option>
-          <option value="oficina">Oficina</option>
-          <option value="industrial">Industrial</option>
-          <option value="salud">Salud</option>
-        </select>
-      </div>
-      <div id="templateList" class="tpl-list"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeTemplatesModal()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: VISTA PREVIA DE PLANTILLA -->
-<div class="modal-backdrop" id="templatePreviewModal">
-  <div class="modal" style="max-width:750px;">
-    <div class="modal-header">
-      <h2 id="tplPreviewTitle">Vista previa</h2>
-      <button class="modal-close" onclick="closeTemplatePreview()">✕</button>
-    </div>
-    <div class="modal-body" id="tplPreviewBody"></div>
-    <div class="modal-footer">
-      <button class="btn btn-primary" onclick="loadTemplateFromPreview()">📥 Cargar plantilla</button>
-      <button class="btn btn-ghost" onclick="downloadTemplatePdf()">🖨️ Descargar copia</button>
-      <button class="btn btn-ghost" onclick="closeTemplatePreview()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: GUARDAR COMO PLANTILLA -->
-<div class="modal-backdrop" id="saveTemplateModal">
-  <div class="modal" style="max-width:500px;">
-    <div class="modal-header">
-      <h2>Guardar como plantilla</h2>
-      <button class="modal-close" onclick="resolveSaveTemplate(false)">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="field" style="grid-column:1/-1;">
-          <label>Nombre de la plantilla</label>
-          <input type="text" id="tplSaveName" placeholder="Ej: Banco - Sistema Integral">
-        </div>
-        <div class="field" style="grid-column:1/-1;">
-          <label>Descripción</label>
-          <input type="text" id="tplSaveDesc" placeholder="Descripción breve del alcance">
-        </div>
-        <div class="field">
-          <label>Tamaño del cliente</label>
-          <select id="tplSaveType">
-            <option value="pequeña">Pequeña</option>
-            <option value="mediana" selected>Mediana</option>
-            <option value="grande">Grande</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Industria</label>
-          <select id="tplSaveIndustry">
-            <option value="comercio" selected>Comercio</option>
-            <option value="banco">Banco</option>
-            <option value="oficina">Oficina</option>
-            <option value="industrial">Industrial</option>
-            <option value="salud">Salud</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="resolveSaveTemplate(false)">Cancelar</button>
-      <button class="btn btn-primary" onclick="resolveSaveTemplate(true)">💾 Guardar plantilla</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: MANUAL DE USUARIO -->
-<div class="modal-backdrop" id="helpModal">
-  <div class="modal" style="max-width:650px;">
-    <div class="modal-header">
-      <h2>❓ Manual de usuario</h2>
-      <button class="modal-close" onclick="closeHelpModal()">✕</button>
-    </div>
-    <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
-      <div class="help-section">
-        <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-          <span class="help-icon">🔑</span><span class="help-title">1. Inicio de sesión</span><span class="help-arrow">▼</span>
-        </button>
-        <div class="help-section-content">
-          <p>Ingresa tu <strong>usuario</strong> (correo o nombre corto) y <strong>contraseña</strong>.</p>
-          <ul>
-            <li>Haz clic en el ojo para mostrar/ocultar la contraseña.</li>
-            <li>Si olvidas tu contraseña, contacta al administrador.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="help-section">
-        <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-          <span class="help-icon">📦</span><span class="help-title">2. Catálogo de productos</span><span class="help-arrow">▼</span>
-        </button>
-        <div class="help-section-content">
-          <p>El catálogo está en el panel izquierdo. Puedes:</p>
-          <ul>
-            <li><strong>Buscar</strong> por código, modelo o descripción.</li>
-            <li><strong>Filtrar</strong> por categoría y subcategoría.</li>
-            <li><strong>Hacer clic</strong> en un producto para ver todos sus detalles y precios.</li>
-            <li><strong>+ Agregar</strong> para añadir al carrito.</li>
-          </ul>
-          <p>Los colores indican actualización: 🟢 ≤30 días · 🟡 30-180 días · 🔴 +180 días o sin fecha.</p>
-        </div>
-      </div>
-
-      <div class="help-section">
-        <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-          <span class="help-icon">👤</span><span class="help-title">3. Datos del cliente</span><span class="help-arrow">▼</span>
-        </button>
-        <div class="help-section-content">
-          <p>Completa los datos del cliente en la sección correspondiente:</p>
-          <ul>
-            <li><strong>Cliente / Razón social</strong> (obligatorio para guardar).</li>
-            <li><strong>RUC / Cédula</strong>, <strong>Teléfono</strong>, <strong>Dirección</strong>.</li>
-            <li><strong>Persona de contacto</strong> y <strong>Email</strong>.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="help-section">
-        <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-          <span class="help-icon">🛒</span><span class="help-title">4. Crear cotización</span><span class="help-arrow">▼</span>
-        </button>
-        <div class="help-section-content">
-          <p>Agrega productos con <strong>+ Agregar</strong> y cambia cantidades directamente en la tabla.</p>
-
-          <div class="help-subtitle">Cómo se calculan los precios</div>
-          <p>Dependiendo del tipo de producto, el cálculo cambia:</p>
-
-          <div class="help-subtitle">Equipos y Materiales</div>
-          <ol>
-            <li>Se parte del <strong>costo base</strong> del producto.</li>
-            <li>Si el producto tiene ganancia habilitada, se suma el <strong>margen de proveedor</strong> (por defecto 15%, editable por proveedor o directamente en la tabla para sin proveedor).</li>
-            <li>Se suma <strong>IVA 15%</strong> (siempre).</li>
-            <li>Si el producto tiene instalación activa, se suma el <strong>costo técnico</strong> (mano de obra por unidad) + <strong>margen de instalación</strong> (porcentaje global, por defecto 35%).</li>
-          </ol>
-
-          <div class="help-subtitle">Servicios</div>
-          <ol>
-            <li>Se toma el <strong>costo mensual</strong>. Si es 0, se usa el costo anual ÷ 12.</li>
-            <li>Se suma <strong>IVA 15%</strong>.</li>
-            <li>Sin ganancia, sin instalación.</li>
-          </ol>
-
-          <div class="help-subtitle">Valores que puedes modificar</div>
-          <ul>
-            <li><strong>Margen proveedor (%):</strong> Se configura por cada proveedor en "Configuración de márgenes". Los productos sin proveedor también tienen un margen individual editable directamente en la tabla de la cotización. Solo afecta productos con ganancia habilitada.</li>
-            <li><strong>Margen instalación (%):</strong> Porcentaje global que se aplica a todos los productos con instalación activa.</li>
-            <li><strong>Instalación global:</strong> Botón para activar o desactivar instalación en todos los productos que la requieran.</li>
-            <li><strong>Costo técnico:</strong> Mano de obra por unidad, editable en la tabla de la cotización.</li>
-          </ul>
-
-          <p>Los totales se calculan automáticamente: <strong>Productos + IVA + Instalación</strong>.</p>
-        </div>
-      </div>
-
-      <div class="help-section">
-        <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-          <span class="help-icon">💾</span><span class="help-title">5. Guardar e imprimir</span><span class="help-arrow">▼</span>
-        </button>
-        <div class="help-section-content">
-          <ul>
-            <li><strong>Guardar cotización:</strong> Guarda en la nube (Supabase). Requiere nombre del cliente y al menos 1 producto.</li>
-            <li><strong>Guardar como plantilla:</strong> Guarda la cotización actual como plantilla reutilizable.</li>
-            <li><strong>Imprimir / Guardar PDF:</strong> Abre el diálogo de impresión del navegador. Selecciona "Guardar como PDF" para descargar.</li>
-            <li><strong>Nueva cotización:</strong> Limpia todo y empieza de cero.</li>
-            <li>El <strong>borrador</strong> se guarda automáticamente en el navegador.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="help-section">
-        <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-          <span class="help-icon">📂</span><span class="help-title">6. Historial</span><span class="help-arrow">▼</span>
-        </button>
-        <div class="help-section-content">
-          <ul>
-            <li>Accede con el botón <strong>Historial</strong> en la barra superior.</li>
-            <li><strong>Busca</strong> por nombre de cliente, vendedor o fecha.</li>
-            <li><strong>Cambia el estado:</strong> Borrador → Enviada → Vista → Aceptada / Rechazada → Vencida.</li>
-            <li><strong>Cargar:</strong> Abre una cotización guardada para editarla.</li>
-            <li><strong>Eliminar:</strong> Borra permanentemente (solo admin).</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="help-section">
-        <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-          <span class="help-icon">📋</span><span class="help-title">7. Plantillas</span><span class="help-arrow">▼</span>
-        </button>
-        <div class="help-section-content">
-          <ul>
-            <li>Accede con <strong>Plantillas</strong> en la barra superior.</li>
-            <li><strong>Crear:</strong> Llena una cotización y haz clic en "Guardar como plantilla".</li>
-            <li><strong>Cargar:</strong> Selecciona una plantilla y haz clic en importar. Reemplaza la cotización actual.</li>
-            <li><strong>Vista previa:</strong> Muestra el detalle con precios calculados.</li>
-            <li><strong>Descargar:</strong> Genera un PDF de la plantilla.</li>
-            <li><strong>Eliminar:</strong> Borra la plantilla (con confirmación).</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="help-section">
-        <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-          <span class="help-icon">🔄</span><span class="help-title">8. Sincronizar catálogo (Admin)</span><span class="help-arrow">▼</span>
-        </button>
-        <div class="help-section-content">
-          <ul>
-            <li>Haz clic en <strong>Catálogo</strong> en la barra superior.</li>
-            <li>Selecciona la pestaña <strong>Sincronizar</strong>.</li>
-            <li>Haz clic en <strong>Sincronizar</strong> para descargar productos desde Google Sheets.</li>
-            <li>El progreso se muestra en tiempo real en el log.</li>
-            <li>Puedes <strong>detener</strong> la sincronización en cualquier momento.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeHelpModal()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: GESTIÓN DE USUARIOS (solo admin) -->
-<div class="modal-backdrop" id="userManagementModal">
-  <div class="modal" style="max-width:750px;">
-    <div class="modal-header">
-      <h2>👥 Gestión de usuarios</h2>
-      <button class="modal-close" onclick="closeUserManagement()">✕</button>
-    </div>
-    <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
-        <button class="btn btn-primary" onclick="showCreateUserForm()" style="font-size:12px;padding:7px 14px;">+ Nuevo usuario</button>
-        <span id="userManagementCount" style="font-size:11px;color:var(--muted);"></span>
-      </div>
-
-      <!-- FORM CREAR USUARIO -->
-      <div id="createUserForm" style="display:none;margin-bottom:16px;padding:12px;background:#f9fafb;border:1px solid var(--border);border-radius:8px;">
-        <div style="font-weight:600;font-size:13px;margin-bottom:10px;">Crear nuevo usuario</div>
-        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
-          <div class="field">
-            <label>Nombre</label>
-            <input type="text" id="newUserName" placeholder="Nombre completo">
-          </div>
-          <div class="field">
-            <label>Email</label>
-            <input type="text" id="newUserEmail" placeholder="usuario@gemeseg.com">
-          </div>
-          <div class="field">
-            <label>Contraseña</label>
-            <input type="password" id="newUserPassword" placeholder="Contraseña">
-          </div>
-          <div class="field">
-            <label>Rol</label>
-            <select id="newUserRole">
-              <option value="vendedor">Vendedor</option>
-              <option value="admin">Administrador</option>
+        <div class="modal-body">
+          <div class="history-filters" id="historyFilters">
+            <input type="text" id="filterClient" placeholder="Buscar cliente..." />
+            <input type="text" id="filterVendor" placeholder="Buscar vendedor..." />
+            <input type="date" id="filterDateFrom" title="Desde fecha" />
+            <input type="date" id="filterDateTo" title="Hasta fecha" />
+            <select id="filterStatus">
+              <option value="">Todos los estados</option>
+              <option value="borrador">Borrador</option>
+              <option value="enviada">Enviada</option>
+              <option value="vista">Vista</option>
+              <option value="aceptada">Aceptada</option>
+              <option value="rechazada">Rechazada</option>
+              <option value="vencida">Vencida</option>
             </select>
           </div>
+          <div class="history-stats" id="historyStats"></div>
+          <div id="historyList"></div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:10px;">
-          <button class="btn btn-primary" onclick="createUser()" id="btnCreateUser">Crear usuario</button>
-          <button class="btn btn-ghost" onclick="hideCreateUserForm()">Cancelar</button>
-        </div>
-        <div id="createUserError" style="color:var(--danger);font-size:12px;margin-top:8px;display:none;"></div>
-      </div>
-
-      <!-- TABLA USUARIOS -->
-      <div style="border:1px solid var(--border);border-radius:6px;overflow-x:auto;">
-        <table class="items-table" id="usersTable" style="min-width:480px;">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Email</th>
-              <th style="width:90px;">Rol</th>
-              <th style="width:70px;">Estado</th>
-              <th style="width:80px;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="usersTableBody"></tbody>
-        </table>
-      </div>
-      <div id="usersLoading" style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">Cargando usuarios...</div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeUserManagement()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: EDITAR USUARIO -->
-<div class="modal-backdrop" id="editUserModal">
-  <div class="modal" style="max-width:480px;">
-    <div class="modal-header">
-      <h2 id="editUserTitle">Editar usuario</h2>
-      <button class="modal-close" onclick="closeEditUser()">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="editUserId">
-      <div class="form-grid" style="grid-template-columns:1fr;">
-        <div class="field">
-          <label>Nombre</label>
-          <input type="text" id="editUserName" placeholder="Nombre completo">
-        </div>
-        <div class="field">
-          <label>Email (no editable)</label>
-          <input type="text" id="editUserEmail" disabled style="opacity:0.6;cursor:not-allowed;">
-        </div>
-        <div class="field">
-          <label>Contraseña</label>
-          <input type="password" id="editUserPassword" placeholder="Nueva contraseña (opcional)">
-          <div style="font-size:10px;color:var(--muted);margin-top:3px;">Para cambiar contraseña ir a Supabase Dashboard → Auth → Users</div>
-        </div>
-        <div class="field">
-          <label>Rol</label>
-          <select id="editUserRole">
-            <option value="vendedor">Vendedor</option>
-            <option value="admin">Administrador</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Estado</label>
-          <select id="editUserActive">
-            <option value="true">Activo</option>
-            <option value="false">Inactivo</option>
-          </select>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeSavedModal()">Cerrar</button>
         </div>
       </div>
-      <div id="editUserError" style="color:var(--danger);font-size:12px;margin-top:8px;display:none;"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeEditUser()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveEditUser()" id="btnSaveEditUser">Guardar</button>
-    </div>
-  </div>
-</div>
 
-<!-- MODAL: CONFIRMAR ACCIÓN -->
-<div class="modal-backdrop" id="confirmModal">
-  <div class="modal" style="max-width:400px;">
-    <div class="modal-header">
-      <h2 id="confirmTitle">Confirmar</h2>
-      <button class="modal-close" onclick="resolveConfirm(false)">✕</button>
-    </div>
-    <div class="modal-body" style="text-align:center;padding:24px;">
-      <p id="confirmMessage" style="font-size:14px;margin:0;line-height:1.5;"></p>
-    </div>
-    <div class="modal-footer" style="justify-content:center;">
-      <button class="btn btn-ghost" onclick="resolveConfirm(false)">Cancelar</button>
-      <button class="btn btn-primary" id="confirmOkBtn" onclick="resolveConfirm(true)">Aceptar</button>
-    </div>
-  </div>
-</div>
+    <!-- MODAL: VISOR DE CATÁLOGO (todos los usuarios) -->
+    <div class="modal-backdrop" id="catalogViewerModal">
+      <div class="modal" style="max-width: 95vw; height: 90vh; display: flex; flex-direction: column">
+        <div class="modal-header">
+          <h2>📦 Catálogo de productos</h2>
+          <button class="modal-close" onclick="closeCatalogViewer()">✕</button>
+        </div>
+        <div
+          class="modal-body"
+          style="flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 12px 16px"
+        >
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center">
+            <input
+              type="text"
+              id="viewerSearch"
+              placeholder="Buscar código, modelo o descripción..."
+              style="
+                flex: 1;
+                min-width: 180px;
+                padding: 7px 10px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 12px;
+              "
+            />
+            <select
+              id="viewerCategory"
+              style="padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px"
+            >
+              <option value="">Todas las categorías</option>
+            </select>
+            <select
+              id="viewerSubcategory"
+              style="padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px"
+            >
+              <option value="">Todas las subcategorías</option>
+            </select>
+            <span id="viewerCount" style="font-size: 11px; color: var(--muted)"></span>
+            <button
+              class="btn btn-ghost"
+              id="btnSyncCatalog"
+              onclick="openSyncPanel()"
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text); display: none"
+            >
+              🔄 Sincronizar Sheet
+            </button>
+            <button
+              class="btn btn-ghost"
+              id="btnGoToEditor"
+              onclick="
+                closeCatalogViewer();
+                openCatalogEditor();
+              "
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text); display: none"
+            >
+              ✏️ Editar catálogo
+            </button>
+          </div>
 
-<!-- MODAL: DETALLE DE PRODUCTO -->
-<div class="modal-backdrop" id="productDetailModal">
-  <div class="modal" style="max-width:600px;">
-    <div class="modal-header">
-      <h2>Detalle del producto</h2>
-      <button class="modal-close" onclick="closeProductDetail()">✕</button>
-    </div>
-    <div class="modal-body" id="productDetailBody"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeProductDetail()">Cerrar</button>
-    </div>
-  </div>
-</div>
+          <!-- PANEL DE SINCRONIZACIÓN -->
+          <div
+            id="syncPanel"
+            style="
+              display: none;
+              margin-bottom: 12px;
+              border: 2px solid var(--primary);
+              border-radius: 8px;
+              overflow: hidden;
+            "
+          >
+            <div
+              style="
+                background: var(--primary);
+                color: white;
+                padding: 10px 14px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <span style="font-weight: 600; font-size: 13px">🔄 Sincronizar desde Google Sheets</span>
+              <button
+                onclick="closeSyncPanel()"
+                style="
+                  background: rgba(255, 255, 255, 0.15);
+                  color: white;
+                  border: none;
+                  width: 24px;
+                  height: 24px;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 14px;
+                "
+              >
+                ✕
+              </button>
+            </div>
+            <div style="padding: 12px 14px; background: #f9fafb">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px">
+                <span style="font-size: 12px; color: var(--muted)">Fuente:</span>
+                <a
+                  href="https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo/edit"
+                  target="_blank"
+                  style="font-size: 12px; color: var(--primary-mid); text-decoration: underline"
+                  >📎 Abrir Google Sheet</a
+                >
+              </div>
+              <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center">
+                <button
+                  class="btn btn-primary"
+                  id="btnStartSync"
+                  onclick="startSync()"
+                  style="font-size: 12px; padding: 7px 14px"
+                >
+                  ▶ Sincronizar
+                </button>
+                <button
+                  class="btn btn-ghost"
+                  id="btnStopSync"
+                  onclick="stopSync()"
+                  style="
+                    font-size: 12px;
+                    padding: 7px 14px;
+                    border-color: var(--danger);
+                    color: var(--danger);
+                    display: none;
+                  "
+                >
+                  ⏹ Detener
+                </button>
+                <span id="syncPanelStatus" style="font-size: 12px; color: var(--muted)"></span>
+              </div>
+              <div
+                id="syncLogContainer"
+                style="
+                  background: #1f2937;
+                  border-radius: 6px;
+                  max-height: 250px;
+                  overflow-y: auto;
+                  font-family: ui-monospace, monospace;
+                  font-size: 11px;
+                "
+              >
+                <div id="syncLogEntries" style="padding: 8px 10px; color: #9ca3af">
+                  Esperando inicio de sincronización...
+                </div>
+              </div>
+              <div id="syncPanelSummary" style="margin-top: 8px; font-size: 12px; color: var(--muted)"></div>
+            </div>
+          </div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+          <!-- TABLA DE PRODUCTOS -->
+          <div style="flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 6px">
+            <table class="editor-table viewer-table" id="viewerTable">
+              <thead>
+                <tr>
+                  <th style="width: 100px">Código</th>
+                  <th style="width: 120px">Subcategoría</th>
+                  <th>Descripción</th>
+                  <th style="width: 70px">Costo</th>
+                  <th style="width: 50px">Gan.</th>
+                  <th style="width: 50px">Inst.</th>
+                  <th style="width: 70px">PVP</th>
+                  <th style="width: 60px">IVA</th>
+                  <th style="width: 75px">Total</th>
+                </tr>
+              </thead>
+              <tbody id="viewerBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeCatalogViewer()">Cerrar</button>
+        </div>
+      </div>
+    </div>
 
-<script type="module" src="/src/main.js"></script>
-</body>
+    <!-- MODAL: EDITOR DE CATÁLOGO (solo admin) -->
+    <div class="modal-backdrop" id="catalogEditorModal">
+      <div class="modal" style="max-width: 95vw; height: 90vh; display: flex; flex-direction: column">
+        <div class="modal-header">
+          <h2>
+            ✏️ Editor de catálogo <span style="font-size: 12px; font-weight: 400; color: var(--muted)">(Admin)</span>
+          </h2>
+          <button class="modal-close" onclick="closeCatalogEditor()">✕</button>
+        </div>
+        <div
+          class="modal-body"
+          style="flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 12px 16px"
+        >
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center">
+            <select
+              id="editorCategory"
+              onchange="renderEditorTable()"
+              style="
+                padding: 7px 10px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 12px;
+                min-width: 180px;
+              "
+            >
+              <option value="">Seleccionar categoría...</option>
+              <option value="equipos">Equipos</option>
+              <option value="materiales">Materiales</option>
+              <option value="servicios">Servicios</option>
+            </select>
+            <input
+              type="text"
+              id="editorSearch"
+              placeholder="Buscar código, modelo o descripción..."
+              oninput="renderEditorTable()"
+              style="
+                flex: 1;
+                min-width: 180px;
+                padding: 7px 10px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 12px;
+              "
+            />
+            <span id="editorCount" style="font-size: 11px; color: var(--muted)"></span>
+            <button class="btn btn-primary" onclick="saveCatalogEdits()" style="font-size: 12px; padding: 7px 14px">
+              💾 Guardar
+            </button>
+            <button
+              class="btn btn-ghost"
+              onclick="addNewProduct()"
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
+            >
+              + Nuevo
+            </button>
+          </div>
+          <div style="flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 6px">
+            <table class="editor-table" id="editorTable">
+              <thead id="editorHead">
+                <tr>
+                  <th colspan="15" style="text-align: center; padding: 20px; color: var(--muted)">
+                    Selecciona una categoría para ver las columnas
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="editorBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeCatalogEditor()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: PLANTILLAS DE COTIZACIÓN -->
+    <div class="modal-backdrop" id="templatesModal">
+      <div class="modal" style="max-width: 900px">
+        <div class="modal-header">
+          <h2>📋 Plantillas de cotización</h2>
+          <button class="modal-close" onclick="closeTemplatesModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="tpl-filters">
+            <input type="text" id="tplSearch" placeholder="Buscar plantilla..." oninput="filterTemplates()" />
+            <select id="tplType" onchange="filterTemplates()">
+              <option value="">Todos los tamaños</option>
+              <option value="pequeña">Pequeña</option>
+              <option value="mediana">Mediana</option>
+              <option value="grande">Grande</option>
+            </select>
+            <select id="tplIndustry" onchange="filterTemplates()">
+              <option value="">Todas las industrias</option>
+              <option value="banco">Banco</option>
+              <option value="comercio">Comercio</option>
+              <option value="oficina">Oficina</option>
+              <option value="industrial">Industrial</option>
+              <option value="salud">Salud</option>
+            </select>
+          </div>
+          <div id="templateList" class="tpl-list"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeTemplatesModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: VISTA PREVIA DE PLANTILLA -->
+    <div class="modal-backdrop" id="templatePreviewModal">
+      <div class="modal" style="max-width: 750px">
+        <div class="modal-header">
+          <h2 id="tplPreviewTitle">Vista previa</h2>
+          <button class="modal-close" onclick="closeTemplatePreview()">✕</button>
+        </div>
+        <div class="modal-body" id="tplPreviewBody"></div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="loadTemplateFromPreview()">📥 Cargar plantilla</button>
+          <button class="btn btn-ghost" onclick="downloadTemplatePdf()">🖨️ Descargar copia</button>
+          <button class="btn btn-ghost" onclick="closeTemplatePreview()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: GUARDAR COMO PLANTILLA -->
+    <div class="modal-backdrop" id="saveTemplateModal">
+      <div class="modal" style="max-width: 500px">
+        <div class="modal-header">
+          <h2>Guardar como plantilla</h2>
+          <button class="modal-close" onclick="resolveSaveTemplate(false)">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="field" style="grid-column: 1/-1">
+              <label>Nombre de la plantilla</label>
+              <input type="text" id="tplSaveName" placeholder="Ej: Banco - Sistema Integral" />
+            </div>
+            <div class="field" style="grid-column: 1/-1">
+              <label>Descripción</label>
+              <input type="text" id="tplSaveDesc" placeholder="Descripción breve del alcance" />
+            </div>
+            <div class="field">
+              <label>Tamaño del cliente</label>
+              <select id="tplSaveType">
+                <option value="pequeña">Pequeña</option>
+                <option value="mediana" selected>Mediana</option>
+                <option value="grande">Grande</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Industria</label>
+              <select id="tplSaveIndustry">
+                <option value="comercio" selected>Comercio</option>
+                <option value="banco">Banco</option>
+                <option value="oficina">Oficina</option>
+                <option value="industrial">Industrial</option>
+                <option value="salud">Salud</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="resolveSaveTemplate(false)">Cancelar</button>
+          <button class="btn btn-primary" onclick="resolveSaveTemplate(true)">💾 Guardar plantilla</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: MANUAL DE USUARIO -->
+    <div class="modal-backdrop" id="helpModal">
+      <div class="modal" style="max-width: 650px">
+        <div class="modal-header">
+          <h2>❓ Manual de usuario</h2>
+          <button class="modal-close" onclick="closeHelpModal()">✕</button>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto">
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">🔑</span><span class="help-title">1. Inicio de sesión</span
+              ><span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>Ingresa tu <strong>usuario</strong> (correo o nombre corto) y <strong>contraseña</strong>.</p>
+              <ul>
+                <li>Haz clic en el ojo para mostrar/ocultar la contraseña.</li>
+                <li>Si olvidas tu contraseña, contacta al administrador.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">📦</span><span class="help-title">2. Catálogo de productos</span
+              ><span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>El catálogo está en el panel izquierdo. Puedes:</p>
+              <ul>
+                <li><strong>Buscar</strong> por código, modelo o descripción.</li>
+                <li><strong>Filtrar</strong> por categoría y subcategoría.</li>
+                <li><strong>Hacer clic</strong> en un producto para ver todos sus detalles y precios.</li>
+                <li><strong>+ Agregar</strong> para añadir al carrito.</li>
+              </ul>
+              <p>Los colores indican actualización: 🟢 ≤30 días · 🟡 30-180 días · 🔴 +180 días o sin fecha.</p>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">📦</span><span class="help-title">3. Kits de productos</span
+              ><span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>Los kits permiten agrupar productos frecuentes para agregarlos rápidamente a una cotización.</p>
+              <ul>
+                <li><strong>Crear kit:</strong> Haz clic en "+ Nuevo kit" en la pestaña Kits del catálogo.</li>
+                <li><strong>Agregar componentes:</strong> Usa la búsqueda para encontrar productos y haz clic en "+ Agregar".</li>
+                <li><strong>Nombre descriptivo:</strong> Ponle un nombre claro (ej: "Kit Cámaras IP").</li>
+                <li><strong>Agregar kit al carrito:</strong> Haz clic en el botón 🛒 del kit. Sus componentes se agregan como items individuales.</li>
+                <li><strong>Editar componentes:</strong> En el carrito, cada componente del kit se puede editar por separado (cantidad, costo técnico, instalación, margen).</li>
+                <li><strong>Eliminar componente:</strong> Puedes quitar un componente del kit en el carrito sin afectar la definición del kit.</li>
+              </ul>
+              <p style="color:var(--muted);font-size:11px;">Los kits están compartidos entre todos los usuarios. Los cambios se guardan en la nube.</p>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">👤</span><span class="help-title">4. Datos del cliente</span
+              ><span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>Completa los datos del cliente en la sección correspondiente:</p>
+              <ul>
+                <li><strong>Cliente / Razón social</strong> (obligatorio para guardar).</li>
+                <li><strong>RUC / Cédula</strong>, <strong>Teléfono</strong>, <strong>Dirección</strong>.</li>
+                <li><strong>Persona de contacto</strong> y <strong>Email</strong>.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">🛒</span><span class="help-title">5. Crear cotización</span
+              ><span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>Agrega productos con <strong>+ Agregar</strong> y cambia cantidades directamente en la tabla.</p>
+
+              <div class="help-subtitle">Cómo se calculan los precios</div>
+              <p>Dependiendo del tipo de producto, el cálculo cambia:</p>
+
+              <div class="help-subtitle">Equipos y Materiales</div>
+              <ol>
+                <li>Se parte del <strong>costo base</strong> del producto.</li>
+                <li>
+                  Si el producto tiene ganancia habilitada, se suma el <strong>margen de proveedor</strong> (por defecto
+                  15%, editable por proveedor o directamente en la tabla para sin proveedor).
+                </li>
+                <li>Se suma <strong>IVA 15%</strong> (siempre).</li>
+                <li>
+                  Si el producto tiene instalación activa, se suma el <strong>costo técnico</strong> (instalación) +
+                  <strong>margen de instalación</strong> (porcentaje global, por defecto 35%).
+                  <strong>Importante:</strong> La instalación es un valor fijo por ítem, NO se multiplica por las
+                  unidades.
+                </li>
+              </ol>
+
+              <div class="help-subtitle">Servicios</div>
+              <ol>
+                <li>Se toma el <strong>costo mensual</strong>. Si es 0, se usa el costo anual ÷ 12.</li>
+                <li>Se suma <strong>IVA 15%</strong>.</li>
+                <li>Sin ganancia, sin instalación.</li>
+              </ol>
+
+              <div class="help-subtitle">Valores que puedes modificar</div>
+              <ul>
+                <li>
+                  <strong>Margen proveedor (%):</strong> Se configura por cada proveedor en "Configuración de márgenes".
+                  Los productos sin proveedor también tienen un margen individual editable directamente en la tabla de
+                  la cotización. Solo afecta productos con ganancia habilitada.
+                </li>
+                <li>
+                  <strong>Margen instalación (%):</strong> Porcentaje global que se aplica a todos los productos con
+                  instalación activa.
+                </li>
+                <li>
+                  <strong>Instalación global:</strong> Botón para activar o desactivar instalación en todos los
+                  productos que la requieran.
+                </li>
+                <li><strong>Costo técnico:</strong> Mano de obra por unidad, editable en la tabla de la cotización.</li>
+              </ul>
+
+              <p>Los totales se calculan automáticamente: <strong>Productos + IVA + Instalación</strong>.</p>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">💾</span><span class="help-title">6. Guardar e imprimir</span
+              ><span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <ul>
+                <li>
+                  <strong>Guardar cotización:</strong> Guarda en la nube (Supabase). Requiere nombre del cliente y al
+                  menos 1 producto.
+                </li>
+                <li>
+                  <strong>Guardar como plantilla:</strong> Guarda la cotización actual como plantilla reutilizable.
+                </li>
+                <li>
+                  <strong>Imprimir / Guardar PDF:</strong> Abre el diálogo de impresión del navegador. Selecciona
+                  "Guardar como PDF" para descargar.
+                </li>
+                <li><strong>Nueva cotización:</strong> Limpia todo y empieza de cero.</li>
+                <li>El <strong>borrador</strong> se guarda automáticamente en el navegador.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">👁️</span
+              ><span class="help-title">7. Información de cotización vs documento final (Cliente)</span
+              ><span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>El cotizador (usted) y el cliente (PDF) ven información diferente:</p>
+
+              <div class="help-subtitle">Lo que ve el COTIZADOR (pantalla)</div>
+              <table style="width: 100%; font-size: 12px; border-collapse: collapse; margin-bottom: 12px">
+                <tr style="background: #f3f4f6">
+                  <th style="text-align: left; padding: 6px; border: 1px solid #ddd">Columna</th>
+                  <th style="text-align: left; padding: 6px; border: 1px solid #ddd">Contenido</th>
+                </tr>
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ddd">Costo Unit.</td>
+                  <td style="padding: 6px; border: 1px solid #ddd">
+                    <strong>Costo REAL del producto</strong> (sin ganancia, sin IVA). Es el precio base que la empresa paga.
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ddd">Cant</td>
+                  <td style="padding: 6px; border: 1px solid #ddd">Cantidad de unidades</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ddd">Costo Total</td>
+                  <td style="padding: 6px; border: 1px solid #ddd">
+                    <strong>Costo Unit. × Cant</strong>. Subtotal del costo base por todas las unidades.
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ddd">Ganancia</td>
+                  <td style="padding: 6px; border: 1px solid #ddd">
+                    <strong>Costo Unit. x Cant. x % de ganancia </strong>. Ganancia de la empresa por la venta. Solo cambia
+                    según el % de ganancia por proveedor. <em>Oculta en PDF.</em>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ddd">PVP</td>
+                  <td style="padding: 6px; border: 1px solid #ddd">
+                    <strong>Precio de Venta = Costo Total + Ganancia</strong>. Lo que el cliente paga. <em>Oculta en
+                    PDF.</em>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ddd">Inst</td>
+                  <td style="padding: 6px; border: 1px solid #ddd">
+                    Costo de instalación (valor fijo por item, no por unidad). Incluye costo técnico + margen de
+                    instalación.
+                  </td>
+                </tr>
+              </table>
+
+              <div class="help-subtitle">Lo que ve el CLIENTE (PDF)</div>
+              <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:12px;">
+                <strong>Importante:</strong> El cliente ve el costo del producto, sin conocer el margen de ganancia.
+              </div>
+              <table style="width: 100%; font-size: 12px; border-collapse: collapse; margin-bottom: 12px">
+                <tr style="background: #f3f4f6">
+                  <th style="text-align: left; padding: 6px; border: 1px solid #ddd">Columna</th>
+                  <th style="text-align: left; padding: 6px; border: 1px solid #ddd">Contenido</th>
+                </tr>
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ddd">Costo Unit.</td>
+                  <td style="padding: 6px; border: 1px solid #ddd">
+                    <strong>Cost Unit. x % Ganancia</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ddd">Cant</td>
+                  <td style="padding: 6px; border: 1px solid #ddd">Cantidad de unidades</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ddd">Costo Total</td>
+                  <td style="padding: 6px; border: 1px solid #ddd">
+                    <strong>Cost unitario x Ganancia x Cantidad</strong>: Costo Unit. × Cant. <em>Equivalente a PVP del cotizador (pantalla)</em>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ddd">Inst</td>
+                  <td style="padding: 6px; border: 1px solid #ddd">Costo de instalación (sin desglose de ganancia).</td>
+                </tr>
+              </table>
+
+              <div class="help-subtitle">Cálculo de precios</div>
+              <ol>
+                <li><strong>Costo Unit.</strong> = costo real del producto (sin ganancia)</li>
+                <li><strong>Costo Total</strong> = Costo Unit. × Cantidad</li>
+                <li><strong>Ganancia</strong> = (Costo Unit. × % ganancia proveedor) × Cantidad</li>
+                <li><strong>PVP</strong> = Costo Total + Ganancia (lo que paga el cliente)</li>
+                <li>
+                  Si tiene instalación: se suma costo técnico + margen de instalación (35%).
+                  <strong>La instalación es valor fijo, NO se multiplica por unidades</strong>
+                </li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">📂</span><span class="help-title">8. Historial</span
+              ><span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <ul>
+                <li>Accede con el botón <strong>Historial</strong> en la barra superior.</li>
+                <li><strong>Busca</strong> por nombre de cliente, vendedor o fecha.</li>
+                <li><strong>Cambia el estado:</strong> Borrador → Enviada → Vista → Aceptada / Rechazada → Vencida.</li>
+                <li><strong>Cargar:</strong> Abre una cotización guardada para editarla.</li>
+                <li><strong>Eliminar:</strong> Borra permanentemente (solo admin).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">📋</span><span class="help-title">9. Plantillas</span
+              ><span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <ul>
+                <li>Accede con <strong>Plantillas</strong> en la barra superior.</li>
+                <li><strong>Crear:</strong> Llena una cotización y haz clic en "Guardar como plantilla".</li>
+                <li>
+                  <strong>Cargar:</strong> Selecciona una plantilla y haz clic en importar. Reemplaza la cotización
+                  actual.
+                </li>
+                <li><strong>Vista previa:</strong> Muestra el detalle con precios calculados.</li>
+                <li><strong>Eliminar:</strong> Borra la plantilla (con confirmación).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">🔄</span><span class="help-title">10. Sincronizar catálogo (Admin)</span
+              ><span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <ul>
+                <li>Haz clic en <strong>Catálogo</strong> en la barra superior.</li>
+                <li>Selecciona la pestaña <strong>Sincronizar</strong>.</li>
+                <li>Haz clic en <strong>Sincronizar</strong> para descargar productos desde Google Sheets.</li>
+                <li>El progreso se muestra en tiempo real en el log.</li>
+                <li>Puedes <strong>detener</strong> la sincronización en cualquier momento.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: GESTIÓN DE USUARIOS (solo admin) -->
+    <div class="modal-backdrop" id="userManagementModal">
+      <div class="modal" style="max-width: 750px">
+        <div class="modal-header">
+          <h2>👥 Gestión de usuarios</h2>
+          <button class="modal-close" onclick="closeUserManagement()">✕</button>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto">
+          <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center">
+            <button class="btn btn-primary" onclick="showCreateUserForm()" style="font-size: 12px; padding: 7px 14px">
+              + Nuevo usuario
+            </button>
+            <span id="userManagementCount" style="font-size: 11px; color: var(--muted)"></span>
+          </div>
+
+          <!-- FORM CREAR USUARIO -->
+          <div
+            id="createUserForm"
+            style="
+              display: none;
+              margin-bottom: 16px;
+              padding: 12px;
+              background: #f9fafb;
+              border: 1px solid var(--border);
+              border-radius: 8px;
+            "
+          >
+            <div style="font-weight: 600; font-size: 13px; margin-bottom: 10px">Crear nuevo usuario</div>
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr">
+              <div class="field">
+                <label>Nombre</label>
+                <input type="text" id="newUserName" placeholder="Nombre completo" />
+              </div>
+              <div class="field">
+                <label>Email</label>
+                <input type="text" id="newUserEmail" placeholder="usuario@gemeseg.com" />
+              </div>
+              <div class="field">
+                <label>Contraseña</label>
+                <input type="password" id="newUserPassword" placeholder="Contraseña" />
+              </div>
+              <div class="field">
+                <label>Rol</label>
+                <select id="newUserRole">
+                  <option value="vendedor">Vendedor</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 10px">
+              <button class="btn btn-primary" onclick="createUser()" id="btnCreateUser">Crear usuario</button>
+              <button class="btn btn-ghost" onclick="hideCreateUserForm()">Cancelar</button>
+            </div>
+            <div
+              id="createUserError"
+              style="color: var(--danger); font-size: 12px; margin-top: 8px; display: none"
+            ></div>
+          </div>
+
+          <!-- TABLA USUARIOS -->
+          <div style="border: 1px solid var(--border); border-radius: 6px; overflow-x: auto">
+            <table class="items-table" id="usersTable" style="min-width: 480px">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Email</th>
+                  <th style="width: 90px">Rol</th>
+                  <th style="width: 70px">Estado</th>
+                  <th style="width: 80px">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+          <div id="usersLoading" style="text-align: center; padding: 20px; color: var(--muted); font-size: 12px">
+            Cargando usuarios...
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeUserManagement()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: EDITAR USUARIO -->
+    <div class="modal-backdrop" id="editUserModal">
+      <div class="modal" style="max-width: 480px">
+        <div class="modal-header">
+          <h2 id="editUserTitle">Editar usuario</h2>
+          <button class="modal-close" onclick="closeEditUser()">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editUserId" />
+          <div class="form-grid" style="grid-template-columns: 1fr">
+            <div class="field">
+              <label>Nombre</label>
+              <input type="text" id="editUserName" placeholder="Nombre completo" />
+            </div>
+            <div class="field">
+              <label>Email (no editable)</label>
+              <input type="text" id="editUserEmail" disabled style="opacity: 0.6; cursor: not-allowed" />
+            </div>
+            <div class="field">
+              <label>Contraseña</label>
+              <input type="password" id="editUserPassword" placeholder="Nueva contraseña (opcional)" />
+              <div style="font-size: 10px; color: var(--muted); margin-top: 3px">
+                Para cambiar contraseña ir a Supabase Dashboard → Auth → Users
+              </div>
+            </div>
+            <div class="field">
+              <label>Rol</label>
+              <select id="editUserRole">
+                <option value="vendedor">Vendedor</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Estado</label>
+              <select id="editUserActive">
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+            </div>
+          </div>
+          <div id="editUserError" style="color: var(--danger); font-size: 12px; margin-top: 8px; display: none"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeEditUser()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveEditUser()" id="btnSaveEditUser">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CONFIRMAR ACCIÓN -->
+    <div class="modal-backdrop" id="confirmModal">
+      <div class="modal" style="max-width: 400px">
+        <div class="modal-header">
+          <h2 id="confirmTitle">Confirmar</h2>
+          <button class="modal-close" onclick="resolveConfirm(false)">✕</button>
+        </div>
+        <div class="modal-body" style="text-align: center; padding: 24px">
+          <p id="confirmMsg" style="font-size: 14px; margin: 0; line-height: 1.5"></p>
+        </div>
+        <div class="modal-footer" style="justify-content: center">
+          <button class="btn btn-ghost" onclick="resolveConfirm(false)">Cancelar</button>
+          <button class="btn btn-primary" id="confirmBtn" onclick="resolveConfirm(true)">Aceptar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: DETALLE DE PRODUCTO -->
+    <div class="modal-backdrop" id="productDetailModal">
+      <div class="modal" style="max-width: 600px">
+        <div class="modal-header">
+          <h2 id="productDetailTitle">Detalle del producto</h2>
+          <button class="modal-close" onclick="closeProductDetail()">✕</button>
+        </div>
+        <div class="modal-body" id="productDetailBody"></div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeProductDetail()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: KITS -->
+    <div class="modal-backdrop" id="kitsModal">
+      <div class="modal" style="max-width: 600px">
+        <div class="modal-header">
+          <h2>📦 Kits</h2>
+          <button class="modal-close" onclick="closeKitsModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px">
+            Crea kits de productos. El cliente solo paga los componentes que incluya.
+          </p>
+          <div id="kitsList"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeKitsModal()">Cerrar</button>
+          <button class="btn btn-primary" onclick="addNewKit()">+ Nuevo kit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: EDITAR KIT -->
+    <div class="modal-backdrop" id="kitEditorModal">
+      <div class="modal" style="max-width: 600px">
+        <div class="modal-header">
+          <h2>Editar Kit</h2>
+          <button class="modal-close" onclick="closeKitEditor()">✕</button>
+        </div>
+        <div class="modal-body">
+          <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px">Nombre del kit</label>
+          <input
+            type="text"
+            id="kitEditName"
+            style="
+              width: 100%;
+              border: 1px solid var(--border);
+              border-radius: 6px;
+              padding: 8px;
+              font-size: 13px;
+              margin-bottom: 10px;
+            "
+            placeholder="Nombre del kit"
+          />
+          <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px">Buscar producto</label>
+          <input
+            type="text"
+            id="kitSearchProduct"
+            style="
+              width: 100%;
+              border: 1px solid var(--border);
+              border-radius: 6px;
+              padding: 8px;
+              font-size: 13px;
+              margin-bottom: 6px;
+            "
+            placeholder="Escribe para buscar productos..."
+            oninput="filterKitProducts()"
+          />
+          <div id="kitSearchResults" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 10px; display: none;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+            <label style="font-size: 12px; font-weight: 600">Componentes</label>
+            <button class="btn-sm" onclick="addKitComponent(parseInt($('kitEditName').dataset.idx))">+ Agregar</button>
+          </div>
+          <div id="kitComponentsList"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeKitEditor()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveKitEditor()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script type="module" src="/src/main.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/cotizador/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+>>>>>>> b714499 (feat: audit improvements - kit search, test dedup, cartCalculations, escAttr fix, help section)
 </html>

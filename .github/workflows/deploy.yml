@@ -2,7 +2,7 @@ name: Deploy Vite SPA to GitHub Pages
 
 on:
   push:
-    branches: ["master"]
+    branches: ['master']
 
 permissions:
   contents: read
@@ -10,11 +10,37 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: true
 
 jobs:
+  quality:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: ESLint check
+        run: npm run lint
+
+      - name: Prettier check
+        run: npm run format:check
+
+      - name: Unit tests
+        run: npm test
+
   deploy:
+    needs: quality
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

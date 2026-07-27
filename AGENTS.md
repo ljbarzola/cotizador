@@ -3,21 +3,23 @@
 ## Stack Tecnologico
 
 ### Lenguajes
+
 - **HTML5** - Estructura y UI
 - **CSS3** - Estilos (CSS Custom Properties, Grid, Flexbox, `@media print`)
 - **JavaScript (ES6+ / ES Modules)** - Toda la logica de la aplicacion
 
 ### Herramientas y Frameworks
 
-| Tecnologia | Uso | Version |
-|---|---|---|
-| Vite | Dev server y bundler | ^5.4.10 |
-| Supabase JS | Autenticacion + Base de datos | v2 |
-| Google Fonts | Tipografia Montserrat | - |
+| Tecnologia   | Uso                           | Version |
+| ------------ | ----------------------------- | ------- |
+| Vite         | Dev server y bundler          | ^8.1.5  |
+| Supabase JS  | Autenticacion + Base de datos | v2      |
+| Google Fonts | Tipografia Montserrat         | -       |
 
 ### Base de datos (Supabase)
 
 **Tablas (sincronizadas desde Google Sheets):**
+
 - `profiles` - Perfiles de usuario (id, email, nombre, rol). Trigger auto-create.
 - `equipos` - Catalogo de equipos (source_id, categoria, subcategoria, modelo, producto, unidades, costo_unitario, ganancia_flag, instalacion_flag, ultima_act, proveedor, observaciones).
 - `materiales` - Catalogo de materiales (source_id, categoria, subcategoria, producto, unidades, costo_unitario, ganancia_flag, instalacion_flag, observaciones).
@@ -25,11 +27,13 @@
 - `saved_quotes` - Cotizaciones guardadas (id, user_id, cot_num, cot_date, client JSONB, margin, items JSONB, status, updated_at).
 
 **Google Sheet fuente:** `https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo`
+
 - Pestaña `PRECIOS EQUIPOS BD` → tabla `equipos`
 - Pestaña `PRECIOS MATERIALES BD` → tabla `materiales`
 - Pestaña `PRECIOS SERVICIOS BD` → tabla `servicios`
 
 **RLS (Row Level Security):**
+
 - `profiles`: Los usuarios ven solo su perfil. Admin puede ver todos.
 - `equipos/materiales/servicios`: Lectura publica, escritura solo admin.
 - `saved_quotes`: Admin ve todas, vendedor solo las suyas.
@@ -38,34 +42,44 @@
 
 ### Arquitectura
 
-SPA vanilla sin frameworks de frontend.
+SPA vanilla sin frameworks de frontend. Arquitectura modular con estado centralizado.
 
 ```
 Cotizador/
 ├── index.html                  # HTML principal (modales, topbar, layout)
 ├── src/
 │   ├── main.js                 # Entry point, init de auth
-│   ├── app.js                  # Logica principal (~1200 lineas)
+│   ├── app.js                  # Core: cart, render, save, sync, auth, user mgmt (~1684 lineas)
+   │   ├── state.js                # Estado compartido + setters + JSDoc (120 lineas)
+│   ├── utils.js                # Utilidades: $, fmt, esc, toast, confirm + JSDoc (120 lineas)
 │   ├── styles.css              # Estilos (~1150 lineas)
 │   ├── lib/
 │   │   └── supabase.js         # Cliente Supabase (variables de entorno)
 │   └── modules/
+│       ├── helpers.js          # Pricing: calcItemPrice, getSupplierMargin, marginBadge + JSDoc (103 lineas)
+│       ├── cartCalculations.js # Pure cart logic: calcItemTotals, calcDiscount, calcSubtotal (110 lineas, JSDoc)
+│       ├── kits.js             # Kit CRUD + rendering (27 funciones, ~600 lineas, JSDoc)
+│       ├── editor.js           # Catalog editor (10 funciones, 318 lineas, JSDoc)
+│       ├── modals.js           # Product/cart detail, help, templates (17 funciones, 384 lineas, JSDoc)
+│       ├── history.js          # Saved quotes, status, new quote (8 funciones, 237 lineas, JSDoc)
 │       ├── auth.js             # Login, sesion, perfiles
 │       ├── sync.js             # Sync Google Sheets ↔ Supabase (3 tablas)
 │       ├── catalog.js          # Stub
-│       └── quote.js            # Stub
+│       └── quote.js            # Template CRUD (Supabase-backed)
 ├── db/
 │   ├── migrate_catalog.sql     # Query para insertar 400 productos (legacy)
 │   ├── migrate_v3_three_tables.sql  # Schema 3 tablas: equipos/materiales/servicios
 │   ├── migrate_v3_1_fix_types.sql   # Fix tipos de datos
 │   ├── migrate_v3_2_add_flags.sql   # Agregar ganancia_flag, instalacion_flag
 │   ├── reset_all_tables.sql    # Reset completo con schema correcto
+│   ├── add_cant_costo_columns.sql  # Agregar cantidad_default y costo_total a equipos/materiales
 │   └── verify_supabase.sql     # Verificacion de tablas
 ├── public/
 │   ├── content/
 │   │   ├── logo-gemeseg-back-white.png   # Logo login
 │   │   ├── logo-gemeseg-back-blue.png    # Logo topbar/impresion
 │   │   └── logo-gemeseg-back-orange.png  # Logo alternativo
+│   ├── sw.js                      # Service worker (offline cache)
 │   └── favicon.svg
 ├── .env                        # Variables de entorno (gitignored)
 ├── vite.config.js              # Config Vite (base: /cotizador/)
@@ -80,16 +94,25 @@ Cotizador/
 4. **Visor de catalogo**: Modal de solo lectura (todos los usuarios). Busqueda + filtro por subcategoria.
 5. **Editor de catalogo**: Solo admin. Edicion inline, agregar/eliminar productos, batch save a Supabase.
 6. **Carrito**: Agregar items, cantidades, eliminar, totales con IVA 15%.
-7. **Sistema de precios**: Costo → supplier margin (% editable, default 15%) → IVA 15% → installation margin (global, default 35%). Servicios: costo directo + IVA.
-8. **Cotizacion**: Numeracion automatica (COT-YYYYMMDD-NNN), guardado en Supabase.
-9. **Historial**: Filtros por cliente, fecha, estado. Dropdown para cambiar estado.
-10. **PDF**: Layout print-only con logo, tabla, condiciones, firmas.
-11. **Paneles redimensionables**: Divider draggable entre catalogo y cotizacion.
-12. **Borrador**: Se guarda automaticamente en localStorage.
-13. **Plantillas**: 3 ejemplos + guardado de plantillas personalizadas (localStorage). CRUD: crear, cargar, vista previa, descargar PDF, eliminar.
-14. **Modales custom**: Confirmar accion, guardar plantilla, detalle de producto (reemplazan dialogs nativos del navegador).
-15. **Manual de usuario**: Modal con 9 secciones colapsables que explica todas las funcionalidades.
-16. **Responsive/Movil**: 3 breakpoints (900px, 768px, 640px). Touch targets 44px, toggles de colapso para catálogo/cotización, grids responsive, modales fullscreen.
+7. **Cotizador vs PDF (Cliente)**:
+   - **Cotizador (pantalla)** ve: #, Descripción, Und, Costo Unit. (=costo REAL, sin ganancia), Cant, Costo Total (=Costo Unit.×Cant), Ganancia (=margen prov.×Cant, oculta en PDF), PVP (=Costo Total+Ganancia, oculta en PDF), Inst, ✕.
+   - **Cliente (PDF)** ve: #, Descripción, Und, Costo Unit. (=priceBeforeIva, con ganancia incluida pero invisible), Cant, Costo Total (=priceBeforeIva×Cant), Inst. PVP y Ganancia ocultos.
+   - Valores duales en HTML: `print-hide-col` muestra baseCost en pantalla; `print-only` muestra priceBeforeIva en PDF.
+8. **Sistema de precios**: Costo → supplier margin (% editable, default 15%) → IVA 15% → installation margin (global, default 35%). Servicios: costo directo + IVA.
+9. **Cotizacion**: Numeracion automatica (COT-YYYYMMDD-NNN), guardado en Supabase.
+10. **Historial**: Filtros por cliente, fecha, estado. Dropdown para cambiar estado.
+11. **PDF**: Layout print-only con logo, tabla, condiciones, firmas.
+12. **Paneles redimensionables**: Divider draggable entre catalogo y cotizacion.
+13. **Borrador**: Se guarda automaticamente en localStorage.
+14. **Plantillas**: CRUD en Supabase (compartidas entre usuarios). Crear, cargar, vista previa, descargar PDF, eliminar.
+15. **Modales custom**: Confirmar accion, guardar plantilla, detalle de producto (reemplazan dialogs nativos del navegador).
+16. **Manual de usuario**: Modal con 10 secciones colapsables que explica todas las funcionalidades.
+17. **Descuentos**: Select (Sin descuento / Porcentaje / Valor fijo) + input. Se muestra en totales como "-Descuento (15%)" o "-Descuento $50". Se guarda en la cotización.
+18. **Sistema de Kits**: Tabs Items/Kits en el catálogo. CRUD de kits con nombre + componentes. Kits guardados en Supabase (tabla `kits`). Agregar un kit agrega sus componentes como items individuales al carrito, editables por separado (qty, instalación, costo técnico, margen). Cada cotización es independiente. Búsqueda de productos en el editor de kits con lista de resultados visible. Separación visual entre kits e items individuales en la cotización.
+19. **Notas opcionales**: Campo de notas adicionales debajo de las condiciones comerciales.
+20. **Responsive/Movil**: 3 breakpoints (900px, 768px, 640px). Touch targets 44px, toggles de colapso para catálogo/cotización, grids responsive, modales fullscreen.
+21. **Code Splitting**: Bundle dividido en chunks: app + supabase separado. Build optimizado.
+22. **Service Worker**: Cache de assets estaticos para modo offline. Network-first con fallback a cache.
 
 ### Flujo de precios (confirmado)
 
@@ -114,6 +137,12 @@ npm install
 npm run dev        # Dev server en http://localhost:5174 (vite.config.js: base /cotizador/)
 npm run build      # Build a dist/
 npm run preview    # Preview del build
+npm run lint       # ESLint check
+npm run lint:fix   # ESLint auto-fix
+npm run format     # Prettier format
+npm run format:check # Prettier check
+npm run test       # Vitest run
+npm run test:watch # Vitest watch mode
 ```
 
 ### Variables de entorno (.env)
@@ -125,7 +154,9 @@ VITE_SUPABASE_ANON_KEY=tu-anon-key-aqui
 
 ### Notas Importantes
 
-- No hay tests automatizados
+- 172 tests unitarios (sync: 18, helpers: 16, utils: 28, templates: 18, kits: 17, history: 10, auth: 22, editor: 27, cartCalculations: 16)
 - Deploy automatico via GitHub Pages al hacer push a `master`
+- **NUNCA hacer push sin confirmacion del usuario**
+- El catalogo original de 400 productos esta en `db/migrate_catalog.sql` (legacy, reemplazado por sync desde Google Sheets)
 - **NUNCA hacer push sin confirmacion del usuario**
 - El catalogo original de 400 productos esta en `db/migrate_catalog.sql` (legacy, reemplazado por sync desde Google Sheets)

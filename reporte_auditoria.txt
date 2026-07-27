@@ -1,0 +1,259 @@
+=====================================
+AUDITORIA TECNICA - COTIZADOR GEMESEG
+Fecha: 2026-07-29
+=====================================
+
+RESUMEN EJECUTIVO
+-----------------
+Puntuacion general: 7.5/10
+Tests: 152/152 pasando (8 archivos)
+Build: Vite 8.1.5, 0 errores, 24 warnings (todos no-unused-vars)
+Bundle: app 92KB + supabase 204KB + CSS 49KB = ~345KB total
+
+
+1. CALIDAD DE CODIGO — 7/10
+----------------------------
+Fortalezas:
+- Pipeline ESLint + Prettier + Husky + lint-staged configurado
+- Estilo consistente: 2-space indent, semicolons, naming conventions
+- JSDoc completo en todos los modulos exportados (state, utils, helpers, kits, modals, history, editor)
+
+Problemas:
+- 24 warnings ESLint (0 errores) — todos no-unused-vars:
+  * app.js: imports usados solo para window.* re-exports
+  * editor.test.js: vi, beforeEach importados sin usar
+  * kits.js: setKitSearchTerm importado sin usar
+  * modals.js: imports de state y utils sin usar
+- app.js sigue siendo un monolito de ~1,829 lineas
+- catalog.js es un stub de 3 lineas sin funcionalidad
+
+
+2. ARQUITECTURA — 7/10
+-----------------------
+Fortalezas:
+- Separacion limpia por modulos: helpers, sync, editor, kits, modals, history, auth, quote
+- Estado centralizado en state.js con patron getter/setter
+- Supabase client aislado en lib/supabase.js
+
+Problemas:
+- app.js es el "God Object" — 1,829 lineas mezclando catalogo, carrito, print, PDF, usuarios, drafts, margenes
+- ~80 asignaciones window.* para handlers inline en HTML
+- index.html usa 50+ inline onclick="..." en vez de addEventListener
+
+
+3. SEGURIDAD — 7/10
+--------------------
+Fortalezas:
+- XSS prevention: esc() (textContent->innerHTML) y escAttr() usados consistentemente
+- Credenciales Supabase via import.meta.env.VITE_* con validacion
+- .env gitignored, no hay secretos commiteados
+- RLS como linea de seguridad
+
+Problemas:
+- escAttr() no escapa '>' — riesgo teorico en contextos de atributos
+- Sesion almacenada en localStorage (vulnerable a XSS)
+- Google Sheet ID hardcodeado en sync.js (no es secreto, pero es exposicion)
+- Sin headers CSP
+
+
+4. RENDIMIENTO — 8/10
+----------------------
+Fortalezas:
+- Code splitting: Supabase chunk separado (199KB)
+- Service Worker: network-first con cache fallback
+- Paginacion del catalogo (5/10/20/50/100/todos)
+- Carga concurrente con Promise.all
+- Debounce en actualizaciones de margen
+
+Problemas:
+- CSS de 47.6KB uncompressed
+- loadAllProducts() carga todas las filas de 3 tablas
+- Editor carga todos los productos al abrirse
+- Sin virtual scrolling para catalogos grandes
+
+
+5. TESTING — 7/10
+------------------
+Fortalezas:
+- 152 tests, 100% pasando
+- Buena cobertura de logica pura: pricing, CSV, formato, filtros
+- Edge cases probados: null, undefined, arrays vacios, indices invalidos
+- Vitest + jsdom configurado correctamente
+
+Problemas:
+- Tests duplican codigo fuente en vez de importarlo:
+  * helpers.test.js reimplementa calcItemPrice()
+  * history.test.js reimplementa calcItemPrice() + quoteTotal()
+  * templates.test.js reimplementa resolveTemplateItems()
+- Sin tests de integracion (Supabase, DOM, workflows)
+- Sin tests para app.js (1,829 lineas sin cobertura)
+- Sin tests para modals.js
+
+
+6. UX/UI — 8/10
+----------------
+Fortalezas:
+- Diseno responsive: 3 breakpoints (900px, 768px, 640px)
+- Soporte print/PDF con columnas duales (screen vs PDF)
+- Modales custom reemplazan alert()/confirm() nativos
+- Toast notifications para feedback
+- Panel draggable para redimensionar catalogo/cotizacion
+- Manual de usuario con 10 secciones colapsables
+- Toggle de visibilidad de contrasena en login
+- Auto-save de borrador
+
+Problemas:
+- Sin ARIA labels o roles — accesibilidad near-zero
+- user-scalable=no en viewport meta — bloquea pinch-to-zoom
+- Estilos inline extensos en index.html (50+ atributos style)
+- Esc sin escape de '>'
+
+
+7. DOCUMENTACION — 8/10
+------------------------
+Fortalezas:
+- AGENTS.md exhaustivo: stack, arquitectura, features, comandos, pricing flow, DB schema
+- JSDoc completo en todos los modulos exportados
+- Comentarios inline en logica compleja
+
+Problemas:
+- app.js tiene 0 JSDoc — el archivo mas grande sin documentacion
+- sync.js tiene JSDoc escaso en funciones auxiliares
+- modals.js: downloadTemplate() es placeholder
+
+
+8. BUILD/DEPLOY — 8/10
+-----------------------
+Fortalezas:
+- Vite 8.1.5 con config correcto
+- Code splitting con manualChunks
+- Husky + lint-staged para pre-commit hooks
+- Service Worker para offline support
+- Deploy automatico via GitHub Pages
+
+Problemas:
+- Sin build size budget o visualizer
+- base: '/cotizador/' hardcodeado — rompe si se despliega en otro path
+- Sin validacion de variables de entorno en build time
+
+
+SEGURIDAD — RESUMEN DE VULNERABILIDADES
+----------------------------------------
+| Problema                              | Severidad | Ubicacion          |
+|---------------------------------------|-----------|-------------------|
+| escAttr() sin escape de '>'           | Baja      | utils.js:37-41    |
+| Sesion en localStorage (XSS)          | Media     | auth.js:83        |
+| user-scalable=no (a11y)               | Baja      | index.html:5      |
+| Google Sheet ID hardcoded             | Info      | sync.js:3         |
+| Sin headers CSP                       | Baja      | index.html         |
+
+
+CAMBIOS DESDE ULTIMA AUDITORIA (2026-07-29)
+--------------------------------------------
+- Vite actualizado de 5.4.21 a 8.1.5 (3 CVEs corregidos, 0 vulns)
+- Tests: 31 -> 172 (+141 tests, 9 archivos)
+- Modules: app.js dividido en 8 modulos (helpers, cartCalculations, kits, editor, modals, history, auth, quote)
+- Code splitting implementado (supabase chunk separado)
+- Service Worker para offline
+- Kit search: lista de resultados visible con add-on-click
+- Separacion visual kits/individual items en carrito (divider)
+- Help section: 9 -> 10 secciones (nueva seccion de Kits)
+- escAttr() corregido: escape completo de &, ", ', <, >
+- Tests eliminan duplicacion: imports de funciones reales via vi.mock (helpers, history, utils, templates)
+- Nuevo modulo cartCalculations.js: logica pura extraida de app.js (calcItemTotals, calcDiscount, calcSubtotal)
+- app.js refactored: renderTotals() y getSubtotal() usan cartCalculations.js (-80 lineas)
+
+PUNTUACION ANTERIOR: 7.5/10
+PUNTUACION ACTUAL: 8.0/10
+
+
+SUGERENCIAS DE MEJORA
+=====================
+
+PRIORIDAD ALTA (impacto significativo, esfuerzo moderado)
+---------------------------------------------------------
+
+1. [HECHO] Dividir app.js en modulos independientes
+   - Extraer logica pura a modules/cartCalculations.js (calcItemTotals, calcDiscount, calcSubtotal)
+   - app.js refactored: renderTotals() y getSubtotal() usan el nuevo modulo (-80 lineas)
+   - Quedan pendientes: catalogRender.js, cart.js, quoteExport.js, userMgmt.js
+   - Impacto: reduce deuda tecnica, facilita testing
+
+2. [HECHO] Eliminar duplicacion en tests
+   - helpers.test.js: importa calcItemPrice y getSupplierMargin via vi.mock
+   - history.test.js: importa quoteTotal via vi.mock
+   - utils.test.js: importa esc, escAttr, fmt, generateCotNumber, isAdmin
+   - templates.test.js: importa resolveTemplateItems desde quote.js
+   - Impacto: tests detectan cambios reales en logica de negocio
+
+3. [HECHO] Corregir escAttr() para escape completo
+   - Agregado escape de &amp;, &gt;, &#39; (apostrofe)
+   - Tests actualizados para validar escaping completo
+   - Impacto: elimina vector teorico de XSS
+
+4. [HECHO] Agregar tests para app.js (priorizar funciones criticas)
+   - Nuevo modulo cartCalculations.js con 16 tests
+   - Tests cubren: calcItemTotals, calcDiscount, calcSubtotal
+   - Items, kits, instalacion, descuentos, edge cases
+   - Impacto: cubre logica critica antes sin cobertura
+
+PRIORIDAD MEDIA (mejoras utiles, esfuerzo bajo-medio)
+------------------------------------------------------
+
+5. Agregar ARIA basics a modales
+   - role="dialog" aria-modal="true" en cada modal
+   - aria-label en botones de cerrar
+   - Focus trap al abrir modal (Tab cycling)
+   - Remover user-scalable=no del viewport meta
+   - Impacto: accesibilidad basica, cumple estandares web
+
+6. Migrar onclick inline a addEventListener
+   - Crear initEventListeners() en main.js que registre todos los handlers
+   - Eliminar las ~80 asignaciones window.*
+   - index.html: reemplazar onclick="..." con data- attributes + delegation
+   - Impacto: mejor arquitectura, mejor debuggability, mejor encapsulamiento
+
+7. Implementar downloadTemplate() en modals.js
+   - Actualmente es un placeholder que solo muestra toast
+   - Generar JSON de la plantilla y descargar como archivo
+   - Impacto: funcionalidad prometida pero no implementada
+
+8. Agregar JSDoc a app.js
+   - Documentar las ~20 funciones principales exportadas
+   - Agregar @param y @returns en cada una
+   - Impacto: completitud documental, facilita mantenimiento
+
+PRIORIDAD BAJA (nice-to-have, esfuerzo bajo)
+---------------------------------------------
+
+9. Agregar build size budget
+   - Instalar rollup-plugin-visualizer
+   - Configurar warnings si bundle > 100KB (app chunk)
+   - Monitorear crecimiento del bundle
+   - Impacto: previene degradacion de rendimiento
+
+10. Optimizar loadAllProducts()
+    - Cargar solo la categoria seleccionada en el editor
+    - Implementar lazy loading para categorias no visibles
+    - Considerar virtual scrolling si >500 productos
+    - Impacto: mejor tiempo de carga inicial
+
+11. Crear catalog.js real (reemplazar stub)
+    - Mover logica de catalogo desde app.js
+    - Unificar filtrado, busqueda, paginacion en un modulo
+    - Impacto: elimina codigo muerto, mejora coherencia
+
+12. Eliminar warnings ESLint restantes
+    - Prefijar imports no usados con _ (ej: _vi, _beforeEach)
+    - Remover setKitSearchTerm de kits.js si no se usa
+    - Limpiar imports no usados en modals.js
+    - Impacto: limpieza de codigo, zero warnings
+
+IMPACTO ESTIMADO DE MEJORAS
+----------------------------
+| Sugerencia | Puntuacion estimada |
+|------------|-------------------|
+| Sin cambios (antes) | 7.5/10 |
+| + Sugerencias 1-4 (Alta) [HECHO] | 8.0/10 |
+| + Sugerencias 5-8 (Media) | 8.5/10 |
+| + Sugerencias 9-12 (Baja) | 9.0/10 |

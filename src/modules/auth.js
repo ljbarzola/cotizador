@@ -13,11 +13,7 @@ export function resetLoginBtn() {
 }
 
 export async function fetchUserProfile(userId) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
   if (error) {
     return null;
   }
@@ -87,7 +83,7 @@ export async function doLogin() {
     localStorage.setItem('session', JSON.stringify(session));
     window._enterApp?.(session);
     return session;
-  } catch (e) {
+  } catch (_e) {
     showLoginError('Error de conexion. Verifica tu internet.');
     resetLoginBtn();
     return null;
@@ -101,7 +97,7 @@ export async function validateSession() {
   let session;
   try {
     session = JSON.parse(raw);
-  } catch (e) {
+  } catch (_e) {
     return false;
   }
 
@@ -125,7 +121,7 @@ export async function validateSession() {
       localStorage.setItem('usuario_rol', session.rol);
     }
     return session;
-  } catch (e) {
+  } catch (_e) {
     if (Date.now() - session.ts < 7 * 86400000) return session;
     localStorage.removeItem('session');
     return false;
@@ -133,7 +129,7 @@ export async function validateSession() {
 }
 
 export async function logout() {
-  if (!await showConfirm('¿Cerrar sesión?', 'Cerrar sesión', 'Salir')) return;
+  if (!(await window.showConfirm('¿Cerrar sesión?', 'Cerrar sesión', 'Salir'))) return;
   supabase.auth.signOut();
   localStorage.removeItem('session');
   localStorage.removeItem('usuario_nombre');

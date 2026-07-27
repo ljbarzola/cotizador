@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/cotizador/',
+  base: '/',
   server: {
     port: 5174,
     open: true,
@@ -9,4 +9,15 @@ export default defineConfig({
   preview: {
     port: 5174,
   },
-})
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/@supabase')) {
+            return 'supabase';
+          }
+        },
+      },
+    },
+  },
+});
