@@ -1,9 +1,9 @@
 const CACHE_NAME = 'cotizador-v1';
 const STATIC_ASSETS = [
-  '/cotizador/',
-  '/cotizador/index.html',
-  '/cotizador/content/logo-gemeseg-back-white.png',
-  '/cotizador/content/logo-gemeseg-back-blue.png',
+  '/',
+  '/index.html',
+  '/content/logo-gemeseg-back-white.png',
+  '/content/logo-gemeseg-back-blue.png',
 ];
 
 // Install: cache static assets
@@ -61,7 +61,7 @@ self.addEventListener('fetch', event => {
 
           // For navigation requests, return cached index.html
           if (request.mode === 'navigate') {
-            return caches.match('/cotizador/index.html');
+            return caches.match('/index.html');
           }
 
           return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });

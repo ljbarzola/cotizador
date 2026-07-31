@@ -35,7 +35,7 @@
 **RLS (Row Level Security):**
 
 - `profiles`: Los usuarios ven solo su perfil. Admin puede ver todos.
-- `equipos/materiales/servicios`: Lectura publica, escritura solo admin.
+- `equipos/materiales/servicios`: Lectura publica, escritura publica (app).
 - `saved_quotes`: Admin ve todas, vendedor solo las suyas.
 
 **Estados de cotizacion:** borrador → enviada → vista → aceptada → rechazada → vencida
@@ -82,7 +82,7 @@ Cotizador/
 │   ├── sw.js                      # Service worker (offline cache)
 │   └── favicon.svg
 ├── .env                        # Variables de entorno (gitignored)
-├── vite.config.js              # Config Vite (base: /cotizador/)
+├── vite.config.js              # Config Vite (base: /)
 └── package.json
 ```
 
@@ -92,7 +92,7 @@ Cotizador/
 2. **Perfiles**: Tabla `profiles` con trigger auto-create en `auth.users`. Roles: admin / vendedor.
 3. **Catalogo desde Google Sheets**: Sincronizacion automatica de 3 pestañas del Google Sheet a tablas Supabase via `sync.js`.
 4. **Visor de catalogo**: Modal de solo lectura (todos los usuarios). Busqueda + filtro por subcategoria.
-5. **Editor de catalogo**: Solo admin. Edicion inline, agregar/eliminar productos, batch save a Supabase.
+5. **Editor de catalogo**: Todos los usuarios pueden editar. Edicion inline, agregar/eliminar productos, batch save a Supabase. Select de categoría obligatorio para mostrar columnas específicas por tabla.
 6. **Carrito**: Agregar items, cantidades, eliminar, totales con IVA 15%.
 7. **Cotizador vs PDF (Cliente)**:
    - **Cotizador (pantalla)** ve: #, Descripción, Und, Costo Unit. (=costo REAL, sin ganancia), Cant, Costo Total (=Costo Unit.×Cant), Ganancia (=margen prov.×Cant, oculta en PDF), PVP (=Costo Total+Ganancia, oculta en PDF), Inst, ✕.
@@ -134,7 +134,7 @@ Cotizador/
 
 ```bash
 npm install
-npm run dev        # Dev server en http://localhost:5174 (vite.config.js: base /cotizador/)
+npm run dev        # Dev server en http://localhost:5174 (vite.config.js: base /)
 npm run build      # Build a dist/
 npm run preview    # Preview del build
 npm run lint       # ESLint check

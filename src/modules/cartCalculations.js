@@ -4,20 +4,36 @@
 
 /**
  * Calculate item-level totals (PVP, IVA, installation) for all cart items.
- * Handles both regular items and kit components.
+ * Handles regular items, kit components, and installation services.
  * @param {Array<Object>} cart - Cart items array
  * @param {Array<Object>} catalog - Full product catalog
  * @param {Function} calcItemPriceFn - Pricing function (calcItemPrice)
  * @param {Function} getSupplierMarginFn - Margin lookup function
  * @param {number} installationMarginPct - Global installation margin %
- * @returns {{subtotalEquipo: number, totalIva: number, totalInstalacion: number}}
+ * @param {Function} calcInstallServicePriceFn - Install service pricing function
+ * @returns {{subtotalEquipo: number, totalIva: number, totalInstalacion: number, totalInstalacionesCat: number}}
  */
-export function calcItemTotals(cart, catalog, calcItemPriceFn, getSupplierMarginFn, installationMarginPct) {
+export function calcItemTotals(
+  cart,
+  catalog,
+  calcItemPriceFn,
+  getSupplierMarginFn,
+  installationMarginPct,
+  calcInstallServicePriceFn
+) {
   let subtotalEquipo = 0;
   let totalIva = 0;
   let totalInstalacion = 0;
+  let totalInstalacionesCat = 0;
 
   cart.forEach(c => {
+    if (c.isInstallService) {
+      if (calcInstallServicePriceFn) {
+        const pricing = calcInstallServicePriceFn(c, installationMarginPct);
+        totalInstalacionesCat += pricing.total * (c.qty || 1);
+      }
+      return;
+    }
     if (c.isKit) {
       (c.kitComponents || []).forEach(cc => {
         const it = catalog[cc.catalogIdx];
@@ -51,7 +67,7 @@ export function calcItemTotals(cart, catalog, calcItemPriceFn, getSupplierMargin
     totalInstalacion += pricing.instalacionPrice;
   });
 
-  return { subtotalEquipo, totalIva, totalInstalacion };
+  return { subtotalEquipo, totalIva, totalInstalacion, totalInstalacionesCat };
 }
 
 /**
@@ -79,11 +95,26 @@ export function calcDiscount(totalGeneral, discountType, discountValue) {
  * @param {Function} calcItemPriceFn - Pricing function
  * @param {Function} getSupplierMarginFn - Margin lookup function
  * @param {number} installationMarginPct - Global installation margin %
+ * @param {Function} calcInstallServicePriceFn - Install service pricing function
  * @returns {number} Subtotal amount
  */
-export function calcSubtotal(cart, catalog, calcItemPriceFn, getSupplierMarginFn, installationMarginPct) {
+export function calcSubtotal(
+  cart,
+  catalog,
+  calcItemPriceFn,
+  getSupplierMarginFn,
+  installationMarginPct,
+  calcInstallServicePriceFn
+) {
   let subtotal = 0;
   cart.forEach(c => {
+    if (c.isInstallService) {
+      if (calcInstallServicePriceFn) {
+        const pricing = calcInstallServicePriceFn(c, installationMarginPct);
+        subtotal += pricing.total * (c.qty || 1);
+      }
+      return;
+    }
     if (c.isKit) {
       (c.kitComponents || []).forEach(cc => {
         const it = catalog[cc.catalogIdx];

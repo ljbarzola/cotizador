@@ -3,7 +3,7 @@
 
 import { currentSession } from '../state.js';
 import supabase from '../lib/supabase.js';
-import { $, escAttr, toast, showConfirm } from '../utils.js';
+import { $, fmt, escAttr, toast, showConfirm } from '../utils.js';
 
 let editorProducts = [];
 let editorChanges = {};
@@ -11,42 +11,51 @@ let editorDeleted = new Set();
 
 const EDITOR_COLS = {
   equipos: [
-    { key: 'source_id', label: 'Código', w: '90px', type: 'text' },
+    { key: 'source_id', label: 'Id', w: '90px', type: 'text' },
     { key: 'categoria', label: 'Categoría', w: '110px', type: 'text' },
     { key: 'subcategoria', label: 'Subcategoría', w: '100px', type: 'text' },
-    { key: 'producto', label: 'Descripción', w: 'auto', type: 'text' },
+    { key: 'producto', label: 'Producto / Servicio', w: 'auto', type: 'text' },
     { key: 'modelo', label: 'Modelo', w: '80px', type: 'text' },
-    { key: 'unidades', label: 'Und', w: '45px', type: 'text', placeholder: 'm, u...' },
+    { key: 'unidades', label: 'Unds', w: '45px', type: 'text', placeholder: 'm, u...' },
     { key: 'cantidad_default', label: 'Cant.', w: '50px', type: 'number', step: '1' },
     { key: 'costo_unitario', label: 'Costo Unit.', w: '70px', type: 'number' },
-    { key: 'costo_total', label: 'Costo Total', w: '70px', type: 'number' },
-    { key: 'ganancia_flag', label: 'Gan.', w: '36px', type: 'check' },
-    { key: 'instalacion_flag', label: 'Inst.', w: '36px', type: 'check' },
-    { key: 'ultima_act', label: 'Última act.', w: '80px', type: 'text' },
-    { key: 'proveedor', label: 'Proveedor', w: '80px', type: 'text' },
+    { key: 'costo_total', label: 'Costo', w: '70px', type: 'readonly' },
+    { key: 'ganancia_flag', label: 'Gan. Prov.', w: '50px', type: 'check' },
+    { key: 'instalacion_flag', label: 'Gan. Inst.', w: '50px', type: 'check' },
+    { key: 'ultima_act', label: 'ULTIMA ACT', w: '80px', type: 'text' },
+    { key: 'proveedor', label: 'PROVEEDOR', w: '80px', type: 'text' },
     { key: 'observaciones', label: 'Observaciones', w: 'auto', type: 'text' },
   ],
   materiales: [
-    { key: 'source_id', label: 'Código', w: '90px', type: 'text' },
+    { key: 'source_id', label: 'Id', w: '90px', type: 'text' },
     { key: 'categoria', label: 'Categoría', w: '110px', type: 'text' },
     { key: 'subcategoria', label: 'Subcategoría', w: '100px', type: 'text' },
-    { key: 'producto', label: 'Descripción', w: 'auto', type: 'text' },
-    { key: 'unidades', label: 'Und', w: '45px', type: 'text', placeholder: 'm, u...' },
+    { key: 'producto', label: 'Producto', w: 'auto', type: 'text' },
+    { key: 'unidades', label: 'Unds', w: '45px', type: 'text', placeholder: 'm, u...' },
     { key: 'cantidad_default', label: 'Cant.', w: '50px', type: 'number', step: '1' },
     { key: 'costo_unitario', label: 'Costo Unit.', w: '70px', type: 'number' },
-    { key: 'costo_total', label: 'Costo Total', w: '70px', type: 'number' },
-    { key: 'ganancia_flag', label: 'Gan.', w: '36px', type: 'check' },
-    { key: 'instalacion_flag', label: 'Inst.', w: '36px', type: 'check' },
+    { key: 'costo_total', label: 'Costo', w: '70px', type: 'readonly' },
+    { key: 'ganancia_flag', label: 'Gan. Prov.', w: '50px', type: 'check' },
+    { key: 'instalacion_flag', label: 'Gan. Inst.', w: '50px', type: 'check' },
     { key: 'observaciones', label: 'Observaciones', w: 'auto', type: 'text' },
   ],
   servicios: [
-    { key: 'source_id', label: 'Código', w: '90px', type: 'text' },
+    { key: 'source_id', label: 'Id', w: '90px', type: 'text' },
     { key: 'categoria', label: 'Categoría', w: '110px', type: 'text' },
     { key: 'subcategoria', label: 'Subcategoría', w: '100px', type: 'text' },
-    { key: 'producto', label: 'Servicio', w: 'auto', type: 'text' },
-    { key: 'observaciones', label: 'Descripción', w: 'auto', type: 'text' },
-    { key: 'costo_unitario', label: 'Costo Mensual', w: '80px', type: 'number' },
-    { key: 'costo_total', label: 'Costo Anual', w: '80px', type: 'number' },
+    { key: 'servicio', label: 'Servicio', w: 'auto', type: 'text' },
+    { key: 'descripcion', label: 'Descripción', w: 'auto', type: 'text' },
+    { key: 'costo_mensual', label: 'Costo Mensual', w: '80px', type: 'number' },
+    { key: 'costo_anual', label: 'Costo Anual', w: '80px', type: 'number' },
+    { key: 'observaciones', label: 'Observaciones', w: 'auto', type: 'text' },
+  ],
+  instalaciones: [
+    { key: 'source_id', label: 'Id', w: '90px', type: 'text' },
+    { key: 'categoria', label: 'Categoría', w: '110px', type: 'text' },
+    { key: 'subcategoria', label: 'Subcategoría', w: '100px', type: 'text' },
+    { key: 'servicio', label: 'Servicio', w: 'auto', type: 'text' },
+    { key: 'costo_unitario', label: 'Costo', w: '80px', type: 'number' },
+    { key: 'observaciones', label: 'Observaciones', w: 'auto', type: 'text' },
   ],
 };
 
@@ -88,10 +97,11 @@ export async function closeCatalogEditor() {
 export async function loadEditorProducts() {
   $('editorBody').innerHTML = '<tr><td colspan="15" style="text-align:center;padding:20px;">Cargando...</td></tr>';
   try {
-    const [eqRes, mtRes, svRes] = await Promise.all([
+    const [eqRes, mtRes, svRes, instRes] = await Promise.all([
       supabase.from('equipos').select('*').order('categoria'),
       supabase.from('materiales').select('*').order('categoria'),
       supabase.from('servicios').select('*').order('categoria'),
+      supabase.from('instalaciones').select('*').order('servicio'),
     ]);
     editorProducts = [];
     (eqRes.data || []).forEach(r =>
@@ -104,7 +114,9 @@ export async function loadEditorProducts() {
         modelo: r.modelo,
         producto: r.producto,
         unidades: r.unidades,
+        cantidad_default: r.cantidad_default ?? 1,
         costo_unitario: r.costo_unitario,
+        costo_total: r.costo_total ?? 0,
         ganancia_flag: r.ganancia_flag,
         instalacion_flag: r.instalacion_flag,
         ultima_act: r.ultima_act,
@@ -119,14 +131,13 @@ export async function loadEditorProducts() {
         source_id: r.source_id,
         categoria: r.categoria,
         subcategoria: r.subcategoria,
-        modelo: '',
         producto: r.producto,
         unidades: r.unidades,
+        cantidad_default: r.cantidad_default ?? 1,
         costo_unitario: r.costo_unitario,
+        costo_total: r.costo_total ?? 0,
         ganancia_flag: r.ganancia_flag,
         instalacion_flag: r.instalacion_flag,
-        ultima_act: null,
-        proveedor: '',
         observaciones: r.observaciones,
       })
     );
@@ -137,15 +148,23 @@ export async function loadEditorProducts() {
         source_id: r.source_id,
         categoria: r.categoria,
         subcategoria: r.subcategoria,
-        modelo: '',
-        producto: r.servicio,
-        unidades: '',
-        costo_unitario: r.costo_mensual,
-        ganancia_flag: false,
-        instalacion_flag: false,
-        ultima_act: null,
-        proveedor: '',
-        observaciones: r.descripcion || r.observaciones,
+        servicio: r.servicio,
+        descripcion: r.descripcion || '',
+        costo_mensual: r.costo_mensual,
+        costo_anual: r.costo_anual,
+        observaciones: r.observaciones || '',
+      })
+    );
+    (instRes.data || []).forEach(r =>
+      editorProducts.push({
+        _table: 'instalaciones',
+        id: r.id,
+        source_id: r.source_id,
+        categoria: r.categoria || 'INSTALACIONES',
+        subcategoria: r.subcategoria || '',
+        servicio: r.servicio,
+        costo_unitario: r.costo_unitario,
+        observaciones: r.observaciones || '',
       })
     );
     editorChanges = {};
@@ -168,18 +187,23 @@ export function renderEditorTable() {
     $('editorHead').innerHTML =
       '<tr><th colspan="15" style="text-align:center;padding:20px;color:var(--muted);">Selecciona una categoría para ver las columnas</th></tr>';
     $('editorBody').innerHTML =
-      '<tr><td colspan="15" style="text-align:center;padding:20px;color:var(--muted);">Selecciona Equipos, Materiales o Servicios arriba</td></tr>';
+      '<tr><td colspan="15" style="text-align:center;padding:20px;color:var(--muted);">Selecciona Equipos, Materiales, Servicios o Instalaciones arriba</td></tr>';
     $('editorCount').textContent = '';
     return;
   }
-  const tableMap = { equipos: 'equipos', materiales: 'materiales', servicios: 'servicios' };
+  const tableMap = {
+    equipos: 'equipos',
+    materiales: 'materiales',
+    servicios: 'servicios',
+    instalaciones: 'instalaciones',
+  };
   const cols = getEditorCols(cat);
   let filtered = editorProducts.filter(p => p._table === tableMap[cat]);
   if (q)
     filtered = filtered.filter(
       p =>
         (p.source_id || '').toLowerCase().includes(q) ||
-        (p.producto || '').toLowerCase().includes(q) ||
+        (p.producto || p.servicio || '').toLowerCase().includes(q) ||
         (p.subcategoria || '').toLowerCase().includes(q) ||
         (p.modelo || '').toLowerCase().includes(q)
     );
@@ -205,7 +229,9 @@ export function renderEditorTable() {
       const g = f => (ch[f] !== undefined ? ch[f] : (p[f] ?? ''));
       let cells = '';
       cols.forEach(c => {
-        if (c.type === 'check') {
+        if (c.type === 'readonly') {
+          cells += `<td style="padding:4px 6px;color:var(--muted);font-size:12px;">${fmt(g(c.key))}</td>`;
+        } else if (c.type === 'check') {
           cells += `<td style="text-align:center;"><input type="checkbox" ${g(c.key) ? 'checked' : ''} onchange="editorField(${idx},'${c.key}',this.checked)"></td>`;
         } else if (c.type === 'number') {
           cells += `<td><input type="number" step="${c.step || '0.01'}" value="${g(c.key) || (c.key === 'cantidad_default' ? 1 : 0)}" onchange="editorField(${idx},'${c.key}',parseFloat(this.value)||${c.key === 'cantidad_default' ? 1 : 0})"></td>`;
@@ -266,33 +292,55 @@ export function addNewProduct() {
     toast('Selecciona una categoría primero', 'warning');
     return;
   }
-  const tableMap = { equipos: 'equipos', materiales: 'materiales', servicios: 'servicios' };
+  const tableMap = {
+    equipos: 'equipos',
+    materiales: 'materiales',
+    servicios: 'servicios',
+    instalaciones: 'instalaciones',
+  };
   const newIdx = editorProducts.length;
+  const base = {
+    _table: tableMap[cat],
+    id: null,
+    source_id: '',
+    categoria: cat === 'instalaciones' ? 'INSTALACIONES' : '',
+    subcategoria: '',
+    observaciones: '',
+  };
   const defaults = {
     equipos: {
       modelo: '',
+      producto: '',
       unidades: '',
+      costo_unitario: 0,
+      costo_total: 0,
+      cantidad_default: 1,
       ganancia_flag: false,
       instalacion_flag: false,
       ultima_act: null,
       proveedor: '',
     },
-    materiales: { modelo: '', unidades: '', ganancia_flag: false, instalacion_flag: false, proveedor: '' },
-    servicios: { modelo: '', unidades: '', ganancia_flag: false, instalacion_flag: false, proveedor: '' },
+    materiales: {
+      producto: '',
+      unidades: '',
+      costo_unitario: 0,
+      costo_total: 0,
+      cantidad_default: 1,
+      ganancia_flag: false,
+      instalacion_flag: false,
+    },
+    servicios: {
+      servicio: '',
+      descripcion: '',
+      costo_mensual: 0,
+      costo_anual: 0,
+    },
+    instalaciones: {
+      servicio: '',
+      costo_unitario: 0,
+    },
   };
-  editorProducts.push({
-    _table: tableMap[cat],
-    id: null,
-    source_id: '',
-    categoria: '',
-    subcategoria: '',
-    producto: '',
-    costo_unitario: 0,
-    costo_total: 0,
-    observaciones: '',
-    cantidad_default: 1,
-    ...defaults[cat],
-  });
+  editorProducts.push({ ...base, ...defaults[cat] });
   editorChanges[newIdx] = {};
   renderEditorTable();
   $('editorTable').parentElement.scrollTop = $('editorTable').parentElement.scrollHeight;
@@ -307,6 +355,21 @@ export async function saveCatalogEdits() {
     toast('Inicia sesión primero', 'danger');
     return;
   }
+  const {
+    data: { session },
+    error: sessErr,
+  } = await supabase.auth.getSession();
+  if (sessErr || !session) {
+    toast('Sesión expirada. Inicia sesión de nuevo.', 'danger');
+    console.error('[EDITOR] Session invalid:', sessErr);
+    return;
+  }
+  const changesCount = Object.keys(editorChanges).length;
+  const deleteCount = editorDeleted.size;
+  if (changesCount === 0 && deleteCount === 0) {
+    toast('No hay cambios para guardar', 'info');
+    return;
+  }
   const btn = document.querySelector('#catalogEditorModal .btn-primary');
   btn.disabled = true;
   btn.textContent = 'Guardando...';
@@ -315,7 +378,10 @@ export async function saveCatalogEdits() {
       const p = editorProducts[idx];
       if (p.id) {
         const { error } = await supabase.from(p._table).delete().eq('id', p.id);
-        if (error) throw error;
+        if (error) {
+          console.error(`[EDITOR] Delete failed for ${p._table} id=${p.id}:`, error);
+          throw error;
+        }
       }
     }
     for (const [idxStr, changes] of Object.entries(editorChanges)) {
@@ -323,8 +389,14 @@ export async function saveCatalogEdits() {
       const p = editorProducts[idx];
       if (editorDeleted.has(idx)) continue;
       if (p.id) {
-        const { error } = await supabase.from(p._table).update(changes).eq('id', p.id);
-        if (error) throw error;
+        const { data, error } = await supabase.from(p._table).update(changes).eq('id', p.id).select();
+        if (error) {
+          console.error(`[EDITOR] Update failed for ${p._table} id=${p.id}:`, error, 'changes:', changes);
+          throw error;
+        }
+        if (!data || data.length === 0) {
+          console.warn(`[EDITOR] Update returned 0 rows for ${p._table} id=${p.id} — RLS or missing row?`, changes);
+        }
       }
     }
     const inserts = [];
@@ -340,15 +412,16 @@ export async function saveCatalogEdits() {
     }
     for (const ins of inserts) {
       const { error } = await supabase.from(ins.table).insert(ins.data);
-      if (error) throw error;
+      if (error) {
+        console.error(`[EDITOR] Insert failed for ${ins.table}:`, error, ins.data);
+        throw error;
+      }
     }
-    toast(
-      `✓ Guardado: ${Object.keys(editorChanges).length} editados, ${inserts.length} nuevos, ${editorDeleted.size} eliminados`,
-      'success'
-    );
+    toast(`✓ Guardado: ${changesCount} editados, ${inserts.length} nuevos, ${deleteCount} eliminados`, 'success');
     await loadEditorProducts();
   } catch (e) {
-    toast('Error: ' + e.message, 'danger');
+    console.error('[EDITOR] Save error:', e);
+    toast('Error al guardar: ' + e.message, 'danger');
   } finally {
     btn.disabled = false;
     btn.textContent = '💾 Guardar cambios';

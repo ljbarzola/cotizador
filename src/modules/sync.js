@@ -5,6 +5,7 @@ const SHEETS = [
   { name: 'PRECIOS EQUIPOS BD', table: 'equipos', type: 'equipo' },
   { name: 'PRECIOS MATERIALES BD', table: 'materiales', type: 'material' },
   { name: 'PRECIOS SERVICIOS BD', table: 'servicios', type: 'servicio' },
+  { name: 'INSTALACIÓN BD', table: 'instalaciones', type: 'instalacion' },
 ];
 
 let syncLog = [];
@@ -79,7 +80,7 @@ function flag(v) {
 }
 
 // Exported for testing
-export { num, txt, flag, parseCsvRows, buildEquipo, buildMaterial, buildServicio };
+export { num, txt, flag, parseCsvRows, buildEquipo, buildMaterial, buildServicio, buildInstalacion };
 
 // --- HEADER MAPS CORREGIDOS ---
 // IMPORTANTE: Los keys NO deben tener tildes porque la normalización las elimina.
@@ -180,6 +181,20 @@ function buildServicio(mapped) {
   };
 }
 
+// INSTALACIONES CSV: columnas positionales (sin headers formales)
+// Columna 1: servicio (descripción), Columna 2: costo_unitario
+
+function buildInstalacion(mapped) {
+  return {
+    source_id: txt(mapped.source_id) || null,
+    categoria: txt(mapped.categoria) || 'INSTALACIONES',
+    subcategoria: txt(mapped.subcategoria) || '',
+    servicio: txt(mapped.servicio),
+    costo_unitario: num(mapped.costo_unitario),
+    observaciones: txt(mapped.observaciones) || '',
+  };
+}
+
 // Detecta columnas existentes de una tabla
 async function getTableColumns(tableName) {
   const { data, error } = await supabase.from(tableName).select('*').limit(1);
@@ -213,7 +228,7 @@ async function getTableColumns(tableName) {
 const V3_2_COLUMNS = ['ganancia_flag', 'instalacion_flag', 'costo_unitario', 'cantidad_default', 'costo_total'];
 
 // Filtra un objeto row para que solo incluya columnas que existen en la tabla
-function filterRowToColumns(row, validColumns) {
+function filterRowToColumns(row, validColumns, sourceId) {
   if (!validColumns) {
     const filtered = {};
     for (const key of Object.keys(row)) {
@@ -222,8 +237,16 @@ function filterRowToColumns(row, validColumns) {
     return filtered;
   }
   const filtered = {};
+  const dropped = [];
   for (const key of Object.keys(row)) {
-    if (validColumns.includes(key)) filtered[key] = row[key];
+    if (validColumns.includes(key)) {
+      filtered[key] = row[key];
+    } else if (key !== '_table') {
+      dropped.push(key);
+    }
+  }
+  if (dropped.length > 0 && sourceId) {
+    log(`  ⚠ ${sourceId}: columnas omitidas (${dropped.join(', ')}) — no existen en la tabla`, 'warn');
   }
   return filtered;
 }
@@ -313,28 +336,40 @@ export async function syncFromGoogleSheets(onProgress, signal) {
       sheetLog.downloaded = csvRows.length - 1;
 
       const headerFields = csvRows[0];
-      const headerMapConfig =
-        sheet.table === 'equipos'
-          ? EQUIPOS_HEADER_MAP
-          : sheet.table === 'materiales'
-            ? MATERIALES_HEADER_MAP
-            : SERVICIOS_HEADER_MAP;
 
-      const posToDbField = [];
-      for (let i = 0; i < headerFields.length; i++) {
-        const normalized = headerFields[i]
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .trim();
-        posToDbField.push(headerMapConfig[normalized] || null);
+      // INSTALACIONES: position-based mapping (no proper headers)
+      let posToDbField = [];
+      let builder;
+      if (sheet.table === 'instalaciones') {
+        // The sheet has no headers — row 0 is data, not headers
+        // Use all rows as data, map by position: col0=servicio, col1=costo_unitario
+        builder = buildInstalacion;
+        // Treat first row as data too (no header row in this sheet)
+        sheetLog.downloaded = csvRows.length;
+      } else {
+        const headerMapConfig =
+          sheet.table === 'equipos'
+            ? EQUIPOS_HEADER_MAP
+            : sheet.table === 'materiales'
+              ? MATERIALES_HEADER_MAP
+              : SERVICIOS_HEADER_MAP;
+
+        for (let i = 0; i < headerFields.length; i++) {
+          const normalized = headerFields[i]
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+          posToDbField.push(headerMapConfig[normalized] || null);
+        }
+
+        builder =
+          sheet.table === 'equipos' ? buildEquipo : sheet.table === 'materiales' ? buildMaterial : buildServicio;
       }
 
-      const builder =
-        sheet.table === 'equipos' ? buildEquipo : sheet.table === 'materiales' ? buildMaterial : buildServicio;
-
       const csvItems = [];
-      for (let i = 1; i < csvRows.length; i++) {
+      const startRow = sheet.table === 'instalaciones' ? 0 : 1;
+      for (let i = startRow; i < csvRows.length; i++) {
         if (signal && signal.aborted) {
           aborted = true;
           break;
@@ -343,8 +378,16 @@ export async function syncFromGoogleSheets(onProgress, signal) {
         if (fields.length < 2 || !fields[0]) continue;
 
         const mapped = {};
-        for (let j = 0; j < fields.length; j++) {
-          if (posToDbField[j]) mapped[posToDbField[j]] = fields[j];
+        if (sheet.table === 'instalaciones') {
+          // Position-based: col0=servicio, col1=costo_unitario, col2=observaciones (optional)
+          mapped.servicio = fields[0] || '';
+          mapped.costo_unitario = fields[1] || '0';
+          mapped.observaciones = fields[2] || '';
+          mapped.source_id = 'INST-' + String(i + 1).padStart(3, '0');
+        } else {
+          for (let j = 0; j < fields.length; j++) {
+            if (posToDbField[j]) mapped[posToDbField[j]] = fields[j];
+          }
         }
         if (!mapped.source_id) continue;
 
@@ -393,7 +436,7 @@ export async function syncFromGoogleSheets(onProgress, signal) {
 
       if (toInsert.length > 0) {
         if (onProgress) onProgress(`Insertando ${toInsert.length} nuevos en ${sheet.name}...`);
-        const validInserts = toInsert.map(r => filterRowToColumns(r, tableColumns[sheet.table]));
+        const validInserts = toInsert.map(r => filterRowToColumns(r, tableColumns[sheet.table], r.source_id));
         const { error } = await supabase.from(sheet.table).insert(validInserts);
         if (error) {
           log(`${sheet.name}: error insertando ${toInsert.length} filas: ${error.message}`, 'error');
@@ -409,7 +452,7 @@ export async function syncFromGoogleSheets(onProgress, signal) {
           aborted = true;
           break;
         }
-        const validRow = filterRowToColumns(newRow, tableColumns[sheet.table]);
+        const validRow = filterRowToColumns(newRow, tableColumns[sheet.table], source_id);
         const { error } = await supabase.from(sheet.table).update(validRow).eq('id', id);
         if (error) {
           log(`  ${source_id} ERROR: ${error.message}`, 'error');
@@ -577,4 +620,20 @@ export function getCategoryHierarchy(catalog) {
     result[cat] = { subcategories: [...info.subcategories].sort(), count: info.count };
   }
   return result;
+}
+
+// ---- Installation services catalog ----
+
+export async function loadAllInstalaciones() {
+  const { data, error } = await supabase.from('instalaciones').select('*').order('servicio');
+  if (error) throw error;
+  return (data || []).map(r => ({
+    id: r.id,
+    sourceId: r.source_id || '',
+    category: r.categoria || 'INSTALACIONES',
+    subcategory: r.subcategoria || '',
+    description: r.servicio || '',
+    cost: num(r.costo_unitario),
+    observations: r.observaciones || '',
+  }));
 }

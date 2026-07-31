@@ -182,8 +182,10 @@
             <!-- ENCABEZADO PRINT-ONLY -->
             <div class="print-only print-header">
               <div class="print-logo" id="printLogo"></div>
-              <div class="empresa-info">Tel: 0980147238</div>
-              <div class="print-client-name" id="printHeaderClientName"></div>
+              <div class="print-header-right">
+                <div class="print-empresa-title">Cotizador GEMESEG</div>
+                <div class="empresa-info">📞 +593 99 897 4909</div>
+              </div>
             </div>
 
             <div class="print-only print-cot-info">
@@ -250,19 +252,24 @@
 
             <!-- DATOS CLIENTE PRINT -->
             <div class="print-only print-cliente">
-              <div class="row"><span class="label">Cliente:</span> <span id="printClientName">—</span></div>
-              <div class="row"><span class="label">RUC / Cédula:</span> <span id="printClientRuc">—</span></div>
-              <div class="row"><span class="label">Dirección:</span> <span id="printClientAddress">—</span></div>
-              <div class="row"><span class="label">Contacto:</span> <span id="printClientContact">—</span></div>
-              <div class="row"><span class="label">Teléfono:</span> <span id="printClientPhone">—</span></div>
-              <div class="row"><span class="label">Email:</span> <span id="printClientEmail">—</span></div>
+              <div class="print-cliente-grid">
+                <div class="row"><span class="label">Cliente:</span> <span id="printClientName">—</span></div>
+                <div class="row"><span class="label">RUC / Cédula:</span> <span id="printClientRuc">—</span></div>
+                <div class="row"><span class="label">Teléfono:</span> <span id="printClientPhone">—</span></div>
+                <div class="row"><span class="label">Dirección:</span> <span id="printClientAddress">—</span></div>
+                <div class="row"><span class="label">Contacto:</span> <span id="printClientContact">—</span></div>
+                <div class="row"><span class="label">Email:</span> <span id="printClientEmail">—</span></div>
+              </div>
             </div>
 
             <!-- ITEMS -->
             <div class="quote-section">
               <div class="quote-section-header">
                 <h2>🛒 Detalle de la cotización</h2>
-                <span id="itemsCount" style="font-size: 12px; color: var(--muted)">0 ítems</span>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <span id="itemsCount" style="font-size: 12px; color: var(--muted)">0 ítems</span>
+                  <button class="btn btn-sm btn-primary" onclick="openInstallServicePicker()" style="font-size:11px;padding:4px 10px;">🔧 + Instalación</button>
+                </div>
               </div>
               <div class="quote-section-body">
                 <div id="itemsContainer">
@@ -272,6 +279,7 @@
                     <div style="margin-top: 4px; font-size: 11px">
                       Busca y agrega productos del catálogo (panel izquierdo)
                     </div>
+                    <button class="btn btn-sm btn-primary" onclick="openInstallServicePicker()" style="margin-top:10px;font-size:12px;">🔧 Agregar servicio de instalación</button>
                   </div>
                 </div>
               </div>
@@ -449,12 +457,28 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             >
               <option value="">Todas las subcategorías</option>
             </select>
+            <button
+              class="btn btn-ghost viewer-tab-btn"
+              id="viewerTabProducts"
+              onclick="switchViewerTab('products')"
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--primary); color: var(--primary); font-weight: 600"
+            >
+              📦 Productos
+            </button>
+            <button
+              class="btn btn-ghost viewer-tab-btn"
+              id="viewerTabInstall"
+              onclick="switchViewerTab('install')"
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
+            >
+              🔧 Instalaciones
+            </button>
             <span id="viewerCount" style="font-size: 11px; color: var(--muted)"></span>
             <button
               class="btn btn-ghost"
               id="btnSyncCatalog"
               onclick="openSyncPanel()"
-              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text); display: none"
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
             >
               🔄 Sincronizar Sheet
             </button>
@@ -465,7 +489,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
                 closeCatalogViewer();
                 openCatalogEditor();
               "
-              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text); display: none"
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
             >
               ✏️ Editar catálogo
             </button>
@@ -589,12 +613,12 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
       </div>
     </div>
 
-    <!-- MODAL: EDITOR DE CATÁLOGO (solo admin) -->
+    <!-- MODAL: EDITOR DE CATÁLOGO -->
     <div class="modal-backdrop" id="catalogEditorModal">
       <div class="modal" style="max-width: 95vw; height: 90vh; display: flex; flex-direction: column">
         <div class="modal-header">
           <h2>
-            ✏️ Editor de catálogo <span style="font-size: 12px; font-weight: 400; color: var(--muted)">(Admin)</span>
+            ✏️ Editor de catálogo
           </h2>
           <button class="modal-close" onclick="closeCatalogEditor()">✕</button>
         </div>
@@ -618,6 +642,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
               <option value="equipos">Equipos</option>
               <option value="materiales">Materiales</option>
               <option value="servicios">Servicios</option>
+              <option value="instalaciones">🔧 Instalaciones</option>
             </select>
             <input
               type="text"
@@ -1046,7 +1071,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">🔄</span><span class="help-title">10. Sincronizar catálogo (Admin)</span
+              <span class="help-icon">🔄</span><span class="help-title">10. Sincronizar catálogo</span
               ><span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
@@ -1298,6 +1323,52 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
       </div>
     </div>
 
+    <!-- MODAL: PICKER SERVICIOS INSTALACIÓN -->
+    <div class="modal-backdrop" id="installServicePickerModal">
+      <div class="modal" style="max-width: 600px">
+        <div class="modal-header">
+          <h2>🔧 Servicios de instalación</h2>
+          <button class="modal-close" onclick="closeInstallServicePicker()">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="text" id="installServiceSearch" placeholder="Buscar servicio..." style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;margin-bottom:10px;" oninput="renderInstallServiceList()">
+          <div id="installServiceList"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeInstallServicePicker()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: EDITAR SERVICIO INSTALACIÓN -->
+    <div class="modal-backdrop" id="installServiceEditorModal">
+      <div class="modal" style="max-width: 400px">
+        <div class="modal-header">
+          <h2>🔧 Editar servicio de instalación</h2>
+          <button class="modal-close" onclick="closeInstallServiceEditor()">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="iseIdx" value="">
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Servicio</label>
+            <div id="iseDesc" style="font-size:14px;font-weight:600;"></div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Costo base</label>
+            <div id="iseCost" style="font-size:14px;"></div>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Cantidad</label>
+            <input type="number" id="iseQty" min="1" step="1" value="1" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeInstallServiceEditor()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveInstallServiceEditor()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
     <!-- TOAST -->
     <div class="toast" id="toast"></div>
 
@@ -1305,10 +1376,9 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/cotizador/sw.js').catch(() => {});
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
         });
       }
     </script>
   </body>
->>>>>>> b714499 (feat: audit improvements - kit search, test dedup, cartCalculations, escAttr fix, help section)
 </html>

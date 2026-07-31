@@ -11,18 +11,19 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Initialize quote/template module
   initQuote();
   // Logo loading - two different logos
-  const LOGO_LOGIN = '/cotizador/content/logo-gemeseg-back-white.png';
-  const LOGO_APP = '/cotizador/content/logo-gemeseg-back-blue.png';
-  const LOGO_PRINT = '/cotizador/content/logo-gemeseg-back-white.png';
+  const LOGO_LOGIN = '/content/logo-gemeseg-back-white.png';
+  const LOGO_APP = '/content/logo-gemeseg-back-blue.png';
+  const LOGO_PRINT = '/content/logo-gemeseg-back-white.png';
   const FALLBACK_LOGIN = 'GE<span class="m">M</span>ESEG';
   const FALLBACK_APP = 'GE<span class="m">M</span>ESEG <span class="brand-sub">Tecnología</span>';
 
   async function tryLoadLogo(path) {
-    try {
-      const res = await fetch(path, { method: 'HEAD' });
-      if (res.ok) return path;
-    } catch {}
-    return null;
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(path);
+      img.onerror = () => resolve(null);
+      img.src = path;
+    });
   }
 
   const [logoLogin, logoApp, logoPrint] = await Promise.all([
@@ -34,6 +35,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const loginLogo = document.getElementById('loginLogo');
   const topbarLogo = document.getElementById('topbarLogo');
   const printLogo = document.getElementById('printLogo');
+  const printFooterLogo = document.getElementById('printFooterLogo');
 
   if (loginLogo)
     loginLogo.innerHTML = logoLogin
@@ -47,6 +49,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     printLogo.innerHTML = logoPrint
       ? `<img src="${logoPrint}" alt="GEMESEG" class="logo-img logo-img-print">`
       : FALLBACK_LOGIN;
+
+  if (printFooterLogo)
+    printFooterLogo.innerHTML = logoPrint
+      ? `<img src="${logoPrint}" alt="GEMESEG" class="logo-img logo-img-print-footer">`
+      : '';
 
   // User dropdown toggle
   const userChipToggle = document.getElementById('userChipToggle');

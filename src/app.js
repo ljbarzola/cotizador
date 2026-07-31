@@ -1,6 +1,6 @@
-import { syncFromGoogleSheets, loadAllProducts, getSyncLog } from './modules/sync.js';
+import { syncFromGoogleSheets, loadAllProducts, loadAllInstalaciones, getSyncLog } from './modules/sync.js';
 import supabase from './lib/supabase.js';
-import { calcItemPrice, getSupplierMargin, marginBadge, quoteTotal as calcQuoteTotal } from './modules/helpers.js';
+import { calcItemPrice, calcInstallServicePrice, getSupplierMargin, marginBadge } from './modules/helpers.js';
 import { calcItemTotals, calcDiscount, calcSubtotal } from './modules/cartCalculations.js';
 import {
   CATALOG,
@@ -25,6 +25,8 @@ import {
   historyQuotesCache,
   setHistoryQuotesCache,
   STATUS_LABELS,
+  instalacionesCatalog,
+  setInstalacionesCatalog,
 } from './state.js';
 import {
   loadKitsFromDB,
@@ -100,7 +102,6 @@ import {
   resolveConfirm,
   resolveSaveTemplate,
   generateCotNumber,
-  isAdmin,
   showSaveTemplateModal,
 } from './utils.js';
 
@@ -118,6 +119,13 @@ async function loadCatalogFromDB() {
       await loadKitsFromDB();
       generateDefaultKits();
       generateDefaultTemplates(CATALOG);
+      // Load installation services catalog
+      try {
+        const instalaciones = await loadAllInstalaciones();
+        setInstalacionesCatalog(instalaciones);
+      } catch (e) {
+        console.warn('No se pudo cargar catálogo de instalaciones:', e.message);
+      }
       return true;
     }
   } catch (e) {
@@ -135,7 +143,7 @@ function _getStatusLabel(s) {
 
 // === PRICING ===
 // pricing functions imported from modules/helpers.js
-// utility functions ($, fmt, toast, generateCotNumber, isAdmin) imported from utils.js
+// utility functions ($, fmt, toast, generateCotNumber) imported from utils.js
 
 // === RENDER CATÁLOGO ===
 function renderCatalog() {
@@ -196,7 +204,6 @@ function renderCatalog() {
             <span class="cat-item-supplier">${supplier}</span>
           </div>
           <div class="cat-item-details">
-            <span>Costo: <strong>${fmt(item.cost)}</strong></span>
             ${item.observations ? '<span title="' + esc(item.observations) + '">📝</span>' : ''}
           </div>
         </div>
@@ -359,6 +366,17 @@ function updateTechCost(idx, val) {
   saveDraft();
 }
 
+function updateInstallServiceQty(idx, val) {
+  const q = parseInt(val) || 1;
+  if (q <= 0) {
+    removeItem(idx);
+    return;
+  }
+  cart[idx].qty = q;
+  renderCart();
+  saveDraft();
+}
+
 function updateSupplierMarginGlobal(supplier, val) {
   const key = supplier || 'Sin proveedor';
   supplierMargins[key] = parseFloat(val) || 0;
@@ -407,6 +425,99 @@ function toggleInstallationGlobal() {
   saveDraft();
 }
 
+// === INSTALL SERVICES ===
+function openInstallServicePicker() {
+  const modal = $('installServicePickerModal');
+  if (!modal) return;
+  modal.classList.add('open');
+  renderInstallServiceList();
+}
+
+function closeInstallServicePicker() {
+  const modal = $('installServicePickerModal');
+  if (modal) modal.classList.remove('open');
+}
+
+function renderInstallServiceList() {
+  const container = $('installServiceList');
+  if (!container) return;
+  if (!instalacionesCatalog || instalacionesCatalog.length === 0) {
+    container.innerHTML =
+      '<div class="empty-state"><div class="icon">🔧</div><div>No hay servicios de instalación disponibles.</div><div style="margin-top:4px;font-size:11px;">Sincroniza el catálogo desde Google Sheets</div></div>';
+    return;
+  }
+  const searchVal = ($('installServiceSearch')?.value || '').toLowerCase();
+  const filtered = instalacionesCatalog.filter(
+    s =>
+      !searchVal ||
+      s.description.toLowerCase().includes(searchVal) ||
+      (s.observations || '').toLowerCase().includes(searchVal)
+  );
+  if (filtered.length === 0) {
+    container.innerHTML =
+      '<div class="empty-state"><div class="icon">🔍</div><div>No se encontraron servicios.</div></div>';
+    return;
+  }
+  let html = '<div class="install-service-grid">';
+  filtered.forEach(s => {
+    html += `<div class="install-service-card" onclick="addInstallServiceToCart('${esc(s.id)}')">
+      <div class="isc-desc">${esc(s.description)}</div>
+      <div class="isc-cost">${fmt(s.cost)}</div>
+    </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function addInstallServiceToCart(serviceId) {
+  const service = instalacionesCatalog.find(s => String(s.id) === String(serviceId));
+  if (!service) return;
+  const existing = cart.find(c => c.isInstallService && String(c.serviceId) === String(serviceId));
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    cart.push({
+      isInstallService: true,
+      serviceId: service.id,
+      description: service.description,
+      cost: service.cost,
+      qty: 1,
+    });
+  }
+  closeInstallServicePicker();
+  renderCart();
+  saveDraft();
+  toast('✓ ' + service.description.slice(0, 40) + ' agregado', 'success');
+}
+
+function openInstallServiceEditor(idx) {
+  const c = cart[idx];
+  if (!c || !c.isInstallService) return;
+  const modal = $('installServiceEditorModal');
+  if (!modal) return;
+  modal.classList.add('open');
+  $('iseDesc').textContent = c.description;
+  $('iseCost').textContent = fmt(c.cost);
+  $('iseQty').value = c.qty;
+  $('iseIdx').value = idx;
+}
+
+function closeInstallServiceEditor() {
+  const modal = $('installServiceEditorModal');
+  if (modal) modal.classList.remove('open');
+}
+
+function saveInstallServiceEditor() {
+  const idx = parseInt($('iseIdx').value);
+  const qty = parseInt($('iseQty').value) || 1;
+  if (cart[idx] && cart[idx].isInstallService) {
+    cart[idx].qty = qty;
+  }
+  closeInstallServiceEditor();
+  renderCart();
+  saveDraft();
+}
+
 // === RENDER CART ===
 function renderCart() {
   const container = $('itemsContainer');
@@ -435,19 +546,24 @@ function renderCart() {
   html += '<th style="width:28px;" class="print-hide-col"></th>';
   html += '</tr></thead><tbody>';
 
-  // Kits first, then individual items; maintain insertion order within each group
-  const ordered = [];
+  // Order: kits first, then install services, then individual items
+  const kits = [];
+  const installServices = [];
+  const individuals = [];
   cart.forEach((c, i) => {
-    if (c.isKit) ordered.push({ c, origIdx: i });
+    if (c.isKit) kits.push({ c, origIdx: i });
+    else if (c.isInstallService) installServices.push({ c, origIdx: i });
+    else individuals.push({ c, origIdx: i });
   });
-  cart.forEach((c, i) => {
-    if (!c.isKit) ordered.push({ c, origIdx: i });
-  });
+  const ordered = [...kits, ...installServices, ...individuals];
 
   let rowNum = 0;
-  const hasKits = ordered.some(x => x.c.isKit);
-  const hasIndividuals = ordered.some(x => !x.c.isKit);
+  const hasKits = kits.length > 0;
+  const hasInstallServices = installServices.length > 0;
+  const hasIndividuals = individuals.length > 0;
   let inKitsSection = true;
+  let inInstallSection = false;
+
   ordered.forEach(({ c, origIdx: idx }) => {
     if (c.isKit) {
       const kitComps = c.kitComponents.filter(cc => cc.catalogIdx >= 0 && cc.catalogIdx < CATALOG.length);
@@ -506,6 +622,35 @@ function renderCart() {
           <td class="print-hide-col"><button class="remove-btn" onclick="removeKitComponentFromCart(${idx}, ${compIdx})" title="Eliminar del kit">✕</button></td>
         </tr>`;
       });
+      return;
+    }
+    if (c.isInstallService) {
+      if (inKitsSection && hasKits) {
+        inKitsSection = false;
+        inInstallSection = true;
+        html += `<tr class="kit-items-separator"><td colspan="10"><div class="kit-items-divider"></div></td></tr>`;
+      } else if (!inKitsSection && !inInstallSection && hasInstallServices) {
+        inInstallSection = true;
+        html += `<tr class="kit-items-separator"><td colspan="10"><div class="kit-items-divider"></div></td></tr>`;
+      }
+      rowNum++;
+      const pricing = calcInstallServicePrice(c, installationMarginPct);
+      const total = pricing.total * c.qty;
+      html += `<tr class="install-service-row">
+        <td class="item-num">${rowNum}</td>
+        <td class="item-desc item-desc-click" onclick="openInstallServiceEditor(${idx})" title="Ver detalle">
+          <span class="item-desc-text">🔧 ${esc(c.description)}</span>
+          <small>Servicio de instalación</small>
+        </td>
+        <td class="center" style="font-size:11px;font-weight:600;color:var(--primary);">serv</td>
+        <td class="right"><span class="print-hide-col">${fmt(pricing.baseCost)}</span><span class="print-only">${fmt(pricing.total)}</span></td>
+        <td class="center"><input type="number" min="1" step="1" value="${c.qty}" class="qty-input" onchange="updateInstallServiceQty(${idx}, this.value)"></td>
+        <td class="right"><span class="print-hide-col"><strong>${fmt(pricing.baseCost * c.qty)}</strong></span><span class="print-only"><strong>${fmt(total)}</strong></span></td>
+        <td class="right print-hide-col">${pricing.ganancia > 0 ? `<span class="supplier-detail">${fmt(pricing.ganancia * c.qty)}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
+        <td class="right print-hide-col">${fmt(total)}</td>
+        <td class="center" style="color:var(--muted);">—</td>
+        <td class="print-hide-col"><button class="remove-btn" onclick="removeItem(${idx})" title="Eliminar">✕</button></td>
+      </tr>`;
       return;
     }
     if (inKitsSection) {
@@ -675,6 +820,7 @@ function renderMarginConfig() {
   installHtml += '<div class="install-toggle-group">';
   installHtml += `<span class="margin-subsection-count">${installCount} ítem(s) con flag</span>`;
   installHtml += `<button class="install-master-toggle ${installationEnabled ? 'active' : ''}" onclick="toggleInstallationGlobal()">${installationEnabled ? '🟩 Instalación ON' : ' ⬛ Instalación OFF'}</button>`;
+  installHtml += `<button class="btn btn-sm btn-primary" onclick="openInstallServicePicker()" style="margin-left:8px;">+ Servicio de instalación</button>`;
   installHtml += '</div>';
   installHtml += '</div>';
 
@@ -729,15 +875,16 @@ function renderMarginConfig() {
 
 // === TOTALS ===
 function renderTotals() {
-  const { subtotalEquipo, totalIva, totalInstalacion } = calcItemTotals(
+  const { subtotalEquipo, totalIva, totalInstalacion, totalInstalacionesCat } = calcItemTotals(
     cart,
     CATALOG,
     calcItemPrice,
     getSupplierMargin,
-    installationMarginPct
+    installationMarginPct,
+    calcInstallServicePrice
   );
 
-  const totalGeneral = subtotalEquipo + totalIva + totalInstalacion;
+  const totalGeneral = subtotalEquipo + totalIva + totalInstalacion + totalInstalacionesCat;
   const discountAmount = calcDiscount(totalGeneral, discountType, discountValue);
   const totalFinal = totalGeneral - discountAmount;
 
@@ -747,7 +894,10 @@ function renderTotals() {
   breakdownHtml += `<div class="totals-row totals-sub"><span>Subtotal (PVP + IVA)</span><span>${fmt(subtotalEquipo + totalIva)}</span></div>`;
 
   if (totalInstalacion > 0) {
-    breakdownHtml += `<div class="totals-row totals-sub totals-install"><span> Instalación</span><span>${fmt(totalInstalacion)}</span></div>`;
+    breakdownHtml += `<div class="totals-row totals-sub totals-install"><span>🔧 Instalación (items)</span><span>${fmt(totalInstalacion)}</span></div>`;
+  }
+  if (totalInstalacionesCat > 0) {
+    breakdownHtml += `<div class="totals-row totals-sub totals-install"><span>🔧 Servicios de instalación</span><span>${fmt(totalInstalacionesCat)}</span></div>`;
   }
   if (discountAmount > 0) {
     const label = discountType === 'percent' ? `Descuento (${discountValue}%)` : 'Descuento';
@@ -784,7 +934,7 @@ function updateDiscount() {
 }
 
 function getSubtotal() {
-  return calcSubtotal(cart, CATALOG, calcItemPrice, getSupplierMargin, installationMarginPct);
+  return calcSubtotal(cart, CATALOG, calcItemPrice, getSupplierMargin, installationMarginPct, calcInstallServicePrice);
 }
 
 function setModality(_m) {
@@ -1023,10 +1173,6 @@ function handleSyncClick() {
 let syncAbortController = null;
 
 function openSyncPanel() {
-  if (!isAdmin()) {
-    toast('Solo admin puede sincronizar', 'danger');
-    return;
-  }
   $('syncPanel').style.display = 'block';
   $('syncPanelStatus').textContent = '';
   $('syncPanelSummary').innerHTML = '';
@@ -1043,10 +1189,6 @@ function closeSyncPanel() {
 }
 
 async function startSync() {
-  if (!isAdmin()) {
-    toast('Solo admin', 'danger');
-    return;
-  }
   $('btnStartSync').style.display = 'none';
   $('btnStopSync').style.display = '';
   $('syncPanelStatus').textContent = 'Iniciando...';
@@ -1111,10 +1253,10 @@ function stopSync() {
 // === CATALOG VIEWER ===
 function openCatalogViewer() {
   $('catalogViewerModal').classList.add('open');
+  viewerTab = 'products';
   loadViewerProducts();
-  $('btnGoToEditor').style.display = isAdmin() ? 'inline-flex' : 'none';
-  $('btnSyncCatalog').style.display = isAdmin() ? 'inline-flex' : 'none';
   renderViewerCategories();
+  if ($('viewerTabProducts')) switchViewerTab('products');
 }
 
 function closeCatalogViewer() {
@@ -1203,11 +1345,79 @@ function renderViewerTable() {
     .join('');
 }
 
+let viewerTab = 'products';
+
+function switchViewerTab(tab) {
+  viewerTab = tab;
+  const btnProducts = $('viewerTabProducts');
+  const btnInstall = $('viewerTabInstall');
+  if (tab === 'products') {
+    btnProducts.style.borderColor = 'var(--primary)';
+    btnProducts.style.color = 'var(--primary)';
+    btnProducts.style.fontWeight = '600';
+    btnInstall.style.borderColor = 'var(--border)';
+    btnInstall.style.color = 'var(--text)';
+    btnInstall.style.fontWeight = '';
+    $('viewerCategory').style.display = '';
+    $('viewerSubcategory').style.display = '';
+    renderViewerTable();
+  } else {
+    btnInstall.style.borderColor = 'var(--primary)';
+    btnInstall.style.color = 'var(--primary)';
+    btnInstall.style.fontWeight = '600';
+    btnProducts.style.borderColor = 'var(--border)';
+    btnProducts.style.color = 'var(--text)';
+    btnProducts.style.fontWeight = '';
+    $('viewerCategory').style.display = 'none';
+    $('viewerSubcategory').style.display = 'none';
+    renderViewerInstallations();
+  }
+}
+
+function renderViewerInstallations() {
+  const q = ($('viewerSearch').value || '').toLowerCase().trim();
+  let items = instalacionesCatalog || [];
+  if (q)
+    items = items.filter(
+      s => (s.description || '').toLowerCase().includes(q) || (s.observations || '').toLowerCase().includes(q)
+    );
+  $('viewerCount').textContent = items.length + ' servicio(s) de instalación';
+  const tbody = $('viewerBody');
+  if (items.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="9" style="text-align:center;padding:20px;">No hay servicios de instalación. Sincroniza el catálogo.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items
+    .map(
+      s => `<tr>
+    <td>${s.sourceId || ''}</td>
+    <td>${s.category || ''}</td>
+    <td>${esc(s.description)}</td>
+    <td class="right">${fmt(s.cost)}</td>
+    <td class="center">—</td>
+    <td class="center">—</td>
+    <td class="right">${fmt(s.cost)}</td>
+    <td class="right">$0.00</td>
+    <td class="right">${fmt(s.cost)}</td>
+  </tr>`
+    )
+    .join('');
+}
+
 window.openCatalogViewer = openCatalogViewer;
 window.closeCatalogViewer = closeCatalogViewer;
 window.renderViewerTable = renderViewerTable;
+window.switchViewerTab = switchViewerTab;
 
 // editor functions imported from modules/editor.js
+window.openCatalogEditor = openCatalogEditor;
+window.closeCatalogEditor = closeCatalogEditor;
+window.renderEditorTable = renderEditorTable;
+window.addNewProduct = addNewProduct;
+window.saveCatalogEdits = saveCatalogEdits;
+window.editorField = editorField;
+window.editorToggleDelete = editorToggleDelete;
 
 // === BOOT ===
 async function bootApp() {
@@ -1228,7 +1438,10 @@ async function bootApp() {
     catalogPage = 1;
     renderCatalog();
   });
-  $('viewerSearch').addEventListener('input', renderViewerTable);
+  $('viewerSearch').addEventListener('input', () => {
+    if (viewerTab === 'install') renderViewerInstallations();
+    else renderViewerTable();
+  });
   $('viewerCategory').addEventListener('change', () => {
     renderViewerSubcategories($('viewerCategory').value);
     renderViewerTable();
@@ -1767,3 +1980,11 @@ window.renderCart = renderCart;
 window.renderCatalog = renderCatalog;
 window.renderMarginConfig = renderMarginConfig;
 window.saveDraft = saveDraft;
+window.openInstallServicePicker = openInstallServicePicker;
+window.closeInstallServicePicker = closeInstallServicePicker;
+window.renderInstallServiceList = renderInstallServiceList;
+window.addInstallServiceToCart = addInstallServiceToCart;
+window.openInstallServiceEditor = openInstallServiceEditor;
+window.closeInstallServiceEditor = closeInstallServiceEditor;
+window.saveInstallServiceEditor = saveInstallServiceEditor;
+window.updateInstallServiceQty = updateInstallServiceQty;

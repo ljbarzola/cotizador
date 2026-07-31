@@ -11,7 +11,7 @@ Aplicacion web para el equipo de ventas de GEMESEG. Permite buscar productos en 
 - **Login seguro**: Autenticacion con Supabase Auth. Usuarios: admin y vendedor.
 - **Catalogo desde Google Sheets**: 3 pestanas del Google Sheet se sincronizan automaticamente a 3 tablas Supabase (equipos, materiales, servicios).
 - **Visor de catalogo**: Tabla de solo lectura visible para todos los usuarios, con busqueda y filtro por subcategoria.
-- **Editor de catalogo**: Solo administradores pueden editar, agregar o eliminar productos.
+- **Editor de catalogo**: Todos los usuarios pueden editar, agregar o eliminar productos.
 - **Sistema de precios dinamico**: Margen de proveedor por producto (incluyendo productos sin proveedor), margen de instalacion global, IVA 15%.
 - **Carrito de cotizacion**: Agregar productos, cantidades, eliminar items, configurar margen por item.
 - **Guardado en la nube**: Cotizaciones se guardan en Supabase (RLS: admin ve todo, vendedor solo lo suyo).
@@ -29,7 +29,7 @@ Aplicacion web para el equipo de ventas de GEMESEG. Permite buscar productos en 
 
 1. Abrir la aplicacion en el navegador
 2. Iniciar sesion con usuario y clave (ej: `sistemas@gemeseg.com`)
-3. Sincronizar catalogo desde Google Sheets (solo admin)
+3. Sincronizar catalogo desde Google Sheets
 4. Buscar y agregar productos al carrito
 5. Completar datos del cliente
 6. Configurar margenes si es necesario
@@ -47,7 +47,7 @@ Aplicacion web para el equipo de ventas de GEMESEG. Permite buscar productos en 
 
 ```bash
 npm install
-npm run dev        # http://localhost:5174/cotizador/
+npm run dev        # http://localhost:5174/
 ```
 
 ## Despliegue

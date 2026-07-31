@@ -75,6 +75,9 @@ export let discountType = 'none';
 /** @type {number} Discount value (percentage or fixed amount) */
 export let discountValue = 0;
 
+/** @type {Array<Object>} Installation services catalog from Supabase */
+export let instalacionesCatalog = [];
+
 /** @type {Array<Object>} Shared kits list */
 export let kits = [];
 
@@ -172,6 +175,14 @@ export function setDiscountValue(v) {
  */
 export function setKits(v) {
   kits = v;
+}
+
+/**
+ * Set the installation services catalog.
+ * @param {Array<Object>} v - Array of installation service objects
+ */
+export function setInstalacionesCatalog(v) {
+  instalacionesCatalog = v;
 }
 
 /**

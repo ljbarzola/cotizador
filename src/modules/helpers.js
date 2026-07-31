@@ -97,6 +97,19 @@ export function marginBadge(item) {
 }
 
 /**
+ * Calculate price for an installation service from the catalog.
+ * No IVA, applies margin only.
+ * @param {Object} item - Install service item (cost, description)
+ * @param {number} marginPct - Margin percentage
+ * @returns {{baseCost: number, ganancia: number, total: number, iva: number}}
+ */
+export function calcInstallServicePrice(item, marginPct) {
+  const baseCost = item.cost || 0;
+  const ganancia = Math.round(baseCost * (marginPct / 100) * 100) / 100;
+  return { baseCost, ganancia, total: baseCost + ganancia, iva: 0 };
+}
+
+/**
  * Calculate the total price of a quote (all items).
  * @param {Object} q - Quote object with items array
  * @returns {number} Sum of all item totals

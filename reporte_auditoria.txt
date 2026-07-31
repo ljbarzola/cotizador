@@ -133,7 +133,7 @@ Fortalezas:
 
 Problemas:
 - Sin build size budget o visualizer
-- base: '/cotizador/' hardcodeado — rompe si se despliega en otro path
+- base: '/' hardcodeado — rompe si se despliega en otro path
 - Sin validacion de variables de entorno en build time
 
 
