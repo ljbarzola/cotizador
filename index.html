@@ -165,8 +165,7 @@
           <div id="catalogKitsTab" style="display: none">
             <div class="catalog-header">
               <div style="display: flex; justify-content: space-between; align-items: center; width: 100%">
-                <span style="font-size: 13px; color: var(--muted)">Crea y administra kits de productos</span>
-                <button class="btn btn-primary btn-sm" onclick="addNewKit()">+ Nuevo kit</button>
+                <span style="font-size: 13px; color: var(--muted)">Kits de productos disponibles</span>
               </div>
             </div>
             <div class="catalog-list" id="kitsCatalogList"></div>
@@ -416,271 +415,90 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
       </div>
     </div>
 
-    <!-- MODAL: VISOR DE CATÁLOGO (todos los usuarios) -->
+    <!-- MODAL: VISOR DE CATÁLOGO -->
     <div class="modal-backdrop" id="catalogViewerModal">
       <div class="modal" style="max-width: 95vw; height: 90vh; display: flex; flex-direction: column">
-        <div class="modal-header">
-          <h2>📦 Catálogo de productos</h2>
-          <button class="modal-close" onclick="closeCatalogViewer()">✕</button>
-        </div>
-        <div
-          class="modal-body"
-          style="flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 12px 16px"
-        >
-          <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center">
-            <input
-              type="text"
-              id="viewerSearch"
-              placeholder="Buscar código, modelo o descripción..."
-              style="
-                flex: 1;
-                min-width: 180px;
-                padding: 7px 10px;
-                border: 1px solid var(--border);
-                border-radius: 6px;
-                font-size: 12px;
-              "
-            />
-            <select
-              id="viewerCategory"
-              style="padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px"
-            >
-              <option value="">Todas las categorías</option>
-            </select>
-            <select
-              id="viewerSubcategory"
-              style="padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px"
-            >
-              <option value="">Todas las subcategorías</option>
-            </select>
-            <button
-              class="btn btn-ghost viewer-tab-btn"
-              id="viewerTabProducts"
-              onclick="switchViewerTab('products')"
-              style="font-size: 12px; padding: 7px 14px; border-color: var(--primary); color: var(--primary); font-weight: 600"
-            >
+        <div class="modal-header" style="gap:12px;">
+          <h2>📦 Catálogo</h2>
+          <div class="viewer-tabs" style="display:flex;gap:4px;margin-left:16px;">
+            <button class="viewer-tab active" id="viewerTabProducts" data-tab="products" onclick="switchViewerTab('products')">
               📦 Productos
             </button>
-            <button
-              class="btn btn-ghost viewer-tab-btn"
-              id="viewerTabInstall"
-              onclick="switchViewerTab('install')"
-              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
-            >
+            <button class="viewer-tab" id="viewerTabInstall" data-tab="install" onclick="switchViewerTab('install')">
               🔧 Instalaciones
             </button>
-            <span id="viewerCount" style="font-size: 11px; color: var(--muted)"></span>
-            <button
-              class="btn btn-ghost"
-              id="btnSyncCatalog"
-              onclick="if(viewerTab==='install'){openInstallSyncPanel()}else{openSyncPanel()}"
-              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
-            >
-              🔄 Sincronizar Sheet
-            </button>
-            <button
-              class="btn btn-ghost"
-              id="btnGoToEditor"
-              onclick="
-                closeCatalogViewer();
-                openCatalogEditor();
-              "
-              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
-            >
-              ✏️ Editar catálogo
-            </button>
-            <button
-              class="btn btn-ghost"
-              id="btnEditInstall"
-              onclick="
-                closeCatalogViewer();
-                openCatalogEditor();
-                setTimeout(() => { document.getElementById('editorCategory').value = 'instalaciones'; renderEditorTable(); }, 100);
-              "
-              style="font-size: 12px; padding: 7px 14px; border-color: var(--primary); color: var(--primary); display: none;"
-            >
-              🔧 Editar instalaciones
+            <button class="viewer-tab" id="viewerTabKits" data-tab="kits" onclick="switchViewerTab('kits')">
+              📋 Kits
             </button>
           </div>
-
-          <!-- PANEL DE SINCRONIZACIÓN -->
-          <div
-            id="syncPanel"
-            style="
-              display: none;
-              margin-bottom: 12px;
-              border: 2px solid var(--primary);
-              border-radius: 8px;
-              overflow: hidden;
-            "
-          >
-            <div
-              style="
-                background: var(--primary);
-                color: white;
-                padding: 10px 14px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-              "
-            >
-              <span style="font-weight: 600; font-size: 13px">🔄 Sincronizar desde Google Sheets</span>
-              <button
-                onclick="closeSyncPanel()"
-                style="
-                  background: rgba(255, 255, 255, 0.15);
-                  color: white;
-                  border: none;
-                  width: 24px;
-                  height: 24px;
-                  border-radius: 4px;
-                  cursor: pointer;
-                  font-size: 14px;
-                "
-              >
-                ✕
-              </button>
+          <div style="margin-left:auto;display:flex;gap:6px;">
+            <span id="viewerCount" class="viewer-result-count"></span>
+            <button class="modal-close" onclick="closeCatalogViewer()">✕</button>
+          </div>
+        </div>
+        <div class="modal-body viewer-body">
+          <!-- TOOLBAR -->
+          <div class="viewer-toolbar">
+            <div class="viewer-search">
+              <span class="viewer-search-icon">🔍</span>
+              <input
+                type="text"
+                id="viewerSearch"
+                placeholder="Buscar por código, nombre o descripción..."
+                oninput="if(viewerTab==='install'){renderViewerInstallations()}else if(viewerTab==='kits'){renderViewerKits()}else{renderViewerTable()}"
+              />
             </div>
-            <div style="padding: 12px 14px; background: #f9fafb">
-              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px">
-                <span style="font-size: 12px; color: var(--muted)">Fuente:</span>
-                <a
-                  href="https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo/edit"
-                  target="_blank"
-                  style="font-size: 12px; color: var(--primary-mid); text-decoration: underline"
-                  >📎 Abrir Google Sheet</a
-                >
-              </div>
-              <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center">
-                <button
-                  class="btn btn-primary"
-                  id="btnStartSync"
-                  onclick="startSync()"
-                  style="font-size: 12px; padding: 7px 14px"
-                >
-                  ▶ Sincronizar
-                </button>
-                <button
-                  class="btn btn-ghost"
-                  id="btnStopSync"
-                  onclick="stopSync()"
-                  style="
-                    font-size: 12px;
-                    padding: 7px 14px;
-                    border-color: var(--danger);
-                    color: var(--danger);
-                    display: none;
-                  "
-                >
-                  ⏹ Detener
-                </button>
-                <span id="syncPanelStatus" style="font-size: 12px; color: var(--muted)"></span>
-              </div>
-              <div
-                id="syncLogContainer"
-                style="
-                  background: #1f2937;
-                  border-radius: 6px;
-                  max-height: 250px;
-                  overflow-y: auto;
-                  font-family: ui-monospace, monospace;
-                  font-size: 11px;
-                "
-              >
-                <div id="syncLogEntries" style="padding: 8px 10px; color: #9ca3af">
-                  Esperando inicio de sincronización...
-                </div>
-              </div>
-              <div id="syncPanelSummary" style="margin-top: 8px; font-size: 12px; color: var(--muted)"></div>
+            <select id="viewerCategory" class="viewer-filter">
+              <option value="">Todas las categorías</option>
+            </select>
+            <select id="viewerSubcategory" class="viewer-filter">
+              <option value="">Todas las subcategorías</option>
+            </select>
+            <div class="viewer-actions" id="viewerActionsProducts">
+              <button class="btn btn-sm btn-primary" onclick="addNewItemFromViewer('product');">+ Nuevo producto</button>
+              <button class="btn btn-sm btn-ghost" onclick="openSyncPanel();">🔄 Sincronizar</button>
+            </div>
+            <div class="viewer-actions" id="viewerActionsInstall" style="display:none;">
+              <button class="btn btn-sm btn-primary" onclick="addNewItemFromViewer('install');">+ Nueva instalación</button>
+              <button class="btn btn-sm btn-ghost" onclick="openInstallSyncPanel();">🔄 Sincronizar</button>
+            </div>
+            <div class="viewer-actions" id="viewerActionsKits" style="display:none;">
+              <button class="btn btn-sm btn-primary" onclick="addNewKitFromViewer();">+ Nuevo kit</button>
             </div>
           </div>
-
-          <!-- PANEL DE SINCRONIZACIÓN INSTALACIONES -->
-          <div
-            id="installSyncPanel"
-            style="
-              display: none;
-              margin-bottom: 12px;
-              border: 2px solid #f59e0b;
-              border-radius: 8px;
-              overflow: hidden;
-            "
-          >
-            <div
-              style="
-                background: #f59e0b;
-                color: white;
-                padding: 10px 14px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-              "
-            >
-              <span style="font-weight: 600; font-size: 13px">🔧 Sincronizar instalaciones</span>
-              <button
-                onclick="closeInstallSyncPanel()"
-                style="
-                  background: rgba(255, 255, 255, 0.15);
-                  color: white;
-                  border: none;
-                  width: 24px;
-                  height: 24px;
-                  border-radius: 4px;
-                  cursor: pointer;
-                  font-size: 14px;
-                "
-              >
-                ✕
-              </button>
-            </div>
-            <div style="padding: 12px 14px; background: #f9fafb">
-              <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center">
-                <button
-                  class="btn btn-primary"
-                  id="btnStartInstallSync"
-                  onclick="startInstallSync()"
-                  style="font-size: 12px; padding: 7px 14px; background: #f59e0b; border-color: #f59e0b;"
-                >
-                  ▶ Sincronizar instalaciones
-                </button>
-                <button
-                  class="btn btn-ghost"
-                  id="btnStopInstallSync"
-                  onclick="stopInstallSync()"
-                  style="font-size: 12px; padding: 7px 14px; border-color: var(--danger); color: var(--danger); display: none;"
-                >
-                  ⏹ Detener
-                </button>
-                <span id="installSyncPanelStatus" style="font-size: 12px; color: var(--muted)"></span>
+          <!-- SYNC PANELS -->
+          <div id="syncPanel" class="viewer-sync-panel" style="display:none;">
+            <div class="viewer-sync-header"><span>🔄 Sincronizar desde Google Sheets</span><button class="btn-close-sm" onclick="closeSyncPanel()">✕</button></div>
+            <div class="viewer-sync-content">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <span style="font-size:12px;color:var(--muted);">Fuente:</span>
+                <a href="https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo/edit" target="_blank" style="font-size:12px;color:var(--primary);text-decoration:underline;">📎 Abrir Google Sheet</a>
               </div>
-              <div
-                id="installSyncLogContainer"
-                style="background: #1f2937; border-radius: 6px; max-height: 200px; overflow-y: auto; font-family: ui-monospace, monospace; font-size: 11px;"
-              >
-                <div id="installSyncLogEntries" style="padding: 8px 10px; color: #9ca3af">
-                  Esperando inicio...
-                </div>
+              <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+                <button class="btn btn-primary" id="btnStartSync" onclick="startSync()" style="font-size:12px;">▶ Sincronizar</button>
+                <button class="btn btn-ghost" id="btnStopSync" onclick="stopSync()" style="font-size:12px;border-color:var(--danger);color:var(--danger);display:none;">⏹ Detener</button>
+                <span id="syncPanelStatus" style="font-size:12px;color:var(--muted);"></span>
               </div>
-              <div id="installSyncPanelSummary" style="margin-top: 8px; font-size: 12px; color: var(--muted)"></div>
+              <div class="viewer-sync-log" id="syncLogContainer"><div id="syncLogEntries">Esperando inicio...</div></div>
+              <div id="syncPanelSummary" class="viewer-sync-summary"></div>
             </div>
           </div>
-
-          <!-- TABLA DE PRODUCTOS -->
-          <div style="flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 6px">
+          <div id="installSyncPanel" class="viewer-sync-panel" style="display:none;">
+            <div class="viewer-sync-header"><span>🔧 Sincronizar instalaciones</span><button class="btn-close-sm" onclick="closeInstallSyncPanel()">✕</button></div>
+            <div class="viewer-sync-content">
+              <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+                <button class="btn btn-primary" id="btnStartInstallSync" onclick="startInstallSync()" style="font-size:12px;">▶ Sincronizar</button>
+                <button class="btn btn-ghost" id="btnStopInstallSync" onclick="stopInstallSync()" style="font-size:12px;border-color:var(--danger);color:var(--danger);display:none;">⏹ Detener</button>
+                <span id="installSyncPanelStatus" style="font-size:12px;color:var(--muted);"></span>
+              </div>
+              <div class="viewer-sync-log" id="installSyncLogContainer"><div id="installSyncLogEntries">Esperando inicio...</div></div>
+              <div id="installSyncPanelSummary" class="viewer-sync-summary"></div>
+            </div>
+          </div>
+          <!-- TABLE -->
+          <div class="viewer-table-wrap">
             <table class="editor-table viewer-table" id="viewerTable">
-              <thead>
-                <tr>
-                  <th style="width: 100px">Código</th>
-                  <th style="width: 120px">Subcategoría</th>
-                  <th>Descripción</th>
-                  <th style="width: 70px">Costo</th>
-                  <th style="width: 50px">Gan.</th>
-                  <th style="width: 50px">Inst.</th>
-                  <th style="width: 70px">PVP</th>
-                  <th style="width: 60px">IVA</th>
-                  <th style="width: 75px">Total</th>
-                </tr>
-              </thead>
+              <thead><tr id="viewerThead"></tr></thead>
               <tbody id="viewerBody"></tbody>
             </table>
           </div>
@@ -705,22 +523,6 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
           style="flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 12px 16px"
         >
           <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center">
-            <button
-              class="btn btn-ghost editor-tab-btn"
-              id="editorTabProducts"
-              onclick="switchEditorTab('products')"
-              style="font-size: 12px; padding: 7px 14px; border-color: var(--primary); color: var(--primary); font-weight: 600"
-            >
-              📦 Productos
-            </button>
-            <button
-              class="btn btn-ghost editor-tab-btn"
-              id="editorTabInstall"
-              onclick="switchEditorTab('install')"
-              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
-            >
-              🔧 Instalaciones
-            </button>
             <select
               id="editorCategory"
               onchange="renderEditorTable()"
@@ -778,6 +580,67 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
         </div>
         <div class="modal-footer">
           <button class="btn btn-ghost" onclick="closeCatalogEditor()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: EDITOR DE INSTALACIONES -->
+    <div class="modal-backdrop" id="installEditorModal">
+      <div class="modal" style="max-width: 95vw; height: 90vh; display: flex; flex-direction: column">
+        <div class="modal-header">
+          <h2>🔧 Editor de instalaciones</h2>
+          <button class="modal-close" onclick="closeInstallEditor()">✕</button>
+        </div>
+        <div
+          class="modal-body"
+          style="flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 12px 16px"
+        >
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center">
+            <input
+              type="text"
+              id="installEditorSearch"
+              placeholder="Buscar servicio..."
+              oninput="renderInstallEditorTable()"
+              style="
+                flex: 1;
+                min-width: 180px;
+                padding: 7px 10px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 12px;
+              "
+            />
+            <span id="installEditorCount" style="font-size: 11px; color: var(--muted)"></span>
+            <button class="btn btn-primary" onclick="saveInstallEditor()" style="font-size: 12px; padding: 7px 14px">
+              💾 Guardar
+            </button>
+            <button
+              class="btn btn-ghost"
+              onclick="addNewInstall()"
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
+            >
+              + Nuevo
+            </button>
+          </div>
+          <div style="flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 6px">
+            <table class="editor-table" id="installEditorTable">
+              <thead id="installEditorHead">
+                <tr>
+                  <th style="width: 100px">Id</th>
+                  <th style="width: 120px">Categoría</th>
+                  <th style="width: 120px">Subcategoría</th>
+                  <th>Servicio</th>
+                  <th style="width: 90px">Costo</th>
+                  <th>Observaciones</th>
+                  <th style="width: 36px"></th>
+                </tr>
+              </thead>
+              <tbody id="installEditorBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeInstallEditor()">Cerrar</button>
         </div>
       </div>
     </div>
@@ -1367,7 +1230,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
     <!-- MODAL: EDITAR KIT -->
     <div class="modal-backdrop" id="kitEditorModal">
-      <div class="modal" style="max-width: 600px">
+      <div class="modal" style="max-width: 850px; width: 92vw;">
         <div class="modal-header">
           <h2>Editar Kit</h2>
           <button class="modal-close" onclick="closeKitEditor()">✕</button>
@@ -1402,10 +1265,9 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             placeholder="Escribe para buscar productos..."
             oninput="filterKitProducts()"
           />
-          <div id="kitSearchResults" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 10px; display: none;"></div>
+          <div id="kitSearchResults" style="max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 10px; display: none;"></div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
             <label style="font-size: 12px; font-weight: 600">Componentes</label>
-            <button class="btn-sm" onclick="addKitComponent(parseInt($('kitEditName').dataset.idx))">+ Agregar</button>
           </div>
           <div id="kitComponentsList"></div>
         </div>
@@ -1470,6 +1332,21 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
         <div class="modal-footer">
           <button class="btn btn-ghost" onclick="closeInstallServiceEditor()">Cancelar</button>
           <button class="btn btn-primary" onclick="saveInstallServiceEditor()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: EDITAR ÍTEM INDIVIDUAL -->
+    <div class="modal-backdrop" id="editItemModal">
+      <div class="modal" style="max-width:600px;">
+        <div class="modal-header">
+          <h2 id="editItemTitle">Editar ítem</h2>
+          <button class="modal-close" onclick="closeEditItemModal()">✕</button>
+        </div>
+        <div class="modal-body" id="editItemBody" style="max-height:60vh;overflow-y:auto;"></div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeEditItemModal()">Cancelar</button>
+          <button class="btn btn-primary" id="editItemSaveBtn" onclick="saveEditItem()">Guardar</button>
         </div>
       </div>
     </div>

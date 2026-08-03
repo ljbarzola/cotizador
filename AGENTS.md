@@ -24,6 +24,7 @@
 - `equipos` - Catalogo de equipos (source_id, categoria, subcategoria, modelo, producto, unidades, costo_unitario, ganancia_flag, instalacion_flag, ultima_act, proveedor, observaciones).
 - `materiales` - Catalogo de materiales (source_id, categoria, subcategoria, producto, unidades, costo_unitario, ganancia_flag, instalacion_flag, observaciones).
 - `servicios` - Catalogo de servicios (source_id, categoria, subcategoria, servicio, descripcion, costo_mensual, costo_anual, costo_unitario, observaciones).
+- `instalaciones` - Servicios de instalación (source_id, categoria, subcategoria, servicio, costo_unitario, observaciones). Tabla independiente, NO es una categoría.
 - `saved_quotes` - Cotizaciones guardadas (id, user_id, cot_num, cot_date, client JSONB, margin, items JSONB, status, updated_at).
 
 **Google Sheet fuente:** `https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo`
@@ -31,11 +32,12 @@
 - Pestaña `PRECIOS EQUIPOS BD` → tabla `equipos`
 - Pestaña `PRECIOS MATERIALES BD` → tabla `materiales`
 - Pestaña `PRECIOS SERVICIOS BD` → tabla `servicios`
+- Pestaña `INSTALACIÓN BD` → tabla `instalaciones` (5 columnas, sin header: servicio, costo_unitario, categoria, subcategoria, observaciones)
 
 **RLS (Row Level Security):**
 
 - `profiles`: Los usuarios ven solo su perfil. Admin puede ver todos.
-- `equipos/materiales/servicios`: Lectura publica, escritura publica (app).
+- `equipos/materiales/servicios/instalaciones`: Lectura publica, escritura publica (app).
 - `saved_quotes`: Admin ve todas, vendedor solo las suyas.
 
 **Estados de cotizacion:** borrador → enviada → vista → aceptada → rechazada → vencida
@@ -49,7 +51,7 @@ Cotizador/
 ├── index.html                  # HTML principal (modales, topbar, layout)
 ├── src/
 │   ├── main.js                 # Entry point, init de auth
-│   ├── app.js                  # Core: cart, render, save, sync, auth, user mgmt (~1684 lineas)
+│   ├── app.js                  # Core: cart, render, save, sync, auth, user mgmt, viewer, edit modal (~2363 lineas)
    │   ├── state.js                # Estado compartido + setters + JSDoc (120 lineas)
 │   ├── utils.js                # Utilidades: $, fmt, esc, toast, confirm + JSDoc (120 lineas)
 │   ├── styles.css              # Estilos (~1150 lineas)
@@ -59,11 +61,11 @@ Cotizador/
 │       ├── helpers.js          # Pricing: calcItemPrice, getSupplierMargin, marginBadge + JSDoc (103 lineas)
 │       ├── cartCalculations.js # Pure cart logic: calcItemTotals, calcDiscount, calcSubtotal (110 lineas, JSDoc)
 │       ├── kits.js             # Kit CRUD + rendering (27 funciones, ~600 lineas, JSDoc)
-│       ├── editor.js           # Catalog editor (10 funciones, 318 lineas, JSDoc)
+│       ├── editor.js           # Catalog editor + install editor (20 funciones, 661 lineas, JSDoc) — bulk editor, no se usa desde el visor
 │       ├── modals.js           # Product/cart detail, help, templates (17 funciones, 384 lineas, JSDoc)
 │       ├── history.js          # Saved quotes, status, new quote (8 funciones, 237 lineas, JSDoc)
 │       ├── auth.js             # Login, sesion, perfiles
-│       ├── sync.js             # Sync Google Sheets ↔ Supabase (3 tablas)
+│       ├── sync.js             # Sync Google Sheets ↔ Supabase (4 tablas)
 │       ├── catalog.js          # Stub
 │       └── quote.js            # Template CRUD (Supabase-backed)
 ├── db/
@@ -113,12 +115,15 @@ Cotizador/
 20. **Responsive/Movil**: 3 breakpoints (900px, 768px, 640px). Touch targets 44px, toggles de colapso para catálogo/cotización, grids responsive, modales fullscreen.
 21. **Code Splitting**: Bundle dividido en chunks: app + supabase separado. Build optimizado.
 22. **Service Worker**: Cache de assets estaticos para modo offline. Network-first con fallback a cache.
+23. **Servicios de instalación (tabla independiente)**: Pestaña Instalaciones en el visor de catálogo con sync separado. Editor de instalaciones con dropdowns de categoría/subcategoría poblados desde la DB. El picker de instalaciones (modal) se abre desde 🔧 Ganancia por instalación y muestra servicios del catálogo. Los servicios de instalación agregados se editan con margen individual (35% default, editable) y NO llevan IVA. Solo aparecen en la sección de configuración de márgenes, NO en la tabla de detalle de cotización.
+24. **Visor de catálogo con edición e interactividad**: El catálogo (modal) tiene 3 pestañas: Productos, Instalaciones, Kits. Cada pestaña muestra una tabla con botones ✏️ (editar) y ✕ (eliminar) lado a lado en cada fila. Botones `[+ Nuevo]` en la barra superior para Productos, Instalaciones y Kits. Redimensión de columnas arrastrando bordes de la cabecera. Carga inteligente de datos existentes en el modal de edición mediante `getItemDBValue`. Cero referencias a ganancia en desglose para clientes (`Subtotal Equipos / Materiales`). Modal de kits ampliado a 850px. Categoría/Subcategoría dinámicas para instalaciones. Búsqueda por nombre/código en Kits sin dropdowns de filtro.
 
 ### Flujo de precios (confirmado)
 
 - **Servicios**: price = costo_mensual (o costo_anual/12 si mensual=0) + IVA 15%. Sin ganancia, sin instalacion.
 - **Equipos/Materiales**: costo → si Ganancia flag=1: +supplier margin (% editable, default 15%) → +IVA 15% (siempre) → si Instalacion flag=1 Y activa: +costo_tecnico + empresa margin (% global, default 35%). NO IVA on installation.
 - **Margen por proveedor**: Cada proveedor tiene su propio %. Los productos sin proveedor ("Sin proveedor") tambien tienen un margen individual configurable.
+- **Servicios de instalación del catálogo**: Fixed cost from sheet → +individual margin (default 35%, editable per service) → NO IVA. Added as separate line items in cart, ONLY visible in 🔧 Ganancia por instalación section.
 
 ### Sync (Google Sheets → Supabase)
 
@@ -129,6 +134,7 @@ Cotizador/
 - **Filtrado**: `filterRowToColumns()` quita columnas que no existen en la tabla (fallback V3_2_COLUMNS).
 - **Comparacion**: `compareRows()` detecta cambios campo por campo y loguea diferencias.
 - **Sorting**: Items ordenados por source_id (natural sort: EQ-0001, EQ-0002, MT-0001, SV-0001, etc.).
+- **INSTALACIÓN BD**: Sync separado via `syncInstalacionesOnly()`. Parser posicional (5 columnas sin header): servicio, costo_unitario, categoria, subcategoria, observaciones.
 
 ### Comandos
 

@@ -203,7 +203,7 @@ export function renderKitsCatalog() {
   if (!el) return;
   if (kits.length === 0) {
     el.innerHTML =
-      '<div class="empty-state"><div class="icon">📦</div><div>No hay kits creados</div><div style="margin-top:4px;font-size:11px;">Haz clic en "+ Nuevo kit" para crear uno</div></div>';
+      '<div class="empty-state"><div class="icon">📦</div><div>No hay kits creados</div><div style="margin-top:4px;font-size:11px;">Añade un kit desde la sección de Catálogo</div></div>';
     return;
   }
   el.innerHTML = kits
@@ -228,8 +228,6 @@ export function renderKitsCatalog() {
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="add-btn" onclick="addKitToCart(${i})" title="Agregar al carrito">🛒 ${fmt(total)}</button>
-          <button class="btn-sm" onclick="editKit(${i})" title="Editar">✏️</button>
-          <button class="btn-sm btn-danger-sm" onclick="deleteKit(${i})" title="Eliminar">🗑️</button>
         </div>
       </div>
     </div>`;
@@ -332,13 +330,15 @@ export function closeKitEditor() {
 export function renderKitComponents(kitIdx) {
   const kit = kits[kitIdx];
   const el = $('kitComponentsList');
+  if (!el) return;
   const filtered = getFilteredKitProducts();
   el.innerHTML = kit.components
     .map((c, i) => {
       const options = filtered
         .map(({ item, idx }) => {
           const selected = c.catalogIdx === idx ? 'selected' : '';
-          return `<option value="${idx}" ${selected}>${esc(item.sourceId || '')} — ${esc(item.description.slice(0, 45))}${item.description.length > 45 ? '…' : ''} [${fmt(item.cost)}]</option>`;
+          const code = item.sourceId ? item.sourceId + ' — ' : '';
+          return `<option value="${idx}" ${selected}>${esc(code)}${esc(item.description)} [${fmt(item.cost)}]</option>`;
         })
         .join('');
       const defaultSelected = c.catalogIdx === null || c.catalogIdx === undefined ? 'selected' : '';
@@ -348,11 +348,7 @@ export function renderKitComponents(kitIdx) {
         <option value="" ${defaultSelected}>Seleccionar producto...</option>
         ${options}
       </select>
-      <label class="kit-comp-check">
-        <input type="checkbox" ${c.included ? 'checked' : ''} onchange="updateKitComp(${kitIdx},${i},'included',this.checked)">
-        Incluir
-      </label>
-      <button class="btn-sm btn-danger-sm" onclick="removeKitComp(${kitIdx},${i})">✕</button>
+      <button class="viewer-action-btn delete" onclick="removeKitComp(${kitIdx},${i})" title="Quitar componente" style="flex-shrink:0;">✕</button>
     </div>`;
     })
     .join('');
@@ -432,9 +428,16 @@ function renderKitSearchResults() {
   }
   el.innerHTML = filtered
     .map(({ item, idx }) => {
-      return `<div class="kit-search-result-item" onclick="addKitComponentFromSearch(${idx})" style="padding:6px 8px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='rgba(var(--primary-rgb),0.08)'" onmouseout="this.style.background=''">
-        <span><strong>${esc(item.sourceId || '')}</strong> ${esc(item.description.slice(0, 40))}${item.description.length > 40 ? '…' : ''}</span>
-        <span style="color:var(--primary);font-weight:600;white-space:nowrap;">${fmt(item.cost)}</span>
+      const code = item.sourceId
+        ? `<strong style="color:var(--primary);font-weight:700;">${esc(item.sourceId)}</strong> `
+        : '';
+      const model = item.model ? `<span style="font-size:11px;color:var(--muted);"> (${esc(item.model)})</span>` : '';
+      return `<div class="kit-search-result-item" onclick="addKitComponentFromSearch(${idx})" style="padding:10px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;line-height:1.4;" onmouseover="this.style.background='rgba(var(--primary-rgb),0.08)'" onmouseout="this.style.background=''">
+        <div style="flex:1;min-width:0;word-break:break-word;">
+          <div>${code}${model}</div>
+          <div style="color:var(--text);margin-top:2px;font-size:12px;font-weight:500;">${esc(item.description)}</div>
+        </div>
+        <span style="color:var(--primary);font-weight:700;white-space:nowrap;font-size:13px;align-self:center;">${fmt(item.cost)}</span>
       </div>`;
     })
     .join('');

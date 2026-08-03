@@ -31,6 +31,7 @@ import {
   STATUS_LABELS,
   instalacionesCatalog,
   setInstalacionesCatalog,
+  kits,
 } from './state.js';
 import {
   loadKitsFromDB,
@@ -61,12 +62,18 @@ import {
   openCatalogEditor,
   closeCatalogEditor,
   renderEditorTable,
-  switchEditorTab,
   loadEditorProducts,
   editorField,
   editorToggleDelete,
   addNewProduct,
   saveCatalogEdits,
+  openInstallEditor,
+  closeInstallEditor,
+  renderInstallEditorTable,
+  installEditorField,
+  installEditorToggleDelete,
+  addNewInstall,
+  saveInstallEditor,
 } from './modules/editor.js';
 import {
   openProductDetail,
@@ -102,6 +109,7 @@ import {
   $,
   fmt,
   esc,
+  escAttr,
   toast,
   showConfirm,
   resolveConfirm,
@@ -195,6 +203,13 @@ function renderCatalog() {
       const pricing = calcItemPrice(item);
       const price = pricing.subtotalEquipo;
       const badges = marginBadge(item);
+      const isAnnualService = item.isService && (!item.monthlyCost || item.monthlyCost === 0) && item.annualCost > 0;
+      const annualLabel = isAnnualService
+        ? '<span class="cat-item-units" style="background:#fef3c7;color:#92400e;">anual</span>'
+        : '';
+      const priceDetail = isAnnualService
+        ? '<div class="cost">' + fmt(item.annualCost) + '/año → ' + fmt(item.cost) + '/mes</div>'
+        : '<div class="cost">costo ' + fmt(item.cost) + '</div>';
 
       return `
       <div class="cat-item">
@@ -205,6 +220,7 @@ function renderCatalog() {
             ${subcatLabel}
             ${unitsLabel}
             ${qtyLabel}
+            ${annualLabel}
             ${badges}
             <span class="cat-item-supplier">${supplier}</span>
           </div>
@@ -215,7 +231,7 @@ function renderCatalog() {
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
           <div class="cat-item-price">
             <div class="pvp">${fmt(price)}</div>
-            <div class="cost">costo ${fmt(item.cost)}</div>
+            ${priceDetail}
           </div>
           <button class="add-btn" onclick="addToCart(${realIdx})">+ Agregar</button>
         </div>
@@ -313,9 +329,10 @@ function addToCart(idx) {
   if (existing) {
     existing.qty += 1;
   } else {
+    const isAnnualService = item.isService && (!item.monthlyCost || item.monthlyCost === 0) && item.annualCost > 0;
     cart.push({
       catalogIdx: idx,
-      qty: item.cantidadDefault ? parseFloat(item.cantidadDefault) || 1 : 1,
+      qty: isAnnualService ? 12 : item.cantidadDefault ? parseFloat(item.cantidadDefault) || 1 : 1,
       installActive: false,
       techCost: 0,
       customMargin: null,
@@ -395,7 +412,7 @@ function closeInstallServicePicker() {
 }
 
 function populateInstallServiceFilters() {
-  const cats = [...new Set(CATALOG.map(i => i.category).filter(Boolean))].sort();
+  const cats = [...new Set((instalacionesCatalog || []).map(i => i.category).filter(Boolean))].sort();
   const catSel = $('installServiceCategory');
   const subSel = $('installServiceSubcategory');
   const currentCat = catSel.value;
@@ -416,7 +433,9 @@ function renderInstallServiceSubcategories(selectedCat) {
   const subSel = $('installServiceSubcategory');
   if (!subSel) return;
   subSel.innerHTML = '<option value="">Todas las subcategorías</option>';
-  const source = selectedCat ? CATALOG.filter(i => i.category === selectedCat) : CATALOG;
+  const source = selectedCat
+    ? (instalacionesCatalog || []).filter(i => i.category === selectedCat)
+    : instalacionesCatalog || [];
   const subs = [...new Set(source.map(i => i.subcategory).filter(Boolean))].sort();
   subs.forEach(s => {
     const opt = document.createElement('option');
@@ -510,7 +529,8 @@ function closeInstallServiceEditor() {
 function saveInstallServiceEditor() {
   const idx = parseInt($('iseIdx').value);
   const qty = parseInt($('iseQty').value) || 1;
-  const margin = parseFloat($('iseMargin').value) || DEFAULT_INSTALL_MARGIN;
+  const parsed = parseFloat($('iseMargin').value);
+  const margin = isNaN(parsed) ? DEFAULT_INSTALL_MARGIN : parsed;
   if (cart[idx] && cart[idx].isInstallService) {
     cart[idx].qty = qty;
     cart[idx].customMargin = margin;
@@ -522,7 +542,8 @@ function saveInstallServiceEditor() {
 
 function updateInstallServiceMargin(idx, val) {
   if (cart[idx] && cart[idx].isInstallService) {
-    cart[idx].customMargin = parseFloat(val) || DEFAULT_INSTALL_MARGIN;
+    const parsed = parseFloat(val);
+    cart[idx].customMargin = isNaN(parsed) ? DEFAULT_INSTALL_MARGIN : parsed;
     clearTimeout(window._marginRenderTimer);
     window._marginRenderTimer = setTimeout(() => {
       renderCart();
@@ -559,23 +580,19 @@ function renderCart() {
   html += '<th style="width:28px;" class="print-hide-col"></th>';
   html += '</tr></thead><tbody>';
 
-  // Order: kits first, then install services, then individual items
+  // Order: kits first, then individual items (install services go ONLY in Ganancia section)
   const kits = [];
-  const installServices = [];
   const individuals = [];
   cart.forEach((c, i) => {
     if (c.isKit) kits.push({ c, origIdx: i });
-    else if (c.isInstallService) installServices.push({ c, origIdx: i });
-    else individuals.push({ c, origIdx: i });
+    else if (!c.isInstallService) individuals.push({ c, origIdx: i });
   });
-  const ordered = [...kits, ...installServices, ...individuals];
+  const ordered = [...kits, ...individuals];
 
   let rowNum = 0;
   const hasKits = kits.length > 0;
-  const hasInstallServices = installServices.length > 0;
   const hasIndividuals = individuals.length > 0;
   let inKitsSection = true;
-  let inInstallSection = false;
 
   ordered.forEach(({ c, origIdx: idx }) => {
     if (c.isKit) {
@@ -635,35 +652,6 @@ function renderCart() {
           <td class="print-hide-col"><button class="remove-btn" onclick="removeKitComponentFromCart(${idx}, ${compIdx})" title="Eliminar del kit">✕</button></td>
         </tr>`;
       });
-      return;
-    }
-    if (c.isInstallService) {
-      if (inKitsSection && hasKits) {
-        inKitsSection = false;
-        inInstallSection = true;
-        html += `<tr class="kit-items-separator"><td colspan="10"><div class="kit-items-divider"></div></td></tr>`;
-      } else if (!inKitsSection && !inInstallSection && hasInstallServices) {
-        inInstallSection = true;
-        html += `<tr class="kit-items-separator"><td colspan="10"><div class="kit-items-divider"></div></td></tr>`;
-      }
-      rowNum++;
-      const pricing = calcInstallServicePrice(c, c.customMargin ?? DEFAULT_INSTALL_MARGIN);
-      const total = pricing.total * c.qty;
-      html += `<tr class="install-service-row">
-        <td class="item-num">${rowNum}</td>
-        <td class="item-desc item-desc-click" onclick="openInstallServiceEditor(${idx})" title="Ver detalle">
-          <span class="item-desc-text">🔧 ${esc(c.description)}</span>
-          <small>${esc(c.category || 'Instalación')}${c.subcategory ? ' › ' + esc(c.subcategory) : ''}</small>
-        </td>
-        <td class="center" style="font-size:11px;font-weight:600;color:var(--primary);">serv</td>
-        <td class="right"><span class="print-hide-col">${fmt(pricing.baseCost)}</span><span class="print-only">${fmt(pricing.total)}</span></td>
-        <td class="center"><input type="number" min="1" step="1" value="${c.qty}" class="qty-input" onchange="updateInstallServiceQty(${idx}, this.value)"></td>
-        <td class="right"><span class="print-hide-col"><strong>${fmt(pricing.baseCost * c.qty)}</strong></span><span class="print-only"><strong>${fmt(total)}</strong></span></td>
-        <td class="right print-hide-col">${pricing.ganancia > 0 ? `<span class="supplier-detail">${fmt(pricing.ganancia * c.qty)} (${c.customMargin ?? DEFAULT_INSTALL_MARGIN}%)</span>` : '<span style="color:var(--muted);">—</span>'}</td>
-        <td class="right print-hide-col">${fmt(total)}</td>
-        <td class="center" style="color:var(--muted);">—</td>
-        <td class="print-hide-col"><button class="remove-btn" onclick="removeItem(${idx})" title="Eliminar">✕</button></td>
-      </tr>`;
       return;
     }
     if (inKitsSection) {
@@ -841,13 +829,18 @@ function renderMarginConfig() {
       const total = pricing.total * c.qty;
       installHtml += `<div class="install-config-row install-active-row">`;
       installHtml += `<div class="install-config-info">`;
-      installHtml += `<span class="install-config-name">${esc(c.description)}</span>`;
+      installHtml += `<span class="install-config-name">🔧 ${esc(c.description)}</span>`;
+      if (c.category || c.subcategory) {
+        installHtml += `<span class="install-config-meta">${esc(c.category || '')}${c.subcategory ? ' › ' + esc(c.subcategory) : ''}</span>`;
+      }
       installHtml += `<span class="install-cost-badge">${fmt(pricing.baseCost)} × ${c.qty} + ${c.customMargin ?? DEFAULT_INSTALL_MARGIN}% = ${fmt(total)}</span>`;
       installHtml += `</div>`;
       installHtml += `<div class="install-config-fields">`;
+      installHtml += `<div class="install-field"><label>Cantidad</label><div class="margin-input-inline"><input type="number" min="1" step="1" value="${c.qty}" onchange="updateInstallServiceQty(${cartIdx}, this.value)"></div></div>`;
       installHtml += `<div class="install-field"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${c.customMargin ?? DEFAULT_INSTALL_MARGIN}" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
       installHtml += `<div class="install-field"><label>Ganancia</label><span class="install-price">${fmt(pricing.ganancia * c.qty)}</span></div>`;
       installHtml += `<div class="install-field"><label>Total</label><span class="install-price install-total">${fmt(total)}</span></div>`;
+      installHtml += `<div class="install-field"><label></label><button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;border-color:var(--danger);color:var(--danger);" onclick="removeItem(${cartIdx})">✕ Eliminar</button></div>`;
       installHtml += `</div>`;
       installHtml += `</div>`;
     });
@@ -873,7 +866,7 @@ function renderTotals() {
   const totalFinal = totalGeneral - discountAmount;
 
   let breakdownHtml = '';
-  breakdownHtml += `<div class="totals-row totals-sub totals-sub-detail"><span>&nbsp;&nbsp;PVP (costo + ganancia)</span><span>${fmt(subtotalEquipo)}</span></div>`;
+  breakdownHtml += `<div class="totals-row totals-sub totals-sub-detail"><span>&nbsp;&nbsp;Subtotal Equipos / Materiales</span><span>${fmt(subtotalEquipo)}</span></div>`;
   breakdownHtml += `<div class="totals-row totals-sub totals-sub-detail"><span>&nbsp;&nbsp;IVA 15%</span><span>${fmt(totalIva)}</span></div>`;
   breakdownHtml += `<div class="totals-row totals-sub"><span>Subtotal (PVP + IVA)</span><span>${fmt(subtotalEquipo + totalIva)}</span></div>`;
 
@@ -1371,7 +1364,7 @@ function renderViewerTable() {
   const q = $('viewerSearch').value.toLowerCase().trim();
   const cat = $('viewerCategory').value;
   const sub = $('viewerSubcategory')?.value || '';
-  let filtered = viewerProducts;
+  let filtered = viewerProducts.map((p, i) => ({ ...p, _viewerIdx: i }));
   if (cat) filtered = filtered.filter(p => p.category === cat);
   if (sub) filtered = filtered.filter(p => p.subcategory === sub);
   if (q)
@@ -1382,19 +1375,23 @@ function renderViewerTable() {
         (p.subcategory || '').toLowerCase().includes(q) ||
         (p.model || '').toLowerCase().includes(q)
     );
-  $('viewerCount').textContent =
+  const countLabel =
     filtered.length +
     ' productos' +
     (filtered.length !== viewerProducts.length ? ' (de ' + viewerProducts.length + ')' : '');
+  $('viewerCount').textContent = countLabel;
+  const tabCount = $('viewerCountProducts');
+  if (tabCount) tabCount.textContent = viewerProducts.length;
   const tbody = $('viewerBody');
   if (filtered.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="9" style="text-align:center;padding:20px;">No se encontraron productos</td></tr>';
+      '<tr><td colspan="10" style="text-align:center;padding:40px 20px;color:var(--muted);"><div style="font-size:24px;margin-bottom:8px;">📦</div>No se encontraron productos<br><small>Intenta ajustar los filtros de búsqueda</small></td></tr>';
     return;
   }
   tbody.innerHTML = filtered
     .map(p => {
       const pricing = calcItemPrice(p);
+      const idx = p._viewerIdx;
       return `<tr>
       <td>${p.sourceId || ''}</td>
       <td>${p.subcategory || ''}</td>
@@ -1405,100 +1402,513 @@ function renderViewerTable() {
       <td class="right">${fmt(pricing.priceBeforeIva)}</td>
       <td class="right">${fmt(pricing.iva)}</td>
       <td class="right"><strong>${fmt(pricing.subtotalEquipo)}</strong></td>
+      <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="openEditItemModal('product',${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteViewerItem('product',${idx})" title="Eliminar">✕</button></div></td>
     </tr>`;
     })
     .join('');
+  makeTableColumnsResizable($('viewerTable'));
 }
 
 let viewerTab = 'products';
+
+const VIEWER_HEADERS = {
+  products:
+    '<th style="width:100px">Código</th><th style="width:120px">Subcategoría</th><th>Descripción</th><th style="width:70px">Costo</th><th style="width:50px">Gan.</th><th style="width:50px">Inst.</th><th style="width:70px">PVP</th><th style="width:60px">IVA</th><th style="width:75px">Total</th><th style="width:65px;text-align:center;">Acciones</th>',
+  install:
+    '<th style="width:80px">Código</th><th>Nombre instalación</th><th style="width:100px">Categoría</th><th style="width:100px">Subcategoría</th><th style="width:80px" class="right">Costo</th><th>Observaciones</th><th style="width:65px;text-align:center;">Acciones</th>',
+  kits: '<th style="width:100px">Código</th><th>Nombre</th><th>Componentes</th><th style="width:80px">Costo</th><th style="width:65px;text-align:center;">Acciones</th>',
+};
 
 function switchViewerTab(tab) {
   viewerTab = tab;
   const btnProducts = $('viewerTabProducts');
   const btnInstall = $('viewerTabInstall');
-  const btnEditInstall = $('btnEditInstall');
-  const btnGoToEditor = $('btnGoToEditor');
-  const btnSyncCatalog = $('btnSyncCatalog');
+  const btnKits = $('viewerTabKits');
+  const actionsProducts = $('viewerActionsProducts');
+  const actionsInstall = $('viewerActionsInstall');
+  const actionsKits = $('viewerActionsKits');
   const syncPanel = $('syncPanel');
   const installSyncPanel = $('installSyncPanel');
-  if (tab === 'products') {
-    btnProducts.style.borderColor = 'var(--primary)';
-    btnProducts.style.color = 'var(--primary)';
-    btnProducts.style.fontWeight = '600';
-    btnInstall.style.borderColor = 'var(--border)';
-    btnInstall.style.color = 'var(--text)';
-    btnInstall.style.fontWeight = '';
-    $('viewerCategory').style.display = '';
-    $('viewerSubcategory').style.display = '';
-    if (btnEditInstall) btnEditInstall.style.display = 'none';
-    if (btnGoToEditor) btnGoToEditor.style.display = '';
-    if (btnSyncCatalog) btnSyncCatalog.style.display = '';
-    if (syncPanel) syncPanel.style.display = 'none';
-    if (installSyncPanel) installSyncPanel.style.display = 'none';
-    renderViewerTable();
-  } else {
-    btnInstall.style.borderColor = 'var(--primary)';
-    btnInstall.style.color = 'var(--primary)';
-    btnInstall.style.fontWeight = '600';
-    btnProducts.style.borderColor = 'var(--border)';
-    btnProducts.style.color = 'var(--text)';
-    btnProducts.style.fontWeight = '';
-    $('viewerCategory').style.display = 'none';
-    $('viewerSubcategory').style.display = 'none';
-    if (btnEditInstall) btnEditInstall.style.display = '';
-    if (btnGoToEditor) btnGoToEditor.style.display = 'none';
-    if (btnSyncCatalog) btnSyncCatalog.style.display = 'none';
-    if (syncPanel) syncPanel.style.display = 'none';
-    if (installSyncPanel) installSyncPanel.style.display = 'none';
-    renderViewerInstallations();
-  }
+
+  // Tab styling
+  [btnProducts, btnInstall, btnKits].forEach(b => b && b.classList.remove('active'));
+  if (tab === 'products') btnProducts.classList.add('active');
+  else if (tab === 'install') btnInstall.classList.add('active');
+  else if (tab === 'kits') btnKits.classList.add('active');
+
+  // Show/hide filters
+  const showFilters = tab === 'products';
+  $('viewerCategory').style.display = showFilters ? '' : 'none';
+  $('viewerSubcategory').style.display = showFilters ? '' : 'none';
+
+  // Show/hide action groups
+  if (actionsProducts) actionsProducts.style.display = tab === 'products' ? 'flex' : 'none';
+  if (actionsInstall) actionsInstall.style.display = tab === 'install' ? 'flex' : 'none';
+  if (actionsKits) actionsKits.style.display = tab === 'kits' ? 'flex' : 'none';
+
+  // Close sync panels on tab switch
+  if (syncPanel) syncPanel.style.display = 'none';
+  if (installSyncPanel) installSyncPanel.style.display = 'none';
+
+  // Set table header
+  const viewerThead = $('viewerThead');
+  if (viewerThead) viewerThead.innerHTML = VIEWER_HEADERS[tab] || VIEWER_HEADERS.products;
+
+  // Render content
+  if (tab === 'products') renderViewerTable();
+  else if (tab === 'install') renderViewerInstallations();
+  else if (tab === 'kits') renderViewerKits();
+
+  makeTableColumnsResizable($('viewerTable'));
 }
 
 function renderViewerInstallations() {
   const q = ($('viewerSearch').value || '').toLowerCase().trim();
-  let items = instalacionesCatalog || [];
+  let items = [...(instalacionesCatalog || [])];
+  items.sort((a, b) => (a.sourceId || '').localeCompare(b.sourceId || '', undefined, { numeric: true }));
+  items = items.map((s, i) => ({ ...s, _sortedIdx: i }));
   if (q)
     items = items.filter(
-      s => (s.description || '').toLowerCase().includes(q) || (s.observations || '').toLowerCase().includes(q)
+      s =>
+        (s.description || '').toLowerCase().includes(q) ||
+        (s.category || '').toLowerCase().includes(q) ||
+        (s.subcategory || '').toLowerCase().includes(q) ||
+        (s.observations || '').toLowerCase().includes(q)
     );
-  $('viewerCount').textContent = items.length + ' servicio(s) de instalación';
+  const totalCount = (instalacionesCatalog || []).length;
+  $('viewerCount').textContent =
+    items.length + ' instalaciones' + (items.length !== totalCount ? ' (de ' + totalCount + ')' : '');
+  const tabCount = $('viewerCountInstall');
+  if (tabCount) tabCount.textContent = totalCount;
   const tbody = $('viewerBody');
   if (items.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="9" style="text-align:center;padding:20px;">No hay servicios de instalación. Sincroniza el catálogo.</td></tr>';
+      '<tr><td colspan="7" style="text-align:center;padding:40px 20px;color:var(--muted);"><div style="font-size:24px;margin-bottom:8px;">🔧</div>No hay servicios de instalación<br><small>Sincroniza el catálogo para cargar datos</small></td></tr>';
     return;
   }
   tbody.innerHTML = items
-    .map(
-      s => `<tr>
+    .map(s => {
+      const idx = s._sortedIdx;
+      return `<tr>
     <td>${s.sourceId || ''}</td>
-    <td>${s.category || ''}</td>
-    <td>${esc(s.description)}</td>
+    <td>${esc(s.description || '')}</td>
+    <td>${esc(s.category || '')}</td>
+    <td>${esc(s.subcategory || '')}</td>
     <td class="right">${fmt(s.cost)}</td>
-    <td class="center">—</td>
-    <td class="center">—</td>
-    <td class="right">${fmt(s.cost)}</td>
-    <td class="right">$0.00</td>
-    <td class="right">${fmt(s.cost)}</td>
-  </tr>`
-    )
+    <td>${esc(s.observations || '')}</td>
+    <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="openEditItemModal('install',${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteViewerItem('install',${idx})" title="Eliminar">✕</button></div></td>
+  </tr>`;
+    })
     .join('');
+  makeTableColumnsResizable($('viewerTable'));
 }
+
+// === KITS VIEWER ===
+
+function renderViewerKits() {
+  const q = ($('viewerSearch').value || '').toLowerCase().trim();
+  const allKits = [...(kits || [])];
+  let items = allKits.map((k, i) => ({ ...k, _kitIdx: i }));
+  if (q) items = items.filter(k => (k.name || '').toLowerCase().includes(q));
+  const totalCount = allKits.length;
+  $('viewerCount').textContent =
+    items.length + ' kits' + (items.length !== totalCount ? ' (de ' + totalCount + ')' : '');
+  const tabCount = $('viewerCountKits');
+  if (tabCount) tabCount.textContent = totalCount;
+  const tbody = $('viewerBody');
+  if (items.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="5" style="text-align:center;padding:40px 20px;color:var(--muted);"><div style="font-size:24px;margin-bottom:8px;">📋</div>No hay kits creados<br><small>Haz clic en "+ Nuevo kit" para crear uno</small></td></tr>';
+    return;
+  }
+  tbody.innerHTML = items
+    .map(k => {
+      const validComps = (k.components || []).filter(c => c.catalogIdx !== null && c.catalogIdx < CATALOG.length);
+      const total = validComps.reduce((s, c) => s + (CATALOG[c.catalogIdx]?.cost || 0), 0);
+      const idx = k._kitIdx;
+      return `<tr>
+      <td>KIT-${String(idx + 1).padStart(3, '0')}</td>
+      <td>${esc(k.name || '')}</td>
+      <td>${validComps.length} componente${validComps.length !== 1 ? 's' : ''}</td>
+      <td class="right">${fmt(total)}</td>
+      <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="editKitFromViewer(${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteKitFromViewer(${idx})" title="Eliminar">✕</button></div></td>
+    </tr>`;
+    })
+    .join('');
+  makeTableColumnsResizable($('viewerTable'));
+}
+
+function editKitFromViewer(idx) {
+  closeCatalogViewer();
+  switchCatalogTab('kits');
+  editKit(idx);
+}
+
+function deleteKitFromViewer(idx) {
+  deleteKit(idx);
+  renderViewerKits();
+}
+
+function addNewKitFromViewer() {
+  addNewKit();
+  closeCatalogViewer();
+  switchCatalogTab('kits');
+}
+
+function addNewItemFromViewer(type) {
+  closeCatalogViewer();
+  if (type === 'product') {
+    openCatalogEditor();
+  } else if (type === 'install') {
+    openInstallEditor();
+  }
+}
+
+function makeTableColumnsResizable(table) {
+  if (!table) return;
+  const ths = table.querySelectorAll('thead th');
+  ths.forEach((th, idx) => {
+    const oldResizer = th.querySelector('.col-resizer');
+    if (oldResizer) oldResizer.remove();
+
+    if (idx === ths.length - 1 && th.textContent.includes('Acciones')) return;
+
+    th.style.position = 'relative';
+    const resizer = document.createElement('div');
+    resizer.className = 'col-resizer';
+    th.appendChild(resizer);
+
+    let startX = 0;
+    let startWidth = 0;
+
+    const onMouseMove = e => {
+      const dx = e.clientX - startX;
+      const newW = Math.max(40, startWidth + dx);
+      th.style.width = newW + 'px';
+      th.style.minWidth = newW + 'px';
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    resizer.addEventListener('mousedown', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      startX = e.clientX;
+      startWidth = th.offsetWidth;
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+  });
+}
+
+// === SINGLE ITEM EDIT MODAL ===
+
+let editItemData = null;
+let editItemTable = null;
+
+function getItemDBValue(item, key) {
+  if (!item) return '';
+  if (item[key] !== undefined && item[key] !== null) return item[key];
+
+  switch (key) {
+    case 'source_id':
+      return item.sourceId || item.source_id || '';
+    case 'categoria':
+      return item.category || item.categoria || '';
+    case 'subcategoria':
+      return item.subcategory || item.subcategoria || '';
+    case 'producto':
+    case 'servicio':
+      return item.description || item.producto || item.servicio || '';
+    case 'descripcion':
+      return item.observations || item.descripcion || '';
+    case 'modelo':
+      return item.model || item.modelo || '';
+    case 'unidades':
+      return item.unidades || item.unit || '';
+    case 'cantidad_default':
+      return item.cantidadDefault ?? item.cantidad_default ?? 1;
+    case 'costo_unitario':
+      return item.cost ?? item.costo_unitario ?? 0;
+    case 'costo_mensual':
+      return item.monthlyCost ?? item.costo_mensual ?? 0;
+    case 'costo_anual':
+      return item.annualCost ?? item.costo_anual ?? 0;
+    case 'ganancia_flag':
+      return item.hasGanancia ?? item.ganancia_flag ?? false;
+    case 'instalacion_flag':
+      return item.hasInstalacion ?? item.instalacion_flag ?? false;
+    case 'proveedor':
+      return item.supplier || item.proveedor || '';
+    case 'observaciones':
+      return item.observations || item.observaciones || '';
+    default:
+      return '';
+  }
+}
+
+function openEditItemModal(type, idx) {
+  if (!currentSession) {
+    toast('Inicia sesión primero', 'danger');
+    return;
+  }
+  let item;
+  let table;
+  if (type === 'product') {
+    item = viewerProducts[idx];
+    if (!item) return;
+    table = item._table;
+    editItemData = { ...item, _catalogIdx: idx };
+    editItemTable = table;
+  } else if (type === 'install') {
+    const sorted = [...(instalacionesCatalog || [])].sort((a, b) =>
+      (a.sourceId || '').localeCompare(b.sourceId || '', undefined, { numeric: true })
+    );
+    item = sorted[idx];
+    if (!item) return;
+    table = 'instalaciones';
+    editItemData = { ...item, _installIdx: idx };
+    editItemTable = table;
+  } else {
+    return;
+  }
+
+  const title = type === 'product' ? '✏️ Editar producto' : '✏️ Editar instalación';
+  $('editItemTitle').textContent = title;
+
+  const cols = EDITOR_COLS_MAP[table] || [];
+  let html = '';
+  cols.forEach(c => {
+    const val = getItemDBValue(item, c.key);
+    const readonly = c.type === 'readonly';
+    const fieldClass = 'edit-item-field';
+    if (c.type === 'check') {
+      html += `<div class="${fieldClass}"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="editField_${c.key}" ${val ? 'checked' : ''} ${readonly ? 'disabled' : ''}>
+        ${c.label}
+      </label></div>`;
+    } else if (c.type === 'select') {
+      const allCats = [
+        ...new Set(
+          [
+            ...CATALOG.map(p => p.category),
+            ...(instalacionesCatalog || []).map(i => i.category),
+            String(val || ''),
+          ].filter(Boolean)
+        ),
+      ].sort();
+
+      const allSubs = [
+        ...new Set(
+          [
+            ...CATALOG.map(p => p.subcategory),
+            ...(instalacionesCatalog || []).map(i => i.subcategory),
+            String(val || ''),
+          ].filter(Boolean)
+        ),
+      ].sort();
+
+      const opts = c.key === 'categoria' ? allCats : allSubs;
+      html += `<div class="${fieldClass}"><label>${c.label}</label>
+        <select id="editField_${c.key}" ${readonly ? 'disabled' : ''}>
+          ${opts.map(o => `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+        </select></div>`;
+    } else if (c.type === 'number') {
+      html += `<div class="${fieldClass}"><label>${c.label}</label>
+        <input type="number" step="${c.step || '0.01'}" id="editField_${c.key}" value="${val}" ${readonly ? 'disabled class="field-readonly"' : ''}></div>`;
+    } else {
+      html += `<div class="${fieldClass}"><label>${c.label}</label>
+        <input type="text" id="editField_${c.key}" value="${escAttr(val)}" ${readonly ? 'disabled class="field-readonly"' : ''} ${c.placeholder ? 'placeholder="' + c.placeholder + '"' : ''}></div>`;
+    }
+  });
+  $('editItemBody').innerHTML = html;
+  $('editItemModal').classList.add('open');
+}
+
+function closeEditItemModal() {
+  $('editItemModal').classList.remove('open');
+  editItemData = null;
+  editItemTable = null;
+}
+
+async function saveEditItem() {
+  if (!editItemData || !editItemTable) return;
+  const ok = await showConfirm('¿Estás seguro que deseas modificar este ítem?', 'Confirmar modificación', 'Guardar');
+  if (!ok) return;
+
+  const cols = EDITOR_COLS_MAP[editItemTable] || [];
+  const changes = {};
+  cols.forEach(c => {
+    if (c.type === 'readonly') return;
+    const el = $('editField_' + c.key);
+    if (!el) return;
+    if (c.type === 'check') changes[c.key] = el.checked;
+    else if (c.type === 'number') changes[c.key] = parseFloat(el.value) || 0;
+    else changes[c.key] = el.value;
+  });
+
+  const isInstall = editItemTable === 'instalaciones';
+  const supabaseTable = isInstall ? 'instalaciones' : editItemTable;
+  const itemId = isInstall ? editItemData._id : editItemData._id;
+
+  try {
+    if (itemId) {
+      const { error } = await supabase.from(supabaseTable).update(changes).eq('id', itemId);
+      if (error) throw error;
+    }
+    toast('✓ Ítem actualizado correctamente', 'success');
+    closeEditItemModal();
+
+    if (isInstall) {
+      try {
+        const instalaciones = await loadAllInstalaciones();
+        setInstalacionesCatalog(instalaciones);
+      } catch (e) {
+        console.warn('Error reloading instalaciones:', e.message);
+      }
+      renderViewerInstallations();
+    } else {
+      await loadAllProducts();
+      viewerProducts = CATALOG;
+      renderViewerTable();
+    }
+  } catch (e) {
+    console.error('[EDIT ITEM] Save error:', e);
+    toast('Error al guardar: ' + e.message, 'danger');
+  }
+}
+
+async function deleteViewerItem(type, idx) {
+  if (type === 'product') {
+    const item = viewerProducts[idx];
+    if (!item) return;
+    const name = (item.description || item.sourceId || '').slice(0, 60);
+    const ok = await showConfirm('¿Eliminar "' + name + '"?', 'Eliminar producto', 'Eliminar');
+    if (!ok) return;
+    if (item._id) {
+      const { error } = await supabase.from(item._table).delete().eq('id', item._id);
+      if (error) {
+        toast('Error al eliminar: ' + error.message, 'danger');
+        return;
+      }
+    }
+    toast('✓ Producto eliminado', 'success');
+    await loadAllProducts();
+    viewerProducts = CATALOG;
+    renderViewerTable();
+  } else if (type === 'install') {
+    const sorted = [...(instalacionesCatalog || [])].sort((a, b) =>
+      (a.sourceId || '').localeCompare(b.sourceId || '', undefined, { numeric: true })
+    );
+    const item = sorted[idx];
+    if (!item) return;
+    const name = (item.description || item.sourceId || '').slice(0, 60);
+    const ok = await showConfirm('¿Eliminar "' + name + '"?', 'Eliminar instalación', 'Eliminar');
+    if (!ok) return;
+    if (item._id) {
+      const { error } = await supabase.from('instalaciones').delete().eq('id', item._id);
+      if (error) {
+        toast('Error al eliminar: ' + error.message, 'danger');
+        return;
+      }
+    }
+    toast('✓ Instalación eliminada', 'success');
+    try {
+      const instalaciones = await loadAllInstalaciones();
+      setInstalacionesCatalog(instalaciones);
+    } catch (e) {
+      console.warn('Error reloading instalaciones:', e.message);
+    }
+    renderViewerInstallations();
+  }
+}
+
+// Column definitions for edit modal (map Supabase table → fields)
+const EDITOR_COLS_MAP = {
+  equipos: [
+    { key: 'source_id', label: 'Id', type: 'text' },
+    { key: 'categoria', label: 'Categoría', type: 'text' },
+    { key: 'subcategoria', label: 'Subcategoría', type: 'text' },
+    { key: 'producto', label: 'Producto / Servicio', type: 'text' },
+    { key: 'modelo', label: 'Modelo', type: 'text' },
+    { key: 'unidades', label: 'Unds', type: 'text', placeholder: 'm, u...' },
+    { key: 'cantidad_default', label: 'Cantidad', type: 'number', step: '1' },
+    { key: 'costo_unitario', label: 'Costo Unitario', type: 'number' },
+    { key: 'ganancia_flag', label: 'Ganancia proveedor', type: 'check' },
+    { key: 'instalacion_flag', label: 'Ganancia instalación', type: 'check' },
+    { key: 'proveedor', label: 'Proveedor', type: 'text' },
+    { key: 'observaciones', label: 'Observaciones', type: 'text' },
+  ],
+  materiales: [
+    { key: 'source_id', label: 'Id', type: 'text' },
+    { key: 'categoria', label: 'Categoría', type: 'text' },
+    { key: 'subcategoria', label: 'Subcategoría', type: 'text' },
+    { key: 'producto', label: 'Producto', type: 'text' },
+    { key: 'unidades', label: 'Unds', type: 'text', placeholder: 'm, u...' },
+    { key: 'cantidad_default', label: 'Cantidad', type: 'number', step: '1' },
+    { key: 'costo_unitario', label: 'Costo Unitario', type: 'number' },
+    { key: 'ganancia_flag', label: 'Ganancia proveedor', type: 'check' },
+    { key: 'instalacion_flag', label: 'Ganancia instalación', type: 'check' },
+    { key: 'observaciones', label: 'Observaciones', type: 'text' },
+  ],
+  servicios: [
+    { key: 'source_id', label: 'Id', type: 'text' },
+    { key: 'categoria', label: 'Categoría', type: 'text' },
+    { key: 'subcategoria', label: 'Subcategoría', type: 'text' },
+    { key: 'servicio', label: 'Servicio', type: 'text' },
+    { key: 'descripcion', label: 'Descripción', type: 'text' },
+    { key: 'costo_mensual', label: 'Costo Mensual', type: 'number' },
+    { key: 'costo_anual', label: 'Costo Anual', type: 'number' },
+    { key: 'observaciones', label: 'Observaciones', type: 'text' },
+  ],
+  instalaciones: [
+    { key: 'source_id', label: 'Id', type: 'text' },
+    { key: 'categoria', label: 'Categoría', type: 'select' },
+    { key: 'subcategoria', label: 'Subcategoría', type: 'select' },
+    { key: 'servicio', label: 'Servicio', type: 'text' },
+    { key: 'costo_unitario', label: 'Costo', type: 'number' },
+    { key: 'observaciones', label: 'Observaciones', type: 'text' },
+  ],
+};
 
 window.openCatalogViewer = openCatalogViewer;
 window.closeCatalogViewer = closeCatalogViewer;
 window.renderViewerTable = renderViewerTable;
+window.renderViewerKits = renderViewerKits;
 window.switchViewerTab = switchViewerTab;
+window.openEditItemModal = openEditItemModal;
+window.closeEditItemModal = closeEditItemModal;
+window.saveEditItem = saveEditItem;
+window.deleteViewerItem = deleteViewerItem;
+window.editKitFromViewer = editKitFromViewer;
+window.deleteKitFromViewer = deleteKitFromViewer;
+window.addNewKitFromViewer = addNewKitFromViewer;
+window.addNewItemFromViewer = addNewItemFromViewer;
 
 // editor functions imported from modules/editor.js
 window.openCatalogEditor = openCatalogEditor;
 window.closeCatalogEditor = closeCatalogEditor;
 window.renderEditorTable = renderEditorTable;
-window.switchEditorTab = switchEditorTab;
 window.addNewProduct = addNewProduct;
 window.saveCatalogEdits = saveCatalogEdits;
 window.editorField = editorField;
 window.editorToggleDelete = editorToggleDelete;
+
+// install editor functions
+window.openInstallEditor = openInstallEditor;
+window.closeInstallEditor = closeInstallEditor;
+window.renderInstallEditorTable = renderInstallEditorTable;
+window.installEditorField = installEditorField;
+window.installEditorToggleDelete = installEditorToggleDelete;
+window.addNewInstall = addNewInstall;
+window.saveInstallEditor = saveInstallEditor;
 
 // === BOOT ===
 async function bootApp() {
