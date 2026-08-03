@@ -266,10 +266,7 @@
             <div class="quote-section">
               <div class="quote-section-header">
                 <h2>🛒 Detalle de la cotización</h2>
-                <div style="display:flex;gap:8px;align-items:center;">
-                  <span id="itemsCount" style="font-size: 12px; color: var(--muted)">0 ítems</span>
-                  <button class="btn btn-sm btn-primary" onclick="openInstallServicePicker()" style="font-size:11px;padding:4px 10px;">🔧 + Instalación</button>
-                </div>
+                <span id="itemsCount" style="font-size: 12px; color: var(--muted)">0 ítems</span>
               </div>
               <div class="quote-section-body">
                 <div id="itemsContainer">
@@ -279,7 +276,6 @@
                     <div style="margin-top: 4px; font-size: 11px">
                       Busca y agrega productos del catálogo (panel izquierdo)
                     </div>
-                    <button class="btn btn-sm btn-primary" onclick="openInstallServicePicker()" style="margin-top:10px;font-size:12px;">🔧 Agregar servicio de instalación</button>
                   </div>
                 </div>
               </div>
@@ -492,6 +488,18 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
               style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
             >
               ✏️ Editar catálogo
+            </button>
+            <button
+              class="btn btn-ghost"
+              id="btnEditInstall"
+              onclick="
+                closeCatalogViewer();
+                openCatalogEditor();
+                setTimeout(() => { document.getElementById('editorCategory').value = 'instalaciones'; renderEditorTable(); }, 100);
+              "
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--primary); color: var(--primary); display: none;"
+            >
+              🔧 Editar instalaciones
             </button>
           </div>
 

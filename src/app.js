@@ -819,8 +819,7 @@ function renderMarginConfig() {
   installHtml += '<h4>🔧 Ganancia por instalación</h4>';
   installHtml += '<div class="install-toggle-group">';
   installHtml += `<span class="margin-subsection-count">${installCount} ítem(s) con flag</span>`;
-  installHtml += `<button class="install-master-toggle ${installationEnabled ? 'active' : ''}" onclick="toggleInstallationGlobal()">${installationEnabled ? '🟩 Instalación ON' : ' ⬛ Instalación OFF'}</button>`;
-  installHtml += `<button class="btn btn-sm btn-primary" onclick="openInstallServicePicker()" style="margin-left:8px;">+ Servicio de instalación</button>`;
+  installHtml += `<button class="btn btn-sm btn-primary" onclick="openInstallServicePicker()">+ Servicio de instalación</button>`;
   installHtml += '</div>';
   installHtml += '</div>';
 
@@ -828,14 +827,8 @@ function renderMarginConfig() {
     installHtml +=
       '<div class="margin-empty">No hay items con flag de instalación en la cotización. Re-sincroniza el catálogo para actualizar los datos.</div>';
   } else if (!installationEnabled) {
-    installHtml += `<div class="margin-empty">Instalación desactivada. <strong>${installCount} ítem(s)</strong> con flag de instalación disponibles. </div>`;
+    installHtml += `<div class="margin-empty">Instalación desactivada. <strong>${installCount} ítem(s)</strong> con flag de instalación disponibles.</div>`;
   } else {
-    installHtml += `<div class="install-global-control">`;
-    installHtml += `<label>Margen global de instalación:</label>`;
-    installHtml += `<div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${installationMarginPct}" onchange="updateInstallationMargin(this.value)"><span>%</span></div>`;
-    installHtml += `<span class="install-active-count">${activeCount} de ${installCount} activos</span>`;
-    installHtml += `</div>`;
-
     installItems.forEach(({ idx: kitIdx, compIdx, item, cartItem, isKit }) => {
       const pricing = calcItemPrice(item, {
         installMargin: installationMarginPct,
@@ -1351,6 +1344,8 @@ function switchViewerTab(tab) {
   viewerTab = tab;
   const btnProducts = $('viewerTabProducts');
   const btnInstall = $('viewerTabInstall');
+  const btnEditInstall = $('btnEditInstall');
+  const btnGoToEditor = $('btnGoToEditor');
   if (tab === 'products') {
     btnProducts.style.borderColor = 'var(--primary)';
     btnProducts.style.color = 'var(--primary)';
@@ -1360,6 +1355,8 @@ function switchViewerTab(tab) {
     btnInstall.style.fontWeight = '';
     $('viewerCategory').style.display = '';
     $('viewerSubcategory').style.display = '';
+    if (btnEditInstall) btnEditInstall.style.display = 'none';
+    if (btnGoToEditor) btnGoToEditor.style.display = '';
     renderViewerTable();
   } else {
     btnInstall.style.borderColor = 'var(--primary)';
@@ -1370,6 +1367,8 @@ function switchViewerTab(tab) {
     btnProducts.style.fontWeight = '';
     $('viewerCategory').style.display = 'none';
     $('viewerSubcategory').style.display = 'none';
+    if (btnEditInstall) btnEditInstall.style.display = '';
+    if (btnGoToEditor) btnGoToEditor.style.display = 'none';
     renderViewerInstallations();
   }
 }
