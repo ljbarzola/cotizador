@@ -379,10 +379,12 @@ export async function syncFromGoogleSheets(onProgress, signal) {
 
         const mapped = {};
         if (sheet.table === 'instalaciones') {
-          // Position-based: col0=servicio, col1=costo_unitario, col2=observaciones (optional)
+          // Position-based: servicio, costo_unitario, categoria, subcategoria, observaciones
           mapped.servicio = fields[0] || '';
           mapped.costo_unitario = fields[1] || '0';
-          mapped.observaciones = fields[2] || '';
+          mapped.categoria = fields[2] || 'INSTALACIONES';
+          mapped.subcategoria = fields[3] || '';
+          mapped.observaciones = fields[4] || '';
           mapped.source_id = 'INST-' + String(i + 1).padStart(3, '0');
         } else {
           for (let j = 0; j < fields.length; j++) {

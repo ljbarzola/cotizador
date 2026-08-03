@@ -14,15 +14,16 @@ ALTER TABLE public.instalaciones ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read instalaciones" ON public.instalaciones FOR SELECT USING (true);
 CREATE POLICY "Authenticated can manage instalaciones" ON public.instalaciones FOR ALL USING (auth.role() = 'authenticated');
 
--- Limpiar datos viejos de instalaciones en cotizaciones guardadas (reset installActive/techCost)
+-- Limpiar datos viejos de instalaciones en cotizaciones guardadas (borrar items isInstallService)
 UPDATE public.saved_quotes
 SET items = (
-  SELECT jsonb_agg(
-    CASE
-      WHEN item ? 'isInstallService' THEN item
-      ELSE item - 'installActive' - 'techCost' || '{"installActive": false, "techCost": 0}'::jsonb
-    END
-  )
+  SELECT jsonb_agg(item)
   FROM jsonb_array_elements(items) AS item
+  WHERE NOT (item ? 'isInstallService')
 )
-WHERE items IS NOT NULL AND jsonb_array_length(items) > 0;
+WHERE items IS NOT NULL
+  AND jsonb_array_length(items) > 0
+  AND EXISTS (
+    SELECT 1 FROM jsonb_array_elements(items) AS item
+    WHERE item ? 'isInstallService'
+  );
