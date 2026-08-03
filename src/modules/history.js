@@ -16,7 +16,6 @@ import {
   setCart,
   setSupplierMargins,
   setInstallationMarginPct,
-  setInstallationEnabled,
   setDiscountType,
   setDiscountValue,
   setHistoryQuotesCache,
@@ -250,7 +249,6 @@ export async function newQuote() {
   setCurrentQuoteId(null);
   setSupplierMargins({});
   setInstallationMarginPct(DEFAULT_INSTALL_MARGIN);
-  setInstallationEnabled(false);
   setDiscountType('none');
   setDiscountValue(0);
   if ($('discountType')) $('discountType').value = 'none';

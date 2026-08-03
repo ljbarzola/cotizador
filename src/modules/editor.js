@@ -8,6 +8,7 @@ import { $, fmt, escAttr, toast, showConfirm } from '../utils.js';
 let editorProducts = [];
 let editorChanges = {};
 let editorDeleted = new Set();
+let editorTab = 'products';
 
 const EDITOR_COLS = {
   equipos: [
@@ -73,7 +74,35 @@ export function openCatalogEditor() {
     return;
   }
   $('catalogEditorModal').classList.add('open');
+  editorTab = 'products';
   loadEditorProducts();
+}
+
+export function switchEditorTab(tab) {
+  editorTab = tab;
+  const btnProducts = $('editorTabProducts');
+  const btnInstall = $('editorTabInstall');
+  const catSel = $('editorCategory');
+  if (tab === 'products') {
+    btnProducts.style.borderColor = 'var(--primary)';
+    btnProducts.style.color = 'var(--primary)';
+    btnProducts.style.fontWeight = '600';
+    btnInstall.style.borderColor = 'var(--border)';
+    btnInstall.style.color = 'var(--text)';
+    btnInstall.style.fontWeight = '';
+    catSel.style.display = '';
+    catSel.value = '';
+  } else {
+    btnInstall.style.borderColor = 'var(--primary)';
+    btnInstall.style.color = 'var(--primary)';
+    btnInstall.style.fontWeight = '600';
+    btnProducts.style.borderColor = 'var(--border)';
+    btnProducts.style.color = 'var(--text)';
+    btnProducts.style.fontWeight = '';
+    catSel.style.display = 'none';
+    catSel.value = '';
+  }
+  renderEditorTable();
 }
 
 /**
@@ -183,20 +212,62 @@ export async function loadEditorProducts() {
 export function renderEditorTable() {
   const q = $('editorSearch').value.toLowerCase().trim();
   const cat = $('editorCategory').value;
+
+  if (editorTab === 'install') {
+    const cols = EDITOR_COLS.instalaciones;
+    let filtered = editorProducts.filter(p => p._table === 'instalaciones');
+    if (q)
+      filtered = filtered.filter(
+        p =>
+          (p.source_id || '').toLowerCase().includes(q) ||
+          (p.servicio || '').toLowerCase().includes(q) ||
+          (p.observaciones || '').toLowerCase().includes(q)
+      );
+    $('editorCount').textContent = filtered.length + ' instalaciones';
+    let thead = '<tr>';
+    cols.forEach(c => {
+      thead += `<th style="width:${c.w};">${c.label}</th>`;
+    });
+    thead += '<th style="width:36px;"></th></tr>';
+    $('editorHead').innerHTML = thead;
+    const tbody = $('editorBody');
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="${cols.length + 1}" style="text-align:center;padding:20px;">Sin resultados</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = filtered
+      .map(p => {
+        const origIdx = editorProducts.indexOf(p);
+        const idx = origIdx;
+        const ch = editorChanges[idx] || {};
+        const isDel = editorDeleted.has(idx);
+        const rowClass = isDel ? 'row-deleted' : Object.keys(ch).length > 0 ? 'row-modified' : '';
+        const g = f => (ch[f] !== undefined ? ch[f] : (p[f] ?? ''));
+        let cells = '';
+        cols.forEach(c => {
+          if (c.type === 'number') {
+            cells += `<td><input type="number" step="${c.step || '0.01'}" value="${g(c.key) || 0}" onchange="editorField(${idx},'${c.key}',parseFloat(this.value)||0)"></td>`;
+          } else {
+            cells += `<td><input value="${escAttr(g(c.key))}" onchange="editorField(${idx},'${c.key}',this.value)"${c.placeholder ? ' placeholder="' + c.placeholder + '"' : ''}></td>`;
+          }
+        });
+        cells += `<td style="text-align:center;"><button class="del-btn" onclick="editorToggleDelete(${idx})" title="${isDel ? 'Restaurar' : 'Eliminar'}">${isDel ? '↩' : '✕'}</button></td>`;
+        return `<tr class="${rowClass}" data-idx="${idx}">${cells}</tr>`;
+      })
+      .join('');
+    return;
+  }
+
+  // Products tab
   if (!cat) {
     $('editorHead').innerHTML =
       '<tr><th colspan="15" style="text-align:center;padding:20px;color:var(--muted);">Selecciona una categoría para ver las columnas</th></tr>';
     $('editorBody').innerHTML =
-      '<tr><td colspan="15" style="text-align:center;padding:20px;color:var(--muted);">Selecciona Equipos, Materiales, Servicios o Instalaciones arriba</td></tr>';
+      '<tr><td colspan="15" style="text-align:center;padding:20px;color:var(--muted);">Selecciona Equipos, Materiales o Servicios arriba</td></tr>';
     $('editorCount').textContent = '';
     return;
   }
-  const tableMap = {
-    equipos: 'equipos',
-    materiales: 'materiales',
-    servicios: 'servicios',
-    instalaciones: 'instalaciones',
-  };
+  const tableMap = { equipos: 'equipos', materiales: 'materiales', servicios: 'servicios' };
   const cols = getEditorCols(cat);
   let filtered = editorProducts.filter(p => p._table === tableMap[cat]);
   if (q)

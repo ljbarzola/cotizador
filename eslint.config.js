@@ -48,7 +48,6 @@ export default [
         editorDeleted: 'writable',
         supplierMargins: 'writable',
         installationMarginPct: 'writable',
-        installationEnabled: 'writable',
         currentQuoteId: 'writable',
         currentTemplateId: 'writable',
         currentPage: 'writable',

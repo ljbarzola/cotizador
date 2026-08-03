@@ -20,7 +20,6 @@ async function fetchTemplates() {
       items: row.items || [],
       supplierMargins: row.supplier_margins || {},
       installMargin: row.install_margin ?? 35,
-      installationEnabled: row.installation_enabled ?? false,
       isSample: row.is_sample ?? false,
       createdBy: row.created_by || null,
       createdByName: row.created_by_name || '',
@@ -57,7 +56,6 @@ async function saveTemplate(tpl, session) {
     items: tpl.items || [],
     supplier_margins: tpl.supplierMargins || {},
     install_margin: tpl.installMargin ?? 35,
-    installation_enabled: tpl.installationEnabled ?? false,
     is_sample: tpl.isSample ?? false,
     updated_at: now,
   };
@@ -163,7 +161,6 @@ async function generateDefaultTemplates(catalog) {
       items: findItems(['camara', 'cámara', 'cable', 'dvr', 'nvr', 'grabador', 'disco'], 4),
       supplierMargins: {},
       installMargin: 35,
-      installationEnabled: false,
       isSample: true,
     },
     {
@@ -182,7 +179,6 @@ async function generateDefaultTemplates(catalog) {
       items: findItems(['camara', 'alarma', 'control de acceso', 'cable', 'nvr', 'dvr'], 6),
       supplierMargins: {},
       installMargin: 35,
-      installationEnabled: true,
       isSample: true,
     },
     {
@@ -204,7 +200,6 @@ async function generateDefaultTemplates(catalog) {
       ),
       supplierMargins: {},
       installMargin: 35,
-      installationEnabled: true,
       isSample: true,
     },
   ];

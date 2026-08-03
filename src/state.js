@@ -63,11 +63,8 @@ export const DEFAULT_SUPPLIER_MARGIN = 15;
 /** Default installation margin percentage (35%) */
 export const DEFAULT_INSTALL_MARGIN = 35;
 
-/** @type {number} Global installation margin percentage */
+/** @type {number} Global installation margin percentage (default for new install services) */
 export let installationMarginPct = DEFAULT_INSTALL_MARGIN;
-
-/** @type {boolean} Whether installation pricing is active */
-export let installationEnabled = false;
 
 /** @type {'none'|'percent'|'fixed'} Discount type */
 export let discountType = 'none';
@@ -138,19 +135,11 @@ export function setSupplierMargins(v) {
 }
 
 /**
- * Set the global installation margin percentage.
+ * Set the global installation margin percentage (default for new install services).
  * @param {number} v - Margin percentage (e.g. 35 for 35%)
  */
 export function setInstallationMarginPct(v) {
   installationMarginPct = v;
-}
-
-/**
- * Enable or disable installation pricing.
- * @param {boolean} v - Whether installation is active
- */
-export function setInstallationEnabled(v) {
-  installationEnabled = v;
 }
 
 /**

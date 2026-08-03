@@ -7,11 +7,9 @@ import {
   currentSession,
   supplierMargins,
   installationMarginPct,
-  installationEnabled,
   DEFAULT_SUPPLIER_MARGIN,
   setSupplierMargins,
   setInstallationMarginPct,
-  setInstallationEnabled,
 } from '../state.js';
 import { $, fmt, esc, toast, showConfirm } from '../utils.js';
 import { calcItemPrice, getSupplierMargin, marginBadge } from './helpers.js';
@@ -417,7 +415,6 @@ export async function loadTemplateDirect(id) {
   // Restore margins
   if (tpl.supplierMargins) setSupplierMargins({ ...tpl.supplierMargins });
   if (tpl.installMargin != null) setInstallationMarginPct(tpl.installMargin);
-  if (tpl.installationEnabled != null) setInstallationEnabled(tpl.installationEnabled);
 
   window.renderCatalog?.();
   window.renderCart?.();

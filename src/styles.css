@@ -3583,6 +3583,11 @@ textarea {
   margin-bottom: 4px;
   color: var(--text);
 }
+.isc-meta {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
 .isc-cost {
   font-size: 14px;
   font-weight: 700;

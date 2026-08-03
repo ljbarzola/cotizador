@@ -489,6 +489,112 @@ export async function syncFromGoogleSheets(onProgress, signal) {
   return results;
 }
 
+// ---- Sync solo instalaciones ----
+
+export async function syncInstalacionesOnly(onProgress, signal) {
+  clearSyncLog();
+  const results = { inserted: 0, updated: 0, failed: 0, skipped: 0, unchanged: 0, errors: [], sheets: {} };
+  const sheet = SHEETS.find(s => s.table === 'instalaciones');
+  if (!sheet) return results;
+
+  const sheetLog = { downloaded: 0, parsed: 0, inserted: 0, updated: 0, failed: 0, unchanged: 0 };
+  results.sheets[sheet.name] = sheetLog;
+
+  const tableColumns = await getTableColumns(sheet.table);
+
+  try {
+    if (onProgress) onProgress(`Descargando ${sheet.name}...`);
+    const resp = await fetch(csvUrl(sheet.name));
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    const csvRows = parseCsvRows(text);
+    if (csvRows.length < 1) {
+      log(`${sheet.name}: vacía`, 'error');
+      return results;
+    }
+    sheetLog.downloaded = csvRows.length;
+    sheetLog.parsed = csvRows.length;
+
+    const csvItems = [];
+    for (let i = 0; i < csvRows.length; i++) {
+      if (signal && signal.aborted) break;
+      const fields = csvRows[i];
+      if (fields.length < 2 || !fields[0]) continue;
+      const mapped = {};
+      mapped.servicio = fields[0] || '';
+      mapped.costo_unitario = fields[1] || '0';
+      mapped.categoria = fields[2] || 'INSTALACIONES';
+      mapped.subcategoria = fields[3] || '';
+      mapped.observaciones = fields[4] || '';
+      mapped.source_id = 'INST-' + String(i + 1).padStart(3, '0');
+      try {
+        csvItems.push(buildInstalacion(mapped));
+      } catch (e) {
+        log(`${mapped.source_id}: ${e.message}`, 'error');
+        sheetLog.failed++;
+      }
+    }
+
+    if (signal && signal.aborted) {
+      results.aborted = true;
+      return results;
+    }
+
+    if (onProgress) onProgress(`Procesando ${csvItems.length} registros de ${sheet.name}...`);
+
+    const { data: existingRows, error: fetchErr } = await supabase.from(sheet.table).select('*');
+    if (fetchErr) throw fetchErr;
+    const existingMap = {};
+    (existingRows || []).forEach(r => {
+      if (r.source_id) existingMap[r.source_id] = r;
+    });
+
+    const validCols = tableColumns || null;
+    for (const csvRow of csvItems) {
+      if (signal && signal.aborted) {
+        results.aborted = true;
+        break;
+      }
+      const source_id = csvRow.source_id;
+      const filtered = filterRowToColumns(csvRow, validCols, sheet.table, source_id);
+      const existing = existingMap[source_id];
+      if (existing) {
+        const changes = compareRows(existing, filtered, Object.keys(filtered));
+        if (changes.length === 0) {
+          sheetLog.unchanged++;
+          continue;
+        }
+        const { error } = await supabase.from(sheet.table).update(filtered).eq('id', existing.id);
+        if (error) {
+          sheetLog.failed++;
+          log(`  ${source_id} ERROR: ${error.message}`, 'error');
+        } else {
+          sheetLog.updated++;
+          log(`  ${source_id} → ${changes.join(', ')}`, 'info');
+        }
+      } else {
+        const { error } = await supabase.from(sheet.table).insert(filtered);
+        if (error) {
+          sheetLog.failed++;
+          log(`  ${source_id} ERROR: ${error.message}`, 'error');
+        } else {
+          sheetLog.inserted++;
+        }
+      }
+    }
+    log(`${sheet.name}: +${sheetLog.inserted} ~${sheetLog.updated} =${sheetLog.unchanged} ✕${sheetLog.failed}`);
+  } catch (e) {
+    log(`${sheet.name}: ${e.message}`, 'error');
+    results.errors.push(`${sheet.name}: ${e.message}`);
+  }
+
+  results.inserted = sheetLog.inserted;
+  results.updated = sheetLog.updated;
+  results.unchanged = sheetLog.unchanged;
+  results.failed = sheetLog.failed;
+  return results;
+}
+
 // ---- Lectura unificada ----
 // Los precios se calculan en tiempo real en app.js, aquí solo leemos datos crudos
 

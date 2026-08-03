@@ -473,7 +473,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             <button
               class="btn btn-ghost"
               id="btnSyncCatalog"
-              onclick="openSyncPanel()"
+              onclick="if(viewerTab==='install'){openInstallSyncPanel()}else{openSyncPanel()}"
               style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
             >
               🔄 Sincronizar Sheet
@@ -595,6 +595,76 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             </div>
           </div>
 
+          <!-- PANEL DE SINCRONIZACIÓN INSTALACIONES -->
+          <div
+            id="installSyncPanel"
+            style="
+              display: none;
+              margin-bottom: 12px;
+              border: 2px solid #f59e0b;
+              border-radius: 8px;
+              overflow: hidden;
+            "
+          >
+            <div
+              style="
+                background: #f59e0b;
+                color: white;
+                padding: 10px 14px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <span style="font-weight: 600; font-size: 13px">🔧 Sincronizar instalaciones</span>
+              <button
+                onclick="closeInstallSyncPanel()"
+                style="
+                  background: rgba(255, 255, 255, 0.15);
+                  color: white;
+                  border: none;
+                  width: 24px;
+                  height: 24px;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 14px;
+                "
+              >
+                ✕
+              </button>
+            </div>
+            <div style="padding: 12px 14px; background: #f9fafb">
+              <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center">
+                <button
+                  class="btn btn-primary"
+                  id="btnStartInstallSync"
+                  onclick="startInstallSync()"
+                  style="font-size: 12px; padding: 7px 14px; background: #f59e0b; border-color: #f59e0b;"
+                >
+                  ▶ Sincronizar instalaciones
+                </button>
+                <button
+                  class="btn btn-ghost"
+                  id="btnStopInstallSync"
+                  onclick="stopInstallSync()"
+                  style="font-size: 12px; padding: 7px 14px; border-color: var(--danger); color: var(--danger); display: none;"
+                >
+                  ⏹ Detener
+                </button>
+                <span id="installSyncPanelStatus" style="font-size: 12px; color: var(--muted)"></span>
+              </div>
+              <div
+                id="installSyncLogContainer"
+                style="background: #1f2937; border-radius: 6px; max-height: 200px; overflow-y: auto; font-family: ui-monospace, monospace; font-size: 11px;"
+              >
+                <div id="installSyncLogEntries" style="padding: 8px 10px; color: #9ca3af">
+                  Esperando inicio...
+                </div>
+              </div>
+              <div id="installSyncPanelSummary" style="margin-top: 8px; font-size: 12px; color: var(--muted)"></div>
+            </div>
+          </div>
+
           <!-- TABLA DE PRODUCTOS -->
           <div style="flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 6px">
             <table class="editor-table viewer-table" id="viewerTable">
@@ -635,6 +705,22 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
           style="flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 12px 16px"
         >
           <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center">
+            <button
+              class="btn btn-ghost editor-tab-btn"
+              id="editorTabProducts"
+              onclick="switchEditorTab('products')"
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--primary); color: var(--primary); font-weight: 600"
+            >
+              📦 Productos
+            </button>
+            <button
+              class="btn btn-ghost editor-tab-btn"
+              id="editorTabInstall"
+              onclick="switchEditorTab('install')"
+              style="font-size: 12px; padding: 7px 14px; border-color: var(--border); color: var(--text)"
+            >
+              🔧 Instalaciones
+            </button>
             <select
               id="editorCategory"
               onchange="renderEditorTable()"
@@ -650,7 +736,6 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
               <option value="equipos">Equipos</option>
               <option value="materiales">Materiales</option>
               <option value="servicios">Servicios</option>
-              <option value="instalaciones">🔧 Instalaciones</option>
             </select>
             <input
               type="text"
@@ -1333,13 +1418,21 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
     <!-- MODAL: PICKER SERVICIOS INSTALACIÓN -->
     <div class="modal-backdrop" id="installServicePickerModal">
-      <div class="modal" style="max-width: 600px">
+      <div class="modal" style="max-width: 650px">
         <div class="modal-header">
           <h2>🔧 Servicios de instalación</h2>
           <button class="modal-close" onclick="closeInstallServicePicker()">✕</button>
         </div>
         <div class="modal-body">
-          <input type="text" id="installServiceSearch" placeholder="Buscar servicio..." style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;margin-bottom:10px;" oninput="renderInstallServiceList()">
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+            <input type="text" id="installServiceSearch" placeholder="Buscar servicio..." style="flex:1;min-width:150px;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;" oninput="renderInstallServiceList()">
+            <select id="installServiceCategory" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;" onchange="renderInstallServiceList()">
+              <option value="">Todas las categorías</option>
+            </select>
+            <select id="installServiceSubcategory" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;" onchange="renderInstallServiceList()">
+              <option value="">Todas las subcategorías</option>
+            </select>
+          </div>
           <div id="installServiceList"></div>
         </div>
         <div class="modal-footer">
@@ -1350,7 +1443,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
     <!-- MODAL: EDITAR SERVICIO INSTALACIÓN -->
     <div class="modal-backdrop" id="installServiceEditorModal">
-      <div class="modal" style="max-width: 400px">
+      <div class="modal" style="max-width: 450px">
         <div class="modal-header">
           <h2>🔧 Editar servicio de instalación</h2>
           <button class="modal-close" onclick="closeInstallServiceEditor()">✕</button>
@@ -1365,9 +1458,13 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Costo base</label>
             <div id="iseCost" style="font-size:14px;"></div>
           </div>
-          <div>
+          <div style="margin-bottom:12px;">
             <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Cantidad</label>
             <input type="number" id="iseQty" min="1" step="1" value="1" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Margen de ganancia (%)</label>
+            <input type="number" id="iseMargin" min="0" max="100" step="1" value="35" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;">
           </div>
         </div>
         <div class="modal-footer">
