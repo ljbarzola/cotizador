@@ -184,10 +184,24 @@ function buildServicio(mapped) {
 // INSTALACIONES CSV: columnas positionales (sin headers formales)
 // Columna 1: servicio (descripción), Columna 2: costo_unitario
 
+export function normalizeCategory(cat, table) {
+  const c = String(cat || '')
+    .trim()
+    .toUpperCase();
+  if (c.includes('EQUIPOS DE SEGURIDAD') || c.includes('EQUIPOS DE SEGURIDAD ELECTRONICA')) return 'EQUIPOS';
+  if (c === 'EQUIPOS' || c === 'MATERIALES' || c === 'SERVICIOS') return c;
+
+  if (table === 'equipos') return 'EQUIPOS';
+  if (table === 'materiales') return 'MATERIALES';
+  if (table === 'servicios' || table === 'instalaciones') return 'SERVICIOS';
+
+  return 'EQUIPOS';
+}
+
 function buildInstalacion(mapped) {
   return {
     source_id: txt(mapped.source_id) || null,
-    categoria: txt(mapped.categoria) || 'INSTALACIONES',
+    categoria: normalizeCategory(mapped.categoria, 'instalaciones'),
     subcategoria: txt(mapped.subcategoria) || '',
     servicio: txt(mapped.servicio),
     costo_unitario: num(mapped.costo_unitario),
@@ -382,7 +396,7 @@ export async function syncFromGoogleSheets(onProgress, signal) {
           // Position-based: servicio, costo_unitario, categoria, subcategoria, observaciones
           mapped.servicio = fields[0] || '';
           mapped.costo_unitario = fields[1] || '0';
-          mapped.categoria = fields[2] || 'INSTALACIONES';
+          mapped.categoria = fields[2] || 'SERVICIOS TÉCNICOS';
           mapped.subcategoria = fields[3] || '';
           mapped.observaciones = fields[4] || '';
           mapped.source_id = 'INST-' + String(i + 1).padStart(3, '0');
@@ -516,17 +530,42 @@ export async function syncInstalacionesOnly(onProgress, signal) {
     sheetLog.parsed = csvRows.length;
 
     const csvItems = [];
+    let validRowIndex = 0;
     for (let i = 0; i < csvRows.length; i++) {
       if (signal && signal.aborted) break;
       const fields = csvRows[i];
       if (fields.length < 2 || !fields[0]) continue;
+
+      const f0 = String(fields[0] || '')
+        .toLowerCase()
+        .trim();
+      const f1 = String(fields[1] || '')
+        .toLowerCase()
+        .trim();
+
+      // Skip header row if present
+      if (
+        f0 === 'servicio' ||
+        f0 === 'instalacion' ||
+        f0 === 'instalación' ||
+        f0 === 'descripcion' ||
+        f1 === 'costo' ||
+        f1 === 'costo_unitario' ||
+        f1 === 'costo unitario' ||
+        f1 === 'precio' ||
+        isNaN(parseFloat(f1.replace(/[^\d.-]/g, '')))
+      ) {
+        if (i === 0) continue; // Skip header row
+      }
+
+      validRowIndex++;
       const mapped = {};
       mapped.servicio = fields[0] || '';
       mapped.costo_unitario = fields[1] || '0';
-      mapped.categoria = fields[2] || 'INSTALACIONES';
+      mapped.categoria = normalizeCategory(fields[2] || '', 'instalaciones');
       mapped.subcategoria = fields[3] || '';
       mapped.observaciones = fields[4] || '';
-      mapped.source_id = 'INST-' + String(i + 1).padStart(3, '0');
+      mapped.source_id = 'INST-' + String(validRowIndex).padStart(3, '0');
       try {
         csvItems.push(buildInstalacion(mapped));
       } catch (e) {
@@ -620,12 +659,24 @@ export async function loadAllProducts() {
   }
 
   if (eqRes.data && eqRes.data.length > 0) {
+    const legacyEq = eqRes.data.filter(r => r.categoria && r.categoria.toUpperCase().includes('EQUIPOS DE SEGURIDAD'));
+    if (legacyEq.length > 0) {
+      supabase
+        .from('equipos')
+        .update({ categoria: 'EQUIPOS' })
+        .in(
+          'id',
+          legacyEq.map(r => r.id)
+        )
+        .then(() => {})
+        .catch(() => {});
+    }
     for (const r of eqRes.data) {
       catalog.push({
         _table: 'equipos',
         _id: r.id,
         sourceId: r.source_id || '',
-        category: r.categoria || '',
+        category: normalizeCategory(r.categoria, 'equipos'),
         subcategory: r.subcategoria || '',
         model: r.modelo || '',
         description: r.producto || '',
@@ -650,7 +701,7 @@ export async function loadAllProducts() {
         _table: 'materiales',
         _id: r.id,
         sourceId: r.source_id || '',
-        category: r.categoria || '',
+        category: normalizeCategory(r.categoria, 'materiales'),
         subcategory: r.subcategoria || '',
         model: '',
         description: r.producto || '',
@@ -680,7 +731,7 @@ export async function loadAllProducts() {
         _table: 'servicios',
         _id: r.id,
         sourceId: r.source_id || '',
-        category: r.categoria || 'SERVICIOS',
+        category: normalizeCategory(r.categoria, 'servicios'),
         subcategory: r.subcategoria || '',
         model: '',
         description: r.servicio || '',
@@ -735,10 +786,40 @@ export function getCategoryHierarchy(catalog) {
 export async function loadAllInstalaciones() {
   const { data, error } = await supabase.from('instalaciones').select('*').order('servicio');
   if (error) throw error;
-  return (data || []).map(r => ({
+
+  // Filter out any header row saved in DB
+  const validRows = (data || []).filter(r => {
+    const s = String(r.servicio || '')
+      .toLowerCase()
+      .trim();
+    return s !== 'servicio' && s !== 'instalacion' && s !== 'instalación' && s !== 'descripcion';
+  });
+
+  // Auto-migrate legacy installation category names in Supabase to 'SERVICIOS'
+  const legacyInst = validRows.filter(
+    r =>
+      !['EQUIPOS', 'MATERIALES', 'SERVICIOS'].includes(
+        String(r.categoria || '')
+          .trim()
+          .toUpperCase()
+      )
+  );
+  if (legacyInst.length > 0) {
+    supabase
+      .from('instalaciones')
+      .update({ categoria: 'SERVICIOS' })
+      .in(
+        'id',
+        legacyInst.map(r => r.id)
+      )
+      .then(() => {})
+      .catch(e => console.warn('[SYNC] Error migrating legacy installations categories:', e.message));
+  }
+
+  return validRows.map(r => ({
     id: r.id,
     sourceId: r.source_id || '',
-    category: r.categoria || 'INSTALACIONES',
+    category: normalizeCategory(r.categoria, 'instalaciones'),
     subcategory: r.subcategoria || '',
     description: r.servicio || '',
     cost: num(r.costo_unitario),

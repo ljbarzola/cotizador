@@ -2220,6 +2220,14 @@ textarea {
   border-bottom: none;
 }
 
+/* Higher z-index for sub-modals opened on top of catalog viewer */
+#kitEditorModal.modal-backdrop,
+#editItemModal.modal-backdrop,
+#createProductModal.modal-backdrop,
+#createInstallModal.modal-backdrop {
+  z-index: 1050;
+}
+
 /* Column resizer */
 .col-resizer {
   position: absolute;
@@ -2269,9 +2277,40 @@ th:hover .col-resizer {
   color: var(--danger);
 }
 
-/* Edit item modal form */
-.edit-item-field {
+/* Edit item modal form sections */
+.edit-item-section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
   margin-bottom: 12px;
+}
+.edit-item-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f3f4f6;
+}
+.edit-item-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.edit-item-full {
+  margin-top: 10px;
+}
+@media (max-width: 550px) {
+  .edit-item-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.edit-item-field {
+  margin-bottom: 10px;
 }
 .edit-item-field label {
   display: block;

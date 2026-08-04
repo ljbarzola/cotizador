@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Cotizador GEMESEG Tecnología</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -163,9 +166,10 @@
             <div class="catalog-pagination" id="catalogPagination"></div>
           </div>
           <div id="catalogKitsTab" style="display: none">
-            <div class="catalog-header">
-              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%">
-                <span style="font-size: 13px; color: var(--muted)">Kits de productos disponibles</span>
+            <div class="catalog-header" style="flex-direction:column;align-items:stretch;gap:8px;">
+              <div style="font-size: 13px; color: var(--muted)">Kits de productos disponibles</div>
+              <div class="search-box">
+                <input type="text" id="kitsPanelSearch" placeholder="Buscar kit por nombre o código..." oninput="renderKitsCatalog()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
               </div>
             </div>
             <div class="catalog-list" id="kitsCatalogList"></div>
@@ -456,11 +460,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             </select>
             <div class="viewer-actions" id="viewerActionsProducts">
               <button class="btn btn-sm btn-primary" onclick="addNewItemFromViewer('product');">+ Nuevo producto</button>
-              <button class="btn btn-sm btn-ghost" onclick="openSyncPanel();">🔄 Sincronizar</button>
+              <button class="btn btn-sm btn-ghost" onclick="openSyncPanel();">🔄 Sincronizar Productos</button>
             </div>
             <div class="viewer-actions" id="viewerActionsInstall" style="display:none;">
               <button class="btn btn-sm btn-primary" onclick="addNewItemFromViewer('install');">+ Nueva instalación</button>
-              <button class="btn btn-sm btn-ghost" onclick="openInstallSyncPanel();">🔄 Sincronizar</button>
+              <button class="btn btn-sm btn-ghost" onclick="openInstallSyncPanel();">🔧 Sincronizar Instalaciones</button>
             </div>
             <div class="viewer-actions" id="viewerActionsKits" style="display:none;">
               <button class="btn btn-sm btn-primary" onclick="addNewKitFromViewer();">+ Nuevo kit</button>
@@ -740,306 +744,170 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
     <!-- MODAL: MANUAL DE USUARIO -->
     <div class="modal-backdrop" id="helpModal">
-      <div class="modal" style="max-width: 650px">
+      <div class="modal" style="max-width: 850px; width: 92vw;">
         <div class="modal-header">
-          <h2>❓ Manual de usuario</h2>
+          <h2>❓ Guía del Cotizador y Manual de Uso</h2>
           <button class="modal-close" onclick="closeHelpModal()">✕</button>
         </div>
-        <div class="modal-body" style="max-height: 70vh; overflow-y: auto">
+        <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 16px;">
+
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">🔑</span><span class="help-title">1. Inicio de sesión</span
-              ><span class="help-arrow">▼</span>
+              <span class="help-icon">📦</span><span class="help-title">1. Panel de Catálogo y Búsqueda de Productos</span>
+              <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
-              <p>Ingresa tu <strong>usuario</strong> (correo o nombre corto) y <strong>contraseña</strong>.</p>
+              <p>Ubicado en el panel principal del catálogo:</p>
               <ul>
-                <li>Haz clic en el ojo para mostrar/ocultar la contraseña.</li>
-                <li>Si olvidas tu contraseña, contacta al administrador.</li>
+                <li><strong>Búsqueda directa:</strong> Ingresa el código (ej. <code>EQ-0001</code>), modelo o palabras del nombre del producto.</li>
+                <li><strong>Filtros por categoría:</strong> Filtra por <strong>EQUIPOS</strong>, <strong>MATERIALES</strong> o <strong>SERVICIOS</strong> y selecciona la subcategoría deseada.</li>
+                <li><strong>Detalle del producto:</strong> Haz clic sobre cualquier producto para consultar su ficha técnica, costo base y precios.</li>
+                <li><strong>Indicador de vigencia de precio:</strong> 🟢 Actualizado (≤ 30 días) · 🟡 Reciente (30 a 180 días) · 🔴 Requerir revisión (+180 días).</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">📦</span><span class="help-title">2. Catálogo de productos</span
-              ><span class="help-arrow">▼</span>
+              <span class="help-icon">📦</span><span class="help-title">2. Kits de Productos</span>
+              <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
-              <p>El catálogo está en el panel izquierdo. Puedes:</p>
+              <p>Los Kits agrupan conjuntos de productos frecuentes (ej. Kit CCTV 4 Cámaras, Kit Alarma Residencial):</p>
               <ul>
-                <li><strong>Buscar</strong> por código, modelo o descripción.</li>
-                <li><strong>Filtrar</strong> por categoría y subcategoría.</li>
-                <li><strong>Hacer clic</strong> en un producto para ver todos sus detalles y precios.</li>
-                <li><strong>+ Agregar</strong> para añadir al carrito.</li>
-              </ul>
-              <p>Los colores indican actualización: 🟢 ≤30 días · 🟡 30-180 días · 🔴 +180 días o sin fecha.</p>
-            </div>
-          </div>
-
-          <div class="help-section">
-            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">📦</span><span class="help-title">3. Kits de productos</span
-              ><span class="help-arrow">▼</span>
-            </button>
-            <div class="help-section-content">
-              <p>Los kits permiten agrupar productos frecuentes para agregarlos rápidamente a una cotización.</p>
-              <ul>
-                <li><strong>Crear kit:</strong> Haz clic en "+ Nuevo kit" en la pestaña Kits del catálogo.</li>
-                <li><strong>Agregar componentes:</strong> Usa la búsqueda para encontrar productos y haz clic en "+ Agregar".</li>
-                <li><strong>Nombre descriptivo:</strong> Ponle un nombre claro (ej: "Kit Cámaras IP").</li>
-                <li><strong>Agregar kit al carrito:</strong> Haz clic en el botón 🛒 del kit. Sus componentes se agregan como items individuales.</li>
-                <li><strong>Editar componentes:</strong> En el carrito, cada componente del kit se puede editar por separado (cantidad, costo técnico, instalación, margen).</li>
-                <li><strong>Eliminar componente:</strong> Puedes quitar un componente del kit en el carrito sin afectar la definición del kit.</li>
-              </ul>
-              <p style="color:var(--muted);font-size:11px;">Los kits están compartidos entre todos los usuarios. Los cambios se guardan en la nube.</p>
-            </div>
-          </div>
-
-          <div class="help-section">
-            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">👤</span><span class="help-title">4. Datos del cliente</span
-              ><span class="help-arrow">▼</span>
-            </button>
-            <div class="help-section-content">
-              <p>Completa los datos del cliente en la sección correspondiente:</p>
-              <ul>
-                <li><strong>Cliente / Razón social</strong> (obligatorio para guardar).</li>
-                <li><strong>RUC / Cédula</strong>, <strong>Teléfono</strong>, <strong>Dirección</strong>.</li>
-                <li><strong>Persona de contacto</strong> y <strong>Email</strong>.</li>
+                <li><strong>Agregar al carrito:</strong> Haz clic en el botón <code>🛒 $total</code>. Todos los componentes se agregarán automáticamente como ítems independientes en la oferta.</li>
+                <li><strong>Modificación en oferta:</strong> Cada componente del kit se puede ajustar por separado en la cotización (cambiar cantidades, activar mano de obra o aplicar descuentos individuales).</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">🛒</span><span class="help-title">5. Crear cotización</span
-              ><span class="help-arrow">▼</span>
+              <span class="help-icon">👤</span><span class="help-title">3. Datos del Cliente</span>
+              <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
-              <p>Agrega productos con <strong>+ Agregar</strong> y cambia cantidades directamente en la tabla.</p>
+              <p>Para emitir y guardar una cotización válida, registra los datos principales del cliente:</p>
+              <ul>
+                <li><strong>Obligatorios para guardar:</strong> Cliente / Razón Social, RUC / Cédula, Teléfono y Correo Electrónico.</li>
+                <li><strong>Campos adicionales:</strong> Dirección y Persona de contacto.</li>
+              </ul>
+            </div>
+          </div>
 
-              <div class="help-subtitle">Cómo se calculan los precios</div>
-              <p>Dependiendo del tipo de producto, el cálculo cambia:</p>
-
-              <div class="help-subtitle">Equipos y Materiales</div>
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">🛒</span><span class="help-title">4. Guía en 4 Pasos para Crear una Cotización</span>
+              <span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>Sigue esta secuencia recomendada para elaborar una oferta comercial:</p>
               <ol>
-                <li>Se parte del <strong>costo base</strong> del producto.</li>
-                <li>
-                  Si el producto tiene ganancia habilitada, se suma el <strong>margen de proveedor</strong> (por defecto
-                  15%, editable por proveedor o directamente en la tabla para sin proveedor).
+                <li><strong>Paso 1: Registra al Cliente:</strong> Completa los datos en la sección del cliente.</li>
+                <li><strong>Paso 2: Selecciona los Ítems:</strong> Busca productos o kits en el panel y haz clic en <code>+ Agregar</code>.</li>
+                <li><strong>Paso 3: Revisa Cantidades y Precios:</strong>
+                  <ul>
+                    <li>Ajusta las cantidades requeridas en la columna <code>Cant</code>.</li>
+                    <li>Activa o desactiva la mano de obra de instalación si la partida lo requiere.</li>
+                    <li>Aplica un descuento global (porcentaje o valor fijo) si aplica.</li>
+                  </ul>
                 </li>
-                <li>Se suma <strong>IVA 15%</strong> (siempre).</li>
-                <li>
-                  Si el producto tiene instalación activa, se suma el <strong>costo técnico</strong> (instalación) +
-                  <strong>margen de instalación</strong> (porcentaje global, por defecto 35%).
-                  <strong>Importante:</strong> La instalación es un valor fijo por ítem, NO se multiplica por las
-                  unidades.
-                </li>
+                <li><strong>Paso 4: Guarda o Exporta:</strong> Guarda la cotización en la nube o genera el documento PDF oficial.</li>
               </ol>
 
-              <div class="help-subtitle">Servicios</div>
-              <ol>
-                <li>Se toma el <strong>costo mensual</strong>. Si es 0, se usa el costo anual ÷ 12.</li>
-                <li>Se suma <strong>IVA 15%</strong>.</li>
-                <li>Sin ganancia, sin instalación.</li>
-              </ol>
-
-              <div class="help-subtitle">Valores que puedes modificar</div>
+              <div class="help-subtitle" style="margin-top: 12px; font-weight:700;">Estructura del Cálculo de Precios</div>
               <ul>
-                <li>
-                  <strong>Margen proveedor (%):</strong> Se configura por cada proveedor en "Configuración de márgenes".
-                  Los productos sin proveedor también tienen un margen individual editable directamente en la tabla de
-                  la cotización. Solo afecta productos con ganancia habilitada.
-                </li>
-                <li>
-                  <strong>Margen instalación (%):</strong> Porcentaje global que se aplica a todos los productos con
-                  instalación activa.
-                </li>
-                <li>
-                  <strong>Instalación global:</strong> Botón para activar o desactivar instalación en todos los
-                  productos que la requieran.
-                </li>
-                <li><strong>Costo técnico:</strong> Mano de obra por unidad, editable en la tabla de la cotización.</li>
-              </ul>
-
-              <p>Los totales se calculan automáticamente: <strong>Productos + IVA + Instalación</strong>.</p>
-            </div>
-          </div>
-
-          <div class="help-section">
-            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">💾</span><span class="help-title">6. Guardar e imprimir</span
-              ><span class="help-arrow">▼</span>
-            </button>
-            <div class="help-section-content">
-              <ul>
-                <li>
-                  <strong>Guardar cotización:</strong> Guarda en la nube (Supabase). Requiere nombre del cliente y al
-                  menos 1 producto.
-                </li>
-                <li>
-                  <strong>Guardar como plantilla:</strong> Guarda la cotización actual como plantilla reutilizable.
-                </li>
-                <li>
-                  <strong>Imprimir / Guardar PDF:</strong> Abre el diálogo de impresión del navegador. Selecciona
-                  "Guardar como PDF" para descargar.
-                </li>
-                <li><strong>Nueva cotización:</strong> Limpia todo y empieza de cero.</li>
-                <li>El <strong>borrador</strong> se guarda automáticamente en el navegador.</li>
+                <li><strong>Equipos y Materiales:</strong> Costo Base → +Margen Proveedor (editable) → +IVA 15% → +Costo Técnico / Instalación (fijo por partida, no se multiplica por cantidad).</li>
+                <li><strong>Servicios:</strong> Costo Mensual (o Anual / 12) + IVA 15%.</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">👁️</span
-              ><span class="help-title">7. Información de cotización vs documento final (Cliente)</span
-              ><span class="help-arrow">▼</span>
+              <span class="help-icon">👁️</span><span class="help-title">5. Cotizador en Pantalla vs Documento PDF del Cliente</span>
+              <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
-              <p>El cotizador (usted) y el cliente (PDF) ven información diferente:</p>
+              <p>El sistema maneja una separación confidencial estricta entre la pantalla del Asesor y el PDF final entregado al cliente:</p>
 
-              <div class="help-subtitle">Lo que ve el COTIZADOR (pantalla)</div>
-              <table style="width: 100%; font-size: 12px; border-collapse: collapse; margin-bottom: 12px">
-                <tr style="background: #f3f4f6">
-                  <th style="text-align: left; padding: 6px; border: 1px solid #ddd">Columna</th>
-                  <th style="text-align: left; padding: 6px; border: 1px solid #ddd">Contenido</th>
-                </tr>
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ddd">Costo Unit.</td>
-                  <td style="padding: 6px; border: 1px solid #ddd">
-                    <strong>Costo REAL del producto</strong> (sin ganancia, sin IVA). Es el precio base que la empresa paga.
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ddd">Cant</td>
-                  <td style="padding: 6px; border: 1px solid #ddd">Cantidad de unidades</td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ddd">Costo Total</td>
-                  <td style="padding: 6px; border: 1px solid #ddd">
-                    <strong>Costo Unit. × Cant</strong>. Subtotal del costo base por todas las unidades.
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ddd">Ganancia</td>
-                  <td style="padding: 6px; border: 1px solid #ddd">
-                    <strong>Costo Unit. x Cant. x % de ganancia </strong>. Ganancia de la empresa por la venta. Solo cambia
-                    según el % de ganancia por proveedor. <em>Oculta en PDF.</em>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ddd">PVP</td>
-                  <td style="padding: 6px; border: 1px solid #ddd">
-                    <strong>Precio de Venta = Costo Total + Ganancia</strong>. Lo que el cliente paga. <em>Oculta en
-                    PDF.</em>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ddd">Inst</td>
-                  <td style="padding: 6px; border: 1px solid #ddd">
-                    Costo de instalación (valor fijo por item, no por unidad). Incluye costo técnico + margen de
-                    instalación.
-                  </td>
-                </tr>
-              </table>
+              <div class="help-subtitle">1. Pantalla del Asesor (Vista de Gestión Interna)</div>
+              <p>Muestra el desglose interno completo: Costo base real de adquisición, Margen de ganancia del proveedor, Ganancia en dólares, PVP interno y costo de instalación.</p>
 
-              <div class="help-subtitle">Lo que ve el CLIENTE (PDF)</div>
+              <div class="help-subtitle">2. Documento PDF para el Cliente (Vista Comercial)</div>
               <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:12px;">
-                <strong>Importante:</strong> El cliente ve el costo del producto, sin conocer el margen de ganancia.
+                <strong>Confidencialidad garantizada:</strong> El documento PDF oculta de forma absoluta los márgenes de ganancia, los costos internos y los desgloses privados de la empresa.
               </div>
-              <table style="width: 100%; font-size: 12px; border-collapse: collapse; margin-bottom: 12px">
-                <tr style="background: #f3f4f6">
-                  <th style="text-align: left; padding: 6px; border: 1px solid #ddd">Columna</th>
-                  <th style="text-align: left; padding: 6px; border: 1px solid #ddd">Contenido</th>
-                </tr>
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ddd">Costo Unit.</td>
-                  <td style="padding: 6px; border: 1px solid #ddd">
-                    <strong>Cost Unit. x % Ganancia</strong>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ddd">Cant</td>
-                  <td style="padding: 6px; border: 1px solid #ddd">Cantidad de unidades</td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ddd">Costo Total</td>
-                  <td style="padding: 6px; border: 1px solid #ddd">
-                    <strong>Cost unitario x Ganancia x Cantidad</strong>: Costo Unit. × Cant. <em>Equivalente a PVP del cotizador (pantalla)</em>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ddd">Inst</td>
-                  <td style="padding: 6px; border: 1px solid #ddd">Costo de instalación (sin desglose de ganancia).</td>
-                </tr>
-              </table>
-
-              <div class="help-subtitle">Cálculo de precios</div>
-              <ol>
-                <li><strong>Costo Unit.</strong> = costo real del producto (sin ganancia)</li>
-                <li><strong>Costo Total</strong> = Costo Unit. × Cantidad</li>
-                <li><strong>Ganancia</strong> = (Costo Unit. × % ganancia proveedor) × Cantidad</li>
-                <li><strong>PVP</strong> = Costo Total + Ganancia (lo que paga el cliente)</li>
-                <li>
-                  Si tiene instalación: se suma costo técnico + margen de instalación (35%).
-                  <strong>La instalación es valor fijo, NO se multiplica por unidades</strong>
-                </li>
-              </ol>
+              <ul>
+                <li><strong>Costo Unitario en PDF:</strong> Equivale al precio público (PVP) unitario del producto con el margen ya incorporado.</li>
+                <li><strong>Costo Total en PDF:</strong> Multiplicación de la cantidad por el precio unitario del producto.</li>
+                <li><strong>Subtotales:</strong> Muestra el Subtotal de Equipos/Materiales, IVA 15%, Servicios de Instalación y Total General a pagar.</li>
+              </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">📂</span><span class="help-title">8. Historial</span
-              ><span class="help-arrow">▼</span>
+              <span class="help-icon">💾</span><span class="help-title">6. Guardar, Plantillas y Exportación a PDF</span>
+              <span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <ul>
+                <li><strong>Guardar cotización:</strong> Registra la oferta en la base de datos asociada al número de cotización oficial.</li>
+                <li><strong>Guardar como plantilla:</strong> Guarda el conjunto de productos y cliente para ser reutilizado en cotizaciones futuras.</li>
+                <li><strong>Imprimir / PDF:</strong> Abre la ventana del navegador pre-configurada para descargar o guardar el documento en formato PDF.</li>
+                <li><strong>Borrador automático:</strong> Los cambios se respaldan continuamente en el navegador por seguridad.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">📂</span><span class="help-title">7. Historial de Cotizaciones</span>
+              <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
               <ul>
                 <li>Accede con el botón <strong>Historial</strong> en la barra superior.</li>
-                <li><strong>Busca</strong> por nombre de cliente, vendedor o fecha.</li>
-                <li><strong>Cambia el estado:</strong> Borrador → Enviada → Vista → Aceptada / Rechazada → Vencida.</li>
-                <li><strong>Cargar:</strong> Abre una cotización guardada para editarla.</li>
-                <li><strong>Eliminar:</strong> Borra permanentemente (solo admin).</li>
+                <li><strong>Filtrado avanzado:</strong> Filtra por nombre de cliente, estado (Borrador, Enviada, Vista, Aceptada, Rechazada, Vencida) o rango de fechas.</li>
+                <li><strong>Cargar:</strong> Recupera una cotización previa para revisar o editar.</li>
+                <li><strong>Cambiar estado:</strong> Modifica el ciclo de vida de la propuesta directamente.</li>
+                <li><strong>Eliminar:</strong> Borra la cotización seleccionada de forma permanente.</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">📋</span><span class="help-title">9. Plantillas</span
-              ><span class="help-arrow">▼</span>
+              <span class="help-icon">📋</span><span class="help-title">8. Uso y Descarga de Plantillas</span>
+              <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
               <ul>
-                <li>Accede con <strong>Plantillas</strong> en la barra superior.</li>
-                <li><strong>Crear:</strong> Llena una cotización y haz clic en "Guardar como plantilla".</li>
-                <li>
-                  <strong>Cargar:</strong> Selecciona una plantilla y haz clic en importar. Reemplaza la cotización
-                  actual.
-                </li>
-                <li><strong>Vista previa:</strong> Muestra el detalle con precios calculados.</li>
-                <li><strong>Eliminar:</strong> Borra la plantilla (con confirmación).</li>
+                <li>Accede mediante el botón <strong>Plantillas</strong> en la barra superior.</li>
+                <li><strong>Vista previa:</strong> Examina las partidas con los precios recalculados en tiempo real según el catálogo actual.</li>
+                <li><strong>Cargar plantilla:</strong> Importa los productos y la configuración directamente al área de trabajo.</li>
+                <li><strong>Descargar copia:</strong> Genera y abre de inmediato la versión PDF oficial de la plantilla.</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">🔄</span><span class="help-title">10. Sincronizar catálogo</span
-              ><span class="help-arrow">▼</span>
+              <span class="help-icon">🔄</span><span class="help-title">9. Visor de Catálogo e Interacción</span>
+              <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
               <ul>
-                <li>Haz clic en <strong>Catálogo</strong> en la barra superior.</li>
-                <li>Selecciona la pestaña <strong>Sincronizar</strong>.</li>
-                <li>Haz clic en <strong>Sincronizar</strong> para descargar productos desde Google Sheets.</li>
-                <li>El progreso se muestra en tiempo real en el log.</li>
-                <li>Puedes <strong>detener</strong> la sincronización en cualquier momento.</li>
+                <li>Abre el modal haciendo clic en <strong>Catálogo</strong> en la barra superior.</li>
+                <li><strong>Pestañas:</strong> Navega entre <strong>Productos</strong>, <strong>Instalaciones</strong> y <strong>Kits</strong>.</li>
+                <li><strong>Edición e interactividad:</strong> Utiliza los botones ✏️ (Editar) y ✕ (Eliminar) en cada fila.</li>
+                <li><strong>Redimensión de columnas:</strong> Arrastra los bordes de la cabecera de cualquier columna para adaptar su ancho a tu preferencia.</li>
+                <li><strong>Sincronización:</strong> Botones dedicados <code>[🔄 Sincronizar Productos]</code> y <code>[🔧 Sincronizar Instalaciones]</code> para actualizar desde las hojas de Google Sheets.</li>
               </ul>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -1088,7 +956,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
               <div class="field">
                 <label>Rol</label>
                 <select id="newUserRole">
-                  <option value="vendedor">Vendedor</option>
+                  <option value="asesor">Asesor</option>
                   <option value="admin">Administrador</option>
                 </select>
               </div>
@@ -1156,7 +1024,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             <div class="field">
               <label>Rol</label>
               <select id="editUserRole">
-                <option value="vendedor">Vendedor</option>
+                <option value="asesor">Asesor</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
@@ -1347,6 +1215,76 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
         <div class="modal-footer">
           <button class="btn btn-ghost" onclick="closeEditItemModal()">Cancelar</button>
           <button class="btn btn-primary" id="editItemSaveBtn" onclick="saveEditItem()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CREAR NUEVO PRODUCTO -->
+    <div class="modal-backdrop" id="createProductModal">
+      <div class="modal" style="max-width:650px;width:90vw;">
+        <div class="modal-header">
+          <h2>➕ Crear nuevo producto</h2>
+          <button class="modal-close" onclick="closeCreateProductModal()">✕</button>
+        </div>
+        <div class="modal-body" style="max-height:65vh;overflow-y:auto;padding:16px;">
+          <div class="edit-item-field">
+            <label style="font-weight:700;font-size:13px;margin-bottom:6px;display:block;">1. Selecciona la categoría principal *</label>
+            <select id="newProdCategorySelect" onchange="onNewProdCategoryChange()" style="padding:10px;font-size:13px;font-weight:600;border:1px solid var(--border);border-radius:6px;width:100%;">
+              <option value="">-- Selecciona Equipos, Materiales o Servicios --</option>
+              <option value="equipos">Equipos</option>
+              <option value="materiales">Materiales</option>
+              <option value="servicios">Servicios</option>
+            </select>
+          </div>
+          <div id="newProdFieldsContainer" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeCreateProductModal()">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveNewProduct" onclick="saveNewProductFromModal()" disabled>Guardar producto</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CREAR NUEVA INSTALACIÓN -->
+    <div class="modal-backdrop" id="createInstallModal">
+      <div class="modal" style="max-width:650px;width:90vw;">
+        <div class="modal-header">
+          <h2>🔧 Crear nueva instalación</h2>
+          <button class="modal-close" onclick="closeCreateInstallModal()">✕</button>
+        </div>
+        <div class="modal-body" style="max-height:65vh;overflow-y:auto;padding:16px;">
+          <div class="edit-item-field">
+            <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Nombre del servicio de instalación *</label>
+            <input type="text" id="newInstallServicio" placeholder="Ej: Instalación de cámara IP..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+          </div>
+          <div class="edit-item-field">
+            <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo ($) *</label>
+            <input type="number" step="0.01" id="newInstallCosto" placeholder="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+          </div>
+          <div class="edit-item-field">
+            <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Categoría (opcional)</label>
+            <select id="newInstallCatSelect" onchange="toggleInstallCatInput()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+              <option value="">(Sin categoría / Ninguna)</option>
+              <option value="__new__">+ Escribir nueva categoría...</option>
+            </select>
+            <input type="text" id="newInstallCatCustom" placeholder="Escribe nueva categoría..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+          </div>
+          <div class="edit-item-field">
+            <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Subcategoría (opcional)</label>
+            <select id="newInstallSubSelect" onchange="toggleInstallSubInput()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+              <option value="">(Sin subcategoría / Ninguna)</option>
+              <option value="__new__">+ Escribir nueva subcategoría...</option>
+            </select>
+            <input type="text" id="newInstallSubCustom" placeholder="Escribe nueva subcategoría..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+          </div>
+          <div class="edit-item-field">
+            <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Observaciones (opcional)</label>
+            <textarea id="newInstallObservaciones" placeholder="Detalles u observaciones adicionales..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;min-height:60px;font-size:13px;"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeCreateInstallModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveNewInstallFromModal()">Guardar instalación</button>
         </div>
       </div>
     </div>

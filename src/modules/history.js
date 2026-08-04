@@ -225,16 +225,20 @@ export async function loadSaved(id) {
  * @returns {Promise<void>}
  */
 export async function deleteSaved(id) {
-  if (!(await showConfirm('¿Eliminar esta cotización?', 'Eliminar cotización', 'Eliminar'))) return;
+  if (!(await showConfirm('¿Eliminar esta cotización del historial?', 'Eliminar cotización', 'Eliminar'))) return;
   try {
-    const { error } = await supabase.from('saved_quotes').delete().eq('id', id);
+    const { data, error } = await supabase.from('saved_quotes').delete().eq('id', id).select();
     if (error) throw error;
+    if (!data || data.length === 0) {
+      console.warn('[HISTORY] Supabase delete returned 0 rows for id=', id);
+    }
     if (currentQuoteId === id) setCurrentQuoteId(null);
     setHistoryQuotesCache(historyQuotesCache.filter(q => q.id !== id));
     applyHistoryFilters();
-    toast('Cotización eliminada');
+    toast('✓ Cotización eliminada', 'success');
   } catch (e) {
-    toast('Error: ' + e.message, 'danger');
+    console.error('[HISTORY] Error deleting quote:', e);
+    toast('Error al eliminar: ' + e.message, 'danger');
   }
 }
 

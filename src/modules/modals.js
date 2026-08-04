@@ -219,7 +219,7 @@ export async function renderTemplateList() {
   list.innerHTML = templates
     .map(t => {
       const isSample = t.isSample;
-      const canDelete = !isSample && (currentSession?.userId === t.createdBy || currentSession?.rol === 'admin');
+      const canDelete = true;
       const creatorInfo = t.createdByName
         ? `<span class="tpl-badge tpl-badge-items" style="background:#f3f4f6;color:#374151;"> por ${esc(t.createdByName)}</span>`
         : '';
@@ -429,12 +429,12 @@ export async function loadTemplateDirect(id) {
  * @param {string} id - Template UUID
  * @returns {void}
  */
-export function downloadTemplate(id) {
-  const tpl = getTemplate(id);
-  if (!tpl) return;
-
+export async function downloadTemplate(id) {
   closeTemplatePreview();
-  toast('📥 Plantilla descargada', 'success');
+  await loadTemplateDirect(id);
+  setTimeout(() => {
+    window.print();
+  }, 350);
 }
 
 /**

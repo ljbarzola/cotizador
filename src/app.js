@@ -10,6 +10,7 @@ import { calcItemPrice, calcInstallServicePrice, getSupplierMargin, marginBadge 
 import { calcItemTotals, calcDiscount, calcSubtotal } from './modules/cartCalculations.js';
 import {
   CATALOG,
+  setCatalog,
   cart,
   setCart,
   currentSession,
@@ -1325,17 +1326,18 @@ let viewerProducts = [];
 
 function renderViewerCategories() {
   const catSel = $('viewerCategory');
+  if (!catSel) return;
   const currentCat = catSel.value;
-  const cats = [...new Set(CATALOG.map(i => i.category))].sort();
+  const validCats = ['EQUIPOS', 'MATERIALES', 'SERVICIOS'];
   catSel.innerHTML = '<option value="">Todas las categorías</option>';
-  cats.forEach(c => {
+  validCats.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c;
-    opt.textContent = c.length > 40 ? c.slice(0, 40) + '…' : c;
+    opt.textContent = c;
     catSel.appendChild(opt);
   });
-  catSel.value = currentCat;
-  renderViewerSubcategories(currentCat);
+  if (validCats.includes(currentCat)) catSel.value = currentCat;
+  renderViewerSubcategories(catSel.value);
 }
 
 function renderViewerSubcategories(selectedCat) {
@@ -1539,8 +1541,6 @@ function renderViewerKits() {
 }
 
 function editKitFromViewer(idx) {
-  closeCatalogViewer();
-  switchCatalogTab('kits');
   editKit(idx);
 }
 
@@ -1551,16 +1551,374 @@ function deleteKitFromViewer(idx) {
 
 function addNewKitFromViewer() {
   addNewKit();
-  closeCatalogViewer();
-  switchCatalogTab('kits');
 }
 
 function addNewItemFromViewer(type) {
-  closeCatalogViewer();
   if (type === 'product') {
-    openCatalogEditor();
+    openCreateProductModal();
   } else if (type === 'install') {
-    openInstallEditor();
+    openCreateInstallModal();
+  }
+}
+
+function toggleSubcatCustomInput(prefix) {
+  const sel = $(prefix + '_subcategoria_select');
+  const custom = $(prefix + '_subcategoria_custom');
+  if (sel && custom) {
+    custom.style.display = sel.value === '__new__' ? 'block' : 'none';
+    if (sel.value === '__new__') custom.focus();
+  }
+}
+
+// === CREATE PRODUCT MODAL ===
+
+function openCreateProductModal() {
+  if (!currentSession) {
+    toast('Inicia sesión primero', 'danger');
+    return;
+  }
+  const sel = $('newProdCategorySelect');
+  if (sel) sel.value = '';
+  const container = $('newProdFieldsContainer');
+  if (container) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+  }
+  const btn = $('btnSaveNewProduct');
+  if (btn) btn.disabled = true;
+  $('createProductModal').classList.add('open');
+}
+
+function closeCreateProductModal() {
+  $('createProductModal').classList.remove('open');
+}
+
+function onNewProdCategoryChange() {
+  const cat = $('newProdCategorySelect').value;
+  const container = $('newProdFieldsContainer');
+  const btn = $('btnSaveNewProduct');
+
+  if (!cat) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    btn.disabled = true;
+    return;
+  }
+
+  btn.disabled = false;
+  container.style.display = 'block';
+
+  const existingSubs = [
+    ...new Set(
+      CATALOG.filter(p => p.category === cat || p._table === cat)
+        .map(p => p.subcategory)
+        .filter(Boolean)
+    ),
+  ].sort();
+
+  const tableItems = CATALOG.filter(p => p._table === cat);
+  const prefixMap = { equipos: 'EQ-', materiales: 'MT-', servicios: 'SV-' };
+  const prefix = prefixMap[cat] || 'PR-';
+  const nextNum = tableItems.length + 1;
+  const suggestedId = prefix + String(nextNum).padStart(4, '0');
+
+  let html = '';
+
+  // SECCIÓN 1: DATOS BÁSICOS
+  html += `<div class="edit-item-section">
+    <div class="edit-item-section-title">📋 Datos Básicos</div>
+    <div class="edit-item-grid">
+      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Subcategoría</label>
+        <select id="newProdSubSelect" onchange="toggleNewProdSubInput()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+          <option value="">(Sin subcategoría / Seleccionar)</option>
+          ${existingSubs.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
+          <option value="__new__">+ Escribir nueva subcategoría...</option>
+        </select>
+        <input type="text" id="newProdSubCustom" placeholder="Escribe nueva subcategoría..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
+      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Código / ID</label>
+        <input type="text" id="newProdSourceId" value="${suggestedId}" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>`;
+
+  if (cat === 'equipos') {
+    html += `<div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Modelo</label>
+      <input type="text" id="newProdModelo" placeholder="Ej: DS-2CD2043G2-I..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>`;
+  }
+
+  html += `</div>`;
+
+  const nameLabel = cat === 'servicios' ? 'Nombre del servicio *' : 'Nombre del producto / descripción *';
+  html += `<div class="edit-item-full" style="margin-top:10px;">
+    <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">${nameLabel}</label>
+    <textarea id="newProdName" placeholder="Descripción clara y completa del ítem..." rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-height:55px;resize:vertical;"></textarea>
+  </div></div>`;
+
+  // SECCIÓN 2: PRECIOS Y MÁRGENES
+  html += `<div class="edit-item-section">
+    <div class="edit-item-section-title">💰 Precios y Márgenes</div>`;
+
+  if (cat === 'servicios') {
+    html += `<div class="edit-item-grid">
+      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo mensual ($)</label>
+        <input type="number" step="0.01" id="newProdCostoMensual" value="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
+      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo anual ($)</label>
+        <input type="number" step="0.01" id="newProdCostoAnual" value="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
+    </div>`;
+  } else {
+    html += `<div class="edit-item-grid">
+      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo unitario ($) *</label>
+        <input type="number" step="0.01" id="newProdCostoUnitario" value="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
+      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Unidades</label>
+        <input type="text" id="newProdUnidades" placeholder="Ej: u, m, global..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>`;
+    if (cat === 'equipos') {
+      html += `<div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Proveedor</label>
+        <input type="text" id="newProdProveedor" placeholder="Ej: HIKVISION, DAHUA..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>`;
+    }
+    html += `</div>`;
+
+    html += `<div class="edit-item-full" style="margin-top:10px;">
+      <label style="font-weight:600;font-size:12px;margin-bottom:6px;display:block;">Márgenes y Ganancias</label>
+      <div style="display:flex;flex-direction:row;align-items:center;gap:20px;background:var(--bg,#f3f4f6);padding:10px 12px;border-radius:6px;border:1px solid var(--border);">
+        <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;">
+          <input type="checkbox" id="newProdGanancia" checked> Ganancia proveedor
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;">
+          <input type="checkbox" id="newProdInstalacion" checked> Ganancia instalación
+        </label>
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // SECCIÓN 3: DETALLES ADICIONALES
+  html += `<div class="edit-item-section">
+    <div class="edit-item-section-title">📝 Detalles Adicionales</div>`;
+  if (cat === 'servicios') {
+    html += `<div class="edit-item-full" style="margin-bottom:10px;"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Descripción extendida (opcional)</label>
+      <input type="text" id="newProdDescripcion" placeholder="Detalles del servicio..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>`;
+  }
+  html += `<div class="edit-item-full"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Observaciones</label>
+    <textarea id="newProdObservaciones" placeholder="Detalles u observaciones adicionales..." rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;min-height:70px;resize:vertical;font-size:13px;"></textarea></div>
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+function toggleNewProdSubInput() {
+  const sel = $('newProdSubSelect');
+  const input = $('newProdSubCustom');
+  if (sel && input) {
+    input.style.display = sel.value === '__new__' ? 'block' : 'none';
+    if (sel.value === '__new__') input.focus();
+  }
+}
+
+function validateUniqueSourceId(sourceId, excludeId) {
+  const cleanId = String(sourceId || '')
+    .trim()
+    .toUpperCase();
+  if (!cleanId) return true;
+
+  const productMatch = CATALOG.find(p => (p.sourceId || '').trim().toUpperCase() === cleanId && p._id !== excludeId);
+  if (productMatch) return false;
+
+  const installMatch = (instalacionesCatalog || []).find(
+    i => (i.sourceId || '').trim().toUpperCase() === cleanId && i.id !== excludeId
+  );
+  if (installMatch) return false;
+
+  return true;
+}
+
+async function saveNewProductFromModal() {
+  const cat = $('newProdCategorySelect')?.value;
+  if (!cat) {
+    toast('Selecciona una categoría primero', 'warning');
+    return;
+  }
+
+  const nameInput = $('newProdName');
+  const name = nameInput ? nameInput.value.trim() : '';
+  if (!name) {
+    toast('Escribe el nombre/descripción del producto', 'warning');
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  const subSel = $('newProdSubSelect');
+  const subCustom = $('newProdSubCustom');
+  let subcategory = '';
+  if (subSel && subSel.value === '__new__') {
+    subcategory = subCustom ? subCustom.value.trim() : '';
+  } else if (subSel) {
+    subcategory = subSel.value;
+  }
+
+  const sourceId = $('newProdSourceId')?.value?.trim() || '';
+  if (sourceId && !validateUniqueSourceId(sourceId)) {
+    toast(`⚠️ El código / ID "${sourceId}" ya existe en el catálogo. Usa uno diferente.`, 'warning');
+    $('newProdSourceId')?.focus();
+    return;
+  }
+
+  const observations = $('newProdObservaciones')?.value?.trim() || '';
+
+  const row = {
+    source_id: sourceId,
+    categoria: cat.toUpperCase(),
+    subcategoria: subcategory,
+    observaciones: observations,
+  };
+
+  if (cat === 'servicios') {
+    row.servicio = name;
+    row.descripcion = $('newProdDescripcion')?.value?.trim() || '';
+    row.costo_mensual = parseFloat($('newProdCostoMensual')?.value) || 0;
+    row.costo_anual = parseFloat($('newProdCostoAnual')?.value) || 0;
+  } else {
+    row.producto = name;
+    row.costo_unitario = parseFloat($('newProdCostoUnitario')?.value) || 0;
+    row.costo_total = row.costo_unitario;
+    row.unidades = $('newProdUnidades')?.value?.trim() || 'u';
+    row.cantidad_default = 1;
+    row.ganancia_flag = $('newProdGanancia')?.checked ?? true;
+    row.instalacion_flag = $('newProdInstalacion')?.checked ?? true;
+    if (cat === 'equipos') {
+      row.modelo = $('newProdModelo')?.value?.trim() || '';
+      row.proveedor = $('newProdProveedor')?.value?.trim() || '';
+    }
+  }
+
+  try {
+    const { error } = await supabase.from(cat).insert(row);
+    if (error) throw error;
+    toast('✓ Producto creado exitosamente', 'success');
+    closeCreateProductModal();
+    const updatedProds = await loadAllProducts();
+    setCatalog(updatedProds);
+    viewerProducts = CATALOG;
+    renderCatalog();
+    renderCategories();
+    renderViewerCategories();
+    renderViewerTable();
+  } catch (e) {
+    console.error('[CREATE PRODUCT] Save error:', e);
+    toast('Error al guardar producto: ' + e.message, 'danger');
+  }
+}
+
+// === CREATE INSTALLATION MODAL ===
+
+function openCreateInstallModal() {
+  if (!currentSession) {
+    toast('Inicia sesión primero', 'danger');
+    return;
+  }
+  $('newInstallServicio').value = '';
+  $('newInstallCosto').value = '0.00';
+  $('newInstallObservaciones').value = '';
+
+  const catSel = $('newInstallCatSelect');
+  catSel.innerHTML =
+    '<option value="">(Sin categoría / Ninguna)</option>' +
+    '<option value="EQUIPOS">EQUIPOS</option>' +
+    '<option value="MATERIALES">MATERIALES</option>' +
+    '<option value="SERVICIOS" selected>SERVICIOS</option>';
+  $('newInstallCatCustom').style.display = 'none';
+  $('newInstallCatCustom').value = '';
+
+  const subSel = $('newInstallSubSelect');
+  const existingSubs = [
+    ...new Set(
+      [...CATALOG.map(p => p.subcategory), ...(instalacionesCatalog || []).map(i => i.subcategory)].filter(Boolean)
+    ),
+  ].sort();
+  subSel.innerHTML =
+    '<option value="">(Sin subcategoría / Ninguna)</option>' +
+    existingSubs.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('') +
+    '<option value="__new__">+ Escribir nueva subcategoría...</option>';
+  $('newInstallSubCustom').style.display = 'none';
+  $('newInstallSubCustom').value = '';
+
+  $('createInstallModal').classList.add('open');
+}
+
+function closeCreateInstallModal() {
+  $('createInstallModal').classList.remove('open');
+}
+
+function toggleInstallCatInput() {
+  const sel = $('newInstallCatSelect');
+  const input = $('newInstallCatCustom');
+  if (sel && input) {
+    input.style.display = sel.value === '__new__' ? 'block' : 'none';
+    if (sel.value === '__new__') input.focus();
+  }
+}
+
+function toggleInstallSubInput() {
+  const sel = $('newInstallSubSelect');
+  const input = $('newInstallSubCustom');
+  if (sel && input) {
+    input.style.display = sel.value === '__new__' ? 'block' : 'none';
+    if (sel.value === '__new__') input.focus();
+  }
+}
+
+async function saveNewInstallFromModal() {
+  const servicio = $('newInstallServicio')?.value?.trim() || '';
+  if (!servicio) {
+    toast('Escribe el nombre de la instalación / servicio', 'warning');
+    $('newInstallServicio')?.focus();
+    return;
+  }
+
+  const costo = parseFloat($('newInstallCosto')?.value) || 0;
+
+  const catSel = $('newInstallCatSelect');
+  const catCustom = $('newInstallCatCustom');
+  let category = '';
+  if (catSel && catSel.value === '__new__') {
+    category = catCustom ? catCustom.value.trim() : '';
+  } else if (catSel) {
+    category = catSel.value;
+  }
+
+  const subSel = $('newInstallSubSelect');
+  const subCustom = $('newInstallSubCustom');
+  let subcategory = '';
+  if (subSel && subSel.value === '__new__') {
+    subcategory = subCustom ? subCustom.value.trim() : '';
+  } else if (subSel) {
+    subcategory = subSel.value;
+  }
+
+  const observaciones = $('newInstallObservaciones')?.value?.trim() || '';
+  const nextNum = (instalacionesCatalog || []).length + 1;
+  const sourceId = 'INST-' + String(nextNum).padStart(3, '0');
+  if (sourceId && !validateUniqueSourceId(sourceId)) {
+    toast(`⚠️ El código / ID "${sourceId}" ya existe. Usa uno diferente.`, 'warning');
+    return;
+  }
+
+  const row = {
+    source_id: sourceId,
+    servicio: servicio,
+    costo_unitario: costo,
+    categoria: category,
+    subcategoria: subcategory,
+    observaciones: observaciones,
+  };
+
+  try {
+    const { error } = await supabase.from('instalaciones').insert(row);
+    if (error) throw error;
+    toast('✓ Instalación creada exitosamente', 'success');
+    closeCreateInstallModal();
+    const instalaciones = await loadAllInstalaciones();
+    setInstalacionesCatalog(instalaciones);
+    renderViewerInstallations();
+  } catch (e) {
+    console.error('[CREATE INSTALL] Save error:', e);
+    toast('Error al guardar instalación: ' + e.message, 'danger');
   }
 }
 
@@ -1684,27 +2042,13 @@ function openEditItemModal(type, idx) {
   $('editItemTitle').textContent = title;
 
   const cols = EDITOR_COLS_MAP[table] || [];
-  let html = '';
-  cols.forEach(c => {
+
+  const renderField = c => {
     const val = getItemDBValue(item, c.key);
     const readonly = c.type === 'readonly';
     const fieldClass = 'edit-item-field';
-    if (c.type === 'check') {
-      html += `<div class="${fieldClass}"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-        <input type="checkbox" id="editField_${c.key}" ${val ? 'checked' : ''} ${readonly ? 'disabled' : ''}>
-        ${c.label}
-      </label></div>`;
-    } else if (c.type === 'select') {
-      const allCats = [
-        ...new Set(
-          [
-            ...CATALOG.map(p => p.category),
-            ...(instalacionesCatalog || []).map(i => i.category),
-            String(val || ''),
-          ].filter(Boolean)
-        ),
-      ].sort();
 
+    if (c.key === 'subcategoria') {
       const allSubs = [
         ...new Set(
           [
@@ -1715,19 +2059,93 @@ function openEditItemModal(type, idx) {
         ),
       ].sort();
 
-      const opts = c.key === 'categoria' ? allCats : allSubs;
-      html += `<div class="${fieldClass}"><label>${c.label}</label>
+      return `<div class="${fieldClass}"><label>${c.label}</label>
+        <select id="editField_subcategoria_select" onchange="toggleSubcatCustomInput('editField')" ${readonly ? 'disabled' : ''}>
+          ${allSubs.map(o => `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+          <option value="__new__">+ Escribir nueva subcategoría...</option>
+        </select>
+        <input type="text" id="editField_subcategoria_custom" placeholder="Escribe nueva subcategoría..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+        </div>`;
+    } else if (c.type === 'select' || c.key === 'categoria') {
+      const validCats = ['EQUIPOS', 'MATERIALES', 'SERVICIOS'];
+      const currentCategoryVal = String(val || '').toUpperCase();
+      const allCats = validCats.includes(currentCategoryVal)
+        ? validCats
+        : [currentCategoryVal, ...validCats].filter(Boolean);
+
+      return `<div class="${fieldClass}"><label>${c.label}</label>
         <select id="editField_${c.key}" ${readonly ? 'disabled' : ''}>
-          ${opts.map(o => `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+          ${allCats.map(o => `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
         </select></div>`;
     } else if (c.type === 'number') {
-      html += `<div class="${fieldClass}"><label>${c.label}</label>
+      return `<div class="${fieldClass}"><label>${c.label}</label>
         <input type="number" step="${c.step || '0.01'}" id="editField_${c.key}" value="${val}" ${readonly ? 'disabled class="field-readonly"' : ''}></div>`;
     } else {
-      html += `<div class="${fieldClass}"><label>${c.label}</label>
+      return `<div class="${fieldClass}"><label>${c.label}</label>
         <input type="text" id="editField_${c.key}" value="${escAttr(val)}" ${readonly ? 'disabled class="field-readonly"' : ''} ${c.placeholder ? 'placeholder="' + c.placeholder + '"' : ''}></div>`;
     }
+  };
+
+  const basicKeys = ['source_id', 'categoria', 'subcategoria', 'modelo', 'unidades'];
+  const nameKeys = ['producto', 'servicio'];
+  const priceKeys = ['costo_unitario', 'costo_mensual', 'costo_anual', 'proveedor', 'cantidad_default'];
+  const checkCols = cols.filter(c => c.type === 'check');
+  const obsCols = cols.filter(c => c.key === 'observaciones' || c.key === 'descripcion');
+
+  const basicCols = cols.filter(c => basicKeys.includes(c.key));
+  const mainNameCol = cols.find(c => nameKeys.includes(c.key));
+  const priceCols = cols.filter(c => priceKeys.includes(c.key));
+
+  let html = '';
+
+  // SECCIÓN 1: DATOS BÁSICOS
+  html += `<div class="edit-item-section">
+    <div class="edit-item-section-title">📋 Datos Básicos</div>
+    <div class="edit-item-grid">`;
+  basicCols.forEach(c => {
+    html += renderField(c);
   });
+  html += `</div>`;
+  if (mainNameCol) {
+    html += `<div class="edit-item-full">${renderField(mainNameCol)}</div>`;
+  }
+  html += `</div>`;
+
+  // SECCIÓN 2: PRECIOS Y MÁRGENES
+  html += `<div class="edit-item-section">
+    <div class="edit-item-section-title">💰 Precios y Márgenes</div>
+    <div class="edit-item-grid">`;
+  priceCols.forEach(c => {
+    html += renderField(c);
+  });
+  html += `</div>`;
+
+  if (checkCols.length > 0) {
+    html += `<div class="edit-item-full">
+      <label style="font-weight:600;font-size:12px;margin-bottom:6px;display:block;">Márgenes y Ganancias</label>
+      <div style="display:flex;flex-direction:row;align-items:center;gap:20px;background:var(--bg,#f3f4f6);padding:10px 14px;border-radius:6px;border:1px solid var(--border);">`;
+    checkCols.forEach(c => {
+      const val = getItemDBValue(item, c.key);
+      html += `<label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;">
+        <input type="checkbox" id="editField_${c.key}" ${val ? 'checked' : ''}>
+        ${c.label}
+      </label>`;
+    });
+    html += `</div></div>`;
+  }
+  html += `</div>`;
+
+  // SECCIÓN 3: DETALLES ADICIONALES
+  if (obsCols.length > 0) {
+    html += `<div class="edit-item-section">
+      <div class="edit-item-section-title">📝 Detalles Adicionales</div>
+      <div class="edit-item-full">`;
+    obsCols.forEach(c => {
+      html += renderField(c);
+    });
+    html += `</div></div>`;
+  }
+
   $('editItemBody').innerHTML = html;
   $('editItemModal').classList.add('open');
 }
@@ -1747,6 +2165,19 @@ async function saveEditItem() {
   const changes = {};
   cols.forEach(c => {
     if (c.type === 'readonly') return;
+    if (c.key === 'subcategoria') {
+      const sel = $('editField_subcategoria_select');
+      const custom = $('editField_subcategoria_custom');
+      if (sel && sel.value === '__new__') {
+        changes[c.key] = custom ? custom.value.trim() : '';
+      } else if (sel) {
+        changes[c.key] = sel.value;
+      } else {
+        const input = $('editField_subcategoria');
+        if (input) changes[c.key] = input.value;
+      }
+      return;
+    }
     const el = $('editField_' + c.key);
     if (!el) return;
     if (c.type === 'check') changes[c.key] = el.checked;
@@ -1756,7 +2187,16 @@ async function saveEditItem() {
 
   const isInstall = editItemTable === 'instalaciones';
   const supabaseTable = isInstall ? 'instalaciones' : editItemTable;
-  const itemId = isInstall ? editItemData._id : editItemData._id;
+  const itemId = editItemData._id || editItemData.id;
+
+  if (changes.source_id) {
+    if (!validateUniqueSourceId(changes.source_id, itemId)) {
+      toast(`⚠️ El código / ID "${changes.source_id}" ya existe. Usa uno diferente.`, 'warning');
+      const input = $('editField_source_id');
+      if (input) input.focus();
+      return;
+    }
+  }
 
   try {
     if (itemId) {
@@ -1773,10 +2213,15 @@ async function saveEditItem() {
       } catch (e) {
         console.warn('Error reloading instalaciones:', e.message);
       }
+      renderViewerCategories();
       renderViewerInstallations();
     } else {
-      await loadAllProducts();
+      const updatedProds = await loadAllProducts();
+      setCatalog(updatedProds);
       viewerProducts = CATALOG;
+      renderCatalog();
+      renderCategories();
+      renderViewerCategories();
       renderViewerTable();
     }
   } catch (e) {
@@ -1800,8 +2245,12 @@ async function deleteViewerItem(type, idx) {
       }
     }
     toast('✓ Producto eliminado', 'success');
-    await loadAllProducts();
+    const updatedProds = await loadAllProducts();
+    setCatalog(updatedProds);
     viewerProducts = CATALOG;
+    renderCatalog();
+    renderCategories();
+    renderViewerCategories();
     renderViewerTable();
   } else if (type === 'install') {
     const sorted = [...(instalacionesCatalog || [])].sort((a, b) =>
@@ -1826,6 +2275,7 @@ async function deleteViewerItem(type, idx) {
     } catch (e) {
       console.warn('Error reloading instalaciones:', e.message);
     }
+    renderViewerCategories();
     renderViewerInstallations();
   }
 }
@@ -1891,6 +2341,17 @@ window.editKitFromViewer = editKitFromViewer;
 window.deleteKitFromViewer = deleteKitFromViewer;
 window.addNewKitFromViewer = addNewKitFromViewer;
 window.addNewItemFromViewer = addNewItemFromViewer;
+window.toggleSubcatCustomInput = toggleSubcatCustomInput;
+window.openCreateProductModal = openCreateProductModal;
+window.closeCreateProductModal = closeCreateProductModal;
+window.onNewProdCategoryChange = onNewProdCategoryChange;
+window.toggleNewProdSubInput = toggleNewProdSubInput;
+window.saveNewProductFromModal = saveNewProductFromModal;
+window.openCreateInstallModal = openCreateInstallModal;
+window.closeCreateInstallModal = closeCreateInstallModal;
+window.toggleInstallCatInput = toggleInstallCatInput;
+window.toggleInstallSubInput = toggleInstallSubInput;
+window.saveNewInstallFromModal = saveNewInstallFromModal;
 
 // editor functions imported from modules/editor.js
 window.openCatalogEditor = openCatalogEditor;
@@ -2047,7 +2508,7 @@ function enterApp(session) {
   const chipName = $('userChipName');
   chipName.textContent = session.nombre || session.user;
   chipName.classList.add('user-chip-name-full');
-  const roleLabel = session.rol === 'admin' ? 'Administrador' : 'Vendedor';
+  const roleLabel = session.rol === 'admin' ? 'Administrador' : 'Asesor';
   const roleBadge = $('userChipRole');
   if (roleBadge) roleBadge.textContent = roleLabel;
   const ddName = $('dropdownName');
@@ -2119,7 +2580,7 @@ function renderUsersTable() {
       const rolBadge =
         u.rol === 'admin'
           ? '<span class="margin-badge margin-supplier">Admin</span>'
-          : '<span class="margin-badge margin-none">Vendedor</span>';
+          : '<span class="margin-badge margin-none">Asesor</span>';
       const estadoBadge =
         u.activo === false
           ? '<span class="margin-badge" style="background:#fee2e2;color:#991b1b;">Inactivo</span>'
@@ -2131,7 +2592,7 @@ function renderUsersTable() {
       <td>${rolBadge}</td>
       <td class="center">${estadoBadge}</td>
       <td>
-        <button class="btn btn-ghost" onclick='openEditUser(${JSON.stringify({ id: u.id, nombre: u.nombre || '', correo: u.correo || '', rol: u.rol || 'vendedor', activo: u.activo !== false }).replace(/'/g, '&#39;')})' style="font-size:11px;padding:4px 10px;">✏️ Editar</button>
+        <button class="btn btn-ghost" onclick='openEditUser(${JSON.stringify({ id: u.id, nombre: u.nombre || '', correo: u.correo || '', rol: u.rol || 'asesor', activo: u.activo !== false }).replace(/'/g, '&#39;')})' style="font-size:11px;padding:4px 10px;">✏️ Editar</button>
       </td>
     </tr>`;
     })

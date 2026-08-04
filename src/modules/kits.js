@@ -206,15 +206,32 @@ export function renderKitsCatalog() {
       '<div class="empty-state"><div class="icon">📦</div><div>No hay kits creados</div><div style="margin-top:4px;font-size:11px;">Añade un kit desde la sección de Catálogo</div></div>';
     return;
   }
-  el.innerHTML = kits
-    .map((k, i) => {
+
+  const searchTerm = ($('kitsPanelSearch')?.value || '').toLowerCase().trim();
+  const allKitsWithIndex = kits.map((k, i) => ({ kit: k, origIdx: i }));
+  const filtered = searchTerm
+    ? allKitsWithIndex.filter(
+        ({ kit, origIdx }) =>
+          (kit.name || '').toLowerCase().includes(searchTerm) ||
+          ('kit-' + String(origIdx + 1).padStart(3, '0')).toLowerCase().includes(searchTerm)
+      )
+    : allKitsWithIndex;
+
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><div>Sin resultados</div></div>';
+    return;
+  }
+
+  el.innerHTML = filtered
+    .map(({ kit: k, origIdx: i }) => {
       const validComps = k.components.filter(c => c.catalogIdx !== null && c.catalogIdx < CATALOG.length);
-      const total = validComps.reduce((s, c) => s + CATALOG[c.catalogIdx].cost, 0);
+      const total = validComps.reduce((s, c) => s + (CATALOG[c.catalogIdx]?.cost || 0) * (c.qty || 1), 0);
       const compNames = validComps
         .slice(0, 3)
         .map(c => {
           const item = CATALOG[c.catalogIdx];
-          return item ? esc(item.description.slice(0, 30)) : '';
+          const qtyLabel = c.qty > 1 ? ` (x${c.qty})` : '';
+          return item ? esc(item.description.slice(0, 25)) + qtyLabel : '';
         })
         .filter(Boolean);
       const extra = validComps.length > 3 ? ` +${validComps.length - 3} más` : '';
@@ -342,12 +359,19 @@ export function renderKitComponents(kitIdx) {
         })
         .join('');
       const defaultSelected = c.catalogIdx === null || c.catalogIdx === undefined ? 'selected' : '';
+      const qtyVal = c.qty || 1;
       return `
-    <div class="kit-comp-row">
-      <select class="kit-comp-select" onchange="updateKitComp(${kitIdx},${i},'catalogIdx',this.value)">
-        <option value="" ${defaultSelected}>Seleccionar producto...</option>
-        ${options}
-      </select>
+    <div class="kit-comp-row" style="display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg,#f3f4f6);margin-bottom:8px;box-sizing:border-box;width:100%;">
+      <div style="flex:1;min-width:0;">
+        <select class="kit-comp-select" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:white;" onchange="updateKitComp(${kitIdx},${i},'catalogIdx',this.value)">
+          <option value="" ${defaultSelected}>Seleccionar producto...</option>
+          ${options}
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span style="font-size:12px;font-weight:600;color:var(--muted);">Cant:</span>
+        <input type="number" min="1" step="1" value="${qtyVal}" style="width:60px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;text-align:center;background:white;" onchange="updateKitComp(${kitIdx},${i},'qty',this.value)">
+      </div>
       <button class="viewer-action-btn delete" onclick="removeKitComp(${kitIdx},${i})" title="Quitar componente" style="flex-shrink:0;">✕</button>
     </div>`;
     })
@@ -360,7 +384,7 @@ export function renderKitComponents(kitIdx) {
  * @returns {void}
  */
 export function addKitComponent(kitIdx) {
-  kits[kitIdx].components.push({ catalogIdx: null, included: true });
+  kits[kitIdx].components.push({ catalogIdx: null, qty: 1, included: true });
   saveKitToDB(kits[kitIdx]);
   renderKitComponents(kitIdx);
 }
@@ -378,17 +402,20 @@ export function removeKitComp(kitIdx, compIdx) {
 }
 
 /**
- * Update a kit component field (catalogIdx or included).
+ * Update a kit component field (catalogIdx, qty, or included).
  * @param {number} kitIdx - Kit index in the kits array
  * @param {number} compIdx - Component index within the kit
- * @param {'catalogIdx'|'included'} field - Field to update
+ * @param {'catalogIdx'|'qty'|'included'} field - Field to update
  * @param {*} val - New value
  * @returns {void}
  */
 export function updateKitComp(kitIdx, compIdx, field, val) {
   const comp = kits[kitIdx].components[compIdx];
+  if (!comp) return;
   if (field === 'catalogIdx') {
     comp.catalogIdx = val === '' ? null : parseInt(val);
+  } else if (field === 'qty') {
+    comp.qty = Math.max(1, parseInt(val) || 1);
   } else {
     comp[field] = val;
   }
@@ -452,8 +479,17 @@ function renderKitSearchResults() {
 export function addKitComponentFromSearch(catalogIdx) {
   const kitIdx = parseInt($('kitEditName')?.dataset?.idx);
   if (isNaN(kitIdx)) return;
-  kits[kitIdx].components.push({ catalogIdx, included: true });
-  saveKitToDB(kits[kitIdx]);
+  const kit = kits[kitIdx];
+  if (!kit) return;
+
+  const existing = kit.components.find(c => c.catalogIdx === catalogIdx);
+  if (existing) {
+    existing.qty = (existing.qty || 1) + 1;
+  } else {
+    kit.components.push({ catalogIdx, qty: 1, included: true });
+  }
+
+  saveKitToDB(kit);
   renderKitComponents(kitIdx);
   const item = CATALOG[catalogIdx];
   if (item) toast(`"${item.description.slice(0, 30)}" agregado al kit`);
@@ -480,10 +516,13 @@ export function getFilteredKitProducts() {
  */
 export function saveKitEditor() {
   const idx = parseInt($('kitEditName').dataset.idx) || 0;
-  kits[idx].name = $('kitEditName').value || 'Sin nombre';
-  saveKitToDB(kits[idx]);
+  if (kits[idx]) {
+    kits[idx].name = $('kitEditName').value || 'Sin nombre';
+    saveKitToDB(kits[idx]);
+  }
   closeKitEditor();
   renderKitsCatalog();
+  if (window.renderViewerKits) window.renderViewerKits();
 }
 
 /**
@@ -521,7 +560,7 @@ export function addKitToCart(kitIdx) {
     kitName: kit.name,
     kitComponents: included.map(c => ({
       catalogIdx: c.catalogIdx,
-      qty: 1,
+      qty: c.qty || 1,
       installActive: false,
       techCost: 0,
       customMargin: null,

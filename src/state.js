@@ -4,6 +4,15 @@
 /** @type {Array<Object>} Full product catalog loaded from Supabase */
 export const CATALOG = [];
 
+/**
+ * Replace the in-memory contents of CATALOG array.
+ * @param {Array<Object>} c - New catalog array
+ */
+export function setCatalog(c) {
+  CATALOG.length = 0;
+  if (Array.isArray(c)) CATALOG.push(...c);
+}
+
 /** @type {number} Number of catalog items per page */
 export let catalogPageSize = 10;
 
