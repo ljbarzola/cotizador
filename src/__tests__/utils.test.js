@@ -110,9 +110,9 @@ describe('generateCotNumber() - quote number generation', () => {
     localStorage.clear();
   });
 
-  it('generates COT-YYYYMMDD-NNN format', () => {
+  it('generates COT-YYYYMMDD-NNNN format', () => {
     const result = generateCotNumber();
-    expect(result).toMatch(/^COT-\d{8}-\d{3}$/);
+    expect(result).toMatch(/^COT-\d{8}-\d{4}$/);
   });
 
   it('increments sequence number', () => {

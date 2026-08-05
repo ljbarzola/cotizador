@@ -58,7 +58,7 @@ export let cart = [];
 export let currentSession = null;
 
 /** @type {string|null} ID of the currently loaded saved quote */
-export let currentQuoteId = [];
+export let currentQuoteId = null;
 
 /** @type {Array<Object>} Cached list of saved quotes */
 export let historyQuotesCache = [];
@@ -124,7 +124,7 @@ export function setCurrentSession(v) {
  * @param {string|null} v - UUID of the saved quote
  */
 export function setCurrentQuoteId(v) {
-  currentQuoteId = v;
+  currentQuoteId = v && typeof v === 'string' && v.trim() ? v.trim() : null;
 }
 
 /**

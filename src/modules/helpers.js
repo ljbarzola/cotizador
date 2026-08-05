@@ -104,7 +104,7 @@ export function marginBadge(item) {
  * @returns {{baseCost: number, ganancia: number, total: number, iva: number}}
  */
 export function calcInstallServicePrice(item, marginPct) {
-  const baseCost = item.cost || 0;
+  const baseCost = (item.customCost ?? item.cost) || 0;
   const ganancia = Math.round(baseCost * (marginPct / 100) * 100) / 100;
   return { baseCost, ganancia, total: baseCost + ganancia, iva: 0 };
 }

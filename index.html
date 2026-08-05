@@ -73,7 +73,47 @@
             </button>
           </div>
           <button class="login-btn" id="loginBtn">Ingresar</button>
+          <a href="#" class="login-forgot" onclick="showForgotPassword(); return false;">¿Olvidaste tu contraseña?</a>
           <div class="login-footer">Acceso exclusivo para personal autorizado de GEMESEG.</div>
+        </div>
+
+        <!-- FORGOT PASSWORD: STEP 1 - EMAIL -->
+        <div id="forgotStep1" style="display:none;">
+          <div class="login-error" id="forgotError1"></div>
+          <div class="login-field">
+            <label>Email</label>
+            <input type="text" id="forgotEmail" placeholder="tu usuario o email" />
+          </div>
+          <button class="login-btn" onclick="requestPasswordReset()">📧 Enviar enlace de recuperación</button>
+          <a href="#" class="login-forgot" onclick="backToLogin(); return false;">← Volver al login</a>
+        </div>
+
+        <!-- FORGOT PASSWORD: STEP 2 - CHECK EMAIL -->
+        <div id="forgotStep2" style="display:none;">
+          <div class="login-error" id="forgotError2"></div>
+          <div style="text-align:center;padding:20px 0;">
+            <div style="font-size:40px;margin-bottom:12px;">📧</div>
+            <p style="font-size:13px;color:var(--text);margin:0 0 8px;font-weight:600;">Revisa tu correo electrónico</p>
+            <p style="font-size:12px;color:var(--muted);margin:0 0 16px;">Te enviamos un enlace para restablecer tu contraseña. Haz clic en el enlace del correo para continuar.</p>
+            <p style="font-size:11px;color:var(--muted);margin:0;">¿No recibiste el correo? Revisa tu carpeta de spam o intenta de nuevo.</p>
+          </div>
+          <button class="login-btn" onclick="requestPasswordReset()" style="background:var(--muted);">🔄 Reenviar enlace</button>
+          <a href="#" class="login-forgot" onclick="backToLogin(); return false;">← Volver al login</a>
+        </div>
+
+        <!-- FORGOT PASSWORD: STEP 3 - NEW PASSWORD (after clicking email link) -->
+        <div id="forgotStep3" style="display:none;">
+          <div class="login-error" id="forgotError3"></div>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Enlace verificado. Ingresa tu nueva contraseña:</p>
+          <div class="login-field">
+            <label>Nueva contraseña</label>
+            <input type="password" id="forgotNewPass" placeholder="mínimo 6 caracteres" />
+          </div>
+          <div class="login-field">
+            <label>Confirmar contraseña</label>
+            <input type="password" id="forgotConfirmPass" placeholder="repite la contraseña" />
+          </div>
+          <button class="login-btn" onclick="setNewPassword()">🔒 Cambiar contraseña</button>
         </div>
       </div>
     </div>
@@ -105,13 +145,8 @@
                 <div class="user-dropdown-role" id="dropdownRole">—</div>
               </div>
               <div class="user-dropdown-divider"></div>
-              <button
-                class="user-dropdown-item"
-                id="btnEditCatalog"
-                onclick="openCatalogEditor()"
-                style="display: none"
-              >
-                📦 Editar catálogo
+              <button class="user-dropdown-item" onclick="openProfile()">
+                ✏️ Perfil
               </button>
               <button class="user-dropdown-item user-dropdown-logout" onclick="logout()">🚪 Cerrar sesión</button>
             </div>
@@ -130,6 +165,7 @@
           <div id="catalogItemsTab">
             <div class="catalog-header">
               <div class="catalog-search">
+                <span class="search-icon">🔍</span>
                 <input
                   type="text"
                   id="search"
@@ -168,8 +204,9 @@
           <div id="catalogKitsTab" style="display: none">
             <div class="catalog-header" style="flex-direction:column;align-items:stretch;gap:8px;">
               <div style="font-size: 13px; color: var(--muted)">Kits de productos disponibles</div>
-              <div class="search-box">
-                <input type="text" id="kitsPanelSearch" placeholder="Buscar kit por nombre o código..." oninput="renderKitsCatalog()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+              <div class="search-box" style="position:relative;width:100%;">
+                <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted);pointer-events:none;">🔍</span>
+                <input type="text" id="kitsPanelSearch" placeholder="Buscar kit por nombre o código..." oninput="renderKitsCatalog()" style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border);border-radius:6px;font-size:12px;box-sizing:border-box;">
               </div>
             </div>
             <div class="catalog-list" id="kitsCatalogList"></div>
@@ -422,9 +459,15 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     <!-- MODAL: VISOR DE CATÁLOGO -->
     <div class="modal-backdrop" id="catalogViewerModal">
       <div class="modal" style="max-width: 95vw; height: 90vh; display: flex; flex-direction: column">
-        <div class="modal-header" style="gap:12px;">
-          <h2>📦 Catálogo</h2>
-          <div class="viewer-tabs" style="display:flex;gap:4px;margin-left:16px;">
+        <div class="modal-header catalog-viewer-modal-header">
+          <div class="viewer-header-top">
+            <h2>📦 Catálogo</h2>
+            <div class="viewer-header-right">
+              <span id="viewerCount" class="viewer-result-count"></span>
+              <button class="modal-close" onclick="closeCatalogViewer()">✕</button>
+            </div>
+          </div>
+          <div class="viewer-tabs" id="viewerTabs">
             <button class="viewer-tab active" id="viewerTabProducts" data-tab="products" onclick="switchViewerTab('products')">
               📦 Productos
             </button>
@@ -434,10 +477,6 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             <button class="viewer-tab" id="viewerTabKits" data-tab="kits" onclick="switchViewerTab('kits')">
               📋 Kits
             </button>
-          </div>
-          <div style="margin-left:auto;display:flex;gap:6px;">
-            <span id="viewerCount" class="viewer-result-count"></span>
-            <button class="modal-close" onclick="closeCatalogViewer()">✕</button>
           </div>
         </div>
         <div class="modal-body viewer-body">
@@ -705,7 +744,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
           <h2>Guardar como plantilla</h2>
           <button class="modal-close" onclick="resolveSaveTemplate(false)">✕</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="overflow-y: auto; max-height: 75vh; padding: 16px;">
           <div class="form-grid">
             <div class="field" style="grid-column: 1/-1">
               <label>Nombre de la plantilla</label>
@@ -725,13 +764,15 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             </div>
             <div class="field">
               <label>Industria</label>
-              <select id="tplSaveIndustry">
+              <select id="tplSaveIndustry" onchange="toggleTplIndustryCustom()">
                 <option value="comercio" selected>Comercio</option>
                 <option value="banco">Banco</option>
                 <option value="oficina">Oficina</option>
                 <option value="industrial">Industrial</option>
                 <option value="salud">Salud</option>
+                <option value="__other__">+ Escribir otra opción...</option>
               </select>
+              <input type="text" id="tplSaveIndustryCustom" placeholder="Escribe la industria..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;" />
             </div>
           </div>
         </div>
@@ -825,7 +866,38 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">👁️</span><span class="help-title">5. Cotizador en Pantalla vs Documento PDF del Cliente</span>
+              <span class="help-icon">🔧</span><span class="help-title">5. Servicios de Instalación y Márgenes</span>
+              <span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>El sistema cuenta con un catálogo independiente de Servicios de Instalación (sincronizado desde la hoja <code>INSTALACIÓN BD</code>):</p>
+              <ul>
+                <li><strong>Agregar al cotizador:</strong> Usa el botón <code>+ Servicio de instalación</code> en la sección 🔧 <strong>Ganancia por instalación</strong>.</li>
+                <li><strong>Configuración flexible:</strong> En cada tarjeta de servicio agregada puedes ajustar la <strong>Cantidad</strong>, el <strong>Costo base</strong> y el <strong>Margen de ganancia</strong> (35% por defecto).</li>
+                <li><strong>Impuestos:</strong> Los servicios de instalación <strong>no aplican IVA 15%</strong>. Se suman de forma directa al total de la oferta.</li>
+                <li><strong>Vista adaptada:</strong> Diseño optimizado con visualización completa de datos tanto en dispositivos móviles como en pantallas de escritorio.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">👤</span><span class="help-title">6. Perfil y Cargo en Firma de Cotización</span>
+              <span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>Puedes personalizar tu cargo comercial desde el menú de usuario en la esquina superior derecha:</p>
+              <ul>
+                <li>Haz clic en tu nombre / avatar y selecciona <code>✏️ Mi cargo</code>.</li>
+                <li>Selecciona un cargo predefinido (<em>Asesor, Administrador, Gerente de Ventas, Director Comercial, Gerente General</em>) o escribe tu propio cargo personalizado.</li>
+                <li>El cargo guardado se mostrará automáticamente en la firma del documento PDF oficial bajo tu nombre ("Emite la cotización").</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">👁️</span><span class="help-title">7. Cotizador en Pantalla vs Documento PDF del Cliente</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
@@ -848,13 +920,13 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">💾</span><span class="help-title">6. Guardar, Plantillas y Exportación a PDF</span>
+              <span class="help-icon">💾</span><span class="help-title">8. Guardar, Plantillas y Exportación a PDF</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
               <ul>
-                <li><strong>Guardar cotización:</strong> Registra la oferta en la base de datos asociada al número de cotización oficial.</li>
-                <li><strong>Guardar como plantilla:</strong> Guarda el conjunto de productos y cliente para ser reutilizado en cotizaciones futuras.</li>
+                <li><strong>Guardar cotización:</strong> Registra la oferta en la base de datos asociada al número de cotización oficial secuencial (ej. <code>COT-20260805-0001</code>).</li>
+                <li><strong>Guardar como plantilla:</strong> Guarda el conjunto de productos y cliente en Supabase para ser compartido y reutilizado por todos los usuarios.</li>
                 <li><strong>Imprimir / PDF:</strong> Abre la ventana del navegador pre-configurada para descargar o guardar el documento en formato PDF.</li>
                 <li><strong>Borrador automático:</strong> Los cambios se respaldan continuamente en el navegador por seguridad.</li>
               </ul>
@@ -863,13 +935,13 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">📂</span><span class="help-title">7. Historial de Cotizaciones</span>
+              <span class="help-icon">📂</span><span class="help-title">9. Historial de Cotizaciones</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
               <ul>
                 <li>Accede con el botón <strong>Historial</strong> en la barra superior.</li>
-                <li><strong>Filtrado avanzado:</strong> Filtra por nombre de cliente, estado (Borrador, Enviada, Vista, Aceptada, Rechazada, Vencida) o rango de fechas.</li>
+                <li><strong>Filtrado avanzado:</strong> Filtra por cliente, vendedor/asesor creador, estado (Borrador, Enviada, Vista, Aceptada, Rechazada, Vencida) o rango de fechas.</li>
                 <li><strong>Cargar:</strong> Recupera una cotización previa para revisar o editar.</li>
                 <li><strong>Cambiar estado:</strong> Modifica el ciclo de vida de la propuesta directamente.</li>
                 <li><strong>Eliminar:</strong> Borra la cotización seleccionada de forma permanente.</li>
@@ -879,7 +951,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">📋</span><span class="help-title">8. Uso y Descarga de Plantillas</span>
+              <span class="help-icon">📋</span><span class="help-title">10. Uso y Descarga de Plantillas</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
@@ -894,20 +966,58 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">🔄</span><span class="help-title">9. Visor de Catálogo e Interacción</span>
+              <span class="help-icon">🔄</span><span class="help-title">11. Visor de Catálogo e Interacción</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
               <ul>
                 <li>Abre el modal haciendo clic en <strong>Catálogo</strong> en la barra superior.</li>
                 <li><strong>Pestañas:</strong> Navega entre <strong>Productos</strong>, <strong>Instalaciones</strong> y <strong>Kits</strong>.</li>
-                <li><strong>Edición e interactividad:</strong> Utiliza los botones ✏️ (Editar) y ✕ (Eliminar) en cada fila.</li>
+                <li><strong>Edición e interactividad:</strong> Utiliza los botones ✏️ (Editar) y ✕ (Eliminar) en cada fila de las tablas.</li>
                 <li><strong>Redimensión de columnas:</strong> Arrastra los bordes de la cabecera de cualquier columna para adaptar su ancho a tu preferencia.</li>
                 <li><strong>Sincronización:</strong> Botones dedicados <code>[🔄 Sincronizar Productos]</code> y <code>[🔧 Sincronizar Instalaciones]</code> para actualizar desde las hojas de Google Sheets.</li>
               </ul>
             </div>
           </div>
 
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: PERFIL / CARGO -->
+    <div class="modal-backdrop" id="ProfileModal">
+      <div class="modal" style="max-width: 400px">
+        <div class="modal-header">
+          <h2>✏️ Perfil</h2>
+          <button class="modal-close" onclick="closeProfile()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="field" style="grid-column: 1/-1">
+              <label>Nombre</label>
+              <input type="text" id="ProfileName" disabled style="background:#f3f4f6;cursor:not-allowed;" />
+            </div>
+            <div class="field" style="grid-column: 1/-1">
+              <label>Email</label>
+              <input type="text" id="ProfileEmail" disabled style="background:#f3f4f6;cursor:not-allowed;" />
+            </div>
+            <div class="field" style="grid-column: 1/-1">
+              <label>Cargo (aparece en la cotización)</label>
+              <select id="ProfileCargo" onchange="toggleProfileCargoCustom()">
+                <option value="Asesor">Asesor</option>
+                <option value="Administrador">Administrador</option>
+                <option value="Gerente de Ventas">Gerente de Ventas</option>
+                <option value="Director Comercial">Director Comercial</option>
+                <option value="Gerente General">Gerente General</option>
+                <option value="__other__">+ Escribir otro cargo...</option>
+              </select>
+              <input type="text" id="ProfileCargoCustom" placeholder="Escribe tu cargo..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeProfile()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveProfileCargo()">💾 Guardar</button>
         </div>
       </div>
     </div>

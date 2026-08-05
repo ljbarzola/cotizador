@@ -116,6 +116,7 @@ export function renderHistoryList(quotes) {
       const d = new Date(q.updated_at || q.saved_at);
       const total = quoteTotal(q);
       const status = q.status || 'borrador';
+      const vendor = q.vendor_name || '';
       const statusOptions = STATUS_ORDER.map(
         s => `<option value="${s}" ${s === status ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`
       ).join('');
@@ -123,7 +124,7 @@ export function renderHistoryList(quotes) {
       <div class="history-item">
         <div class="history-item-info">
           <div class="history-item-client">${esc(client.name || '(sin nombre)')}</div>
-          <div class="history-item-meta">${esc(q.cot_num || '(sin número)')} · ${q.items?.length || 0} ítems · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</div>
+          <div class="history-item-meta">${esc(q.cot_num || '(sin número)')} · ${q.items?.length || 0} ítems · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}${vendor ? ' · <span style="color:var(--primary);font-weight:500;">' + esc(vendor) + '</span>' : ''}</div>
         </div>
         <select class="status-select" onchange="changeStatus('${q.id}', this.value)">${statusOptions}</select>
         <div class="history-item-actions">
@@ -141,12 +142,14 @@ export function renderHistoryList(quotes) {
  */
 export function applyHistoryFilters() {
   const clientQ = $('filterClient').value.toLowerCase().trim();
+  const vendorQ = $('filterVendor').value.toLowerCase().trim();
   const status = $('filterStatus').value;
   const dateFrom = $('filterDateFrom').value;
   const dateTo = $('filterDateTo').value;
   let filtered = historyQuotesCache.filter(q => {
     const client = q.client || {};
     if (clientQ && !(client.name || '').toLowerCase().includes(clientQ)) return false;
+    if (vendorQ && !(q.vendor_name || '').toLowerCase().includes(vendorQ)) return false;
     if (status && q.status !== status) return false;
     if (dateFrom) {
       const d = q.cot_date || (q.updated_at || '').slice(0, 10);

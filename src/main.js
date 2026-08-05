@@ -1,7 +1,7 @@
 import './styles.css';
 import './app.js';
 
-import { doLogin, validateSession, logout } from './modules/auth.js';
+import { doLogin, validateSession, logout, checkRecoveryToken } from './modules/auth.js';
 import { initQuote } from './modules/quote.js';
 
 window.doLogin = doLogin;
@@ -147,6 +147,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (session) {
     window._enterApp(session);
   } else {
-    document.getElementById('loginUser').focus();
+    const isRecovery = await checkRecoveryToken();
+    if (!isRecovery) {
+      document.getElementById('loginUser').focus();
+    }
   }
 });

@@ -1,55 +1,55 @@
 # Cotizador GEMESEG Tecnologia
 
-Herramienta web para crear cotizaciones profesionales de productos y servicios de seguridad y tecnologia.
+Herramienta web para crear cotizaciones profesionales de productos y servicios de seguridad y tecnología.
 
-## Que es este sistema?
+## ¿Qué es este sistema?
 
-Aplicacion web para el equipo de ventas de GEMESEG. Permite buscar productos en un catalogo sincronizado desde Google Sheets, armar cotizaciones, calcular precios con IVA, y generar PDFs listos para entregar al cliente. Los datos se almacenan en Supabase (base de datos en la nube).
+Aplicación web para el equipo de ventas de GEMESEG. Permite buscar productos en un catálogo sincronizado desde Google Sheets, armar cotizaciones, calcular precios con IVA, administrar servicios de instalación y generar PDFs oficiales listos para entregar al cliente. Los datos se almacenan en Supabase (base de datos en la nube).
 
-## Funcionalidades
+## Funcionalidades Clave
 
-- **Login seguro**: Autenticacion con Supabase Auth. Usuarios: admin y vendedor.
-- **Catalogo desde Google Sheets**: 3 pestanas del Google Sheet se sincronizan automaticamente a 3 tablas Supabase (equipos, materiales, servicios).
-- **Visor de catalogo**: Tabla de solo lectura visible para todos los usuarios, con busqueda y filtro por subcategoria.
-- **Editor de catalogo**: Todos los usuarios pueden editar, agregar o eliminar productos.
-- **Sistema de precios dinamico**: Margen de proveedor por producto (incluyendo productos sin proveedor), margen de instalacion global, IVA 15%.
-- **Carrito de cotizacion**: Agregar productos, cantidades, eliminar items, configurar margen por item.
-- **Guardado en la nube**: Cotizaciones se guardan en Supabase (RLS: admin ve todo, vendedor solo lo suyo).
-- **Historial de cotizaciones**: Filtros por cliente, fecha y estado. Cambio de estado con dropdown.
-- **Estados de cotizacion**: Borrador, Enviada, Vista, Aceptada, Rechazada, Vencida.
-- **PDF profesional**: Logo GEMESEG, datos del cliente, tabla de productos, condiciones comerciales, firmas.
-- **Borrador automatico**: Se guarda en localStorage mientras se edita.
-- **Paneles redimensionables**: Divider draggable entre catalogo y cotizacion.
-- **Plantillas**: 3 plantillas de ejemplo + creacion de plantillas personalizadas. Cargar, vista previa, descargar PDF, eliminar.
-- **Modales custom**: Confirmaciones y formularios con modales propios (sin dialogs del navegador).
-- **Manual de usuario**: Guia integrada con 9 secciones que explica todas las funcionalidades.
-- **Responsive/Movil**: Adaptado para tablets y celulares con toggles de colapso, touch targets 44px, modales fullscreen.
+- **Login seguro y Recuperación de Contraseña**: Autenticación con Supabase Auth (`signInWithPassword`) y flujo de recuperación de clave por correo.
+- **Catálogo desde Google Sheets (4 tablas)**: Sincronización de 4 pestañas a Supabase: `equipos`, `materiales`, `servicios` e `instalaciones`.
+- **Visor de Catálogo Interactivo**: 3 pestañas (Productos, Instalaciones, Kits) con edición inline, eliminación, creación de productos/instalaciones y redimensión de columnas.
+- **Servicios de Instalación**: Pestaña dedicada y picker de servicios de instalación con costo configurable por ítem, margen editable (35% por defecto) y sin cobro de IVA.
+- **Sistema de Precios Dinámico**: Costo base → +Margen Proveedor (editable, default 15%) → +IVA 15% → +Servicios de Instalación sin IVA.
+- **Sistema de Kits**: CRUD completo de Kits compartidos en Supabase. Al agregar un kit, se cargan sus componentes como ítems independientes en la cotización.
+- **Carrito y Cotizador**: Gestión de productos, cantidades, márgenes individuales y descuentos globales (porcentaje o valor fijo).
+- **Cargo Personalizado de Perfil**: Menú de usuario con opción "✏️ Mi cargo" para definir el cargo comercial que aparece en la firma del PDF.
+- **Numeración Secuencial de Cotización**: Generación de números secuenciales formateados (`COT-YYYYMMDD-0001`).
+- **Guardado en la Nube e Historial**: Cotizaciones guardadas en Supabase con RLS, filtrado por cliente, vendedor y estado.
+- **Plantillas Compartidas**: Almacenamiento e importación de plantillas en Supabase con vista previa y descarga directa de PDF.
+- **Separación Confidencial (Pantalla vs PDF)**: Ocultamiento total de costos bases y márgenes de ganancia en el PDF del cliente.
+- **Diseño Responsive y Adaptado**: Maquetación optimizada para móviles y escritorio en tarjetas de instalación, tablas y modales.
+- **Borrador Automático**: Respaldo continuo en localStorage.
 
-## Como se usa?
+## ¿Cómo se usa?
 
-1. Abrir la aplicacion en el navegador
-2. Iniciar sesion con usuario y clave (ej: `sistemas@gemeseg.com`)
-3. Sincronizar catalogo desde Google Sheets
-4. Buscar y agregar productos al carrito
-5. Completar datos del cliente
-6. Configurar margenes si es necesario
-7. Guardar cotizacion, usar como plantilla o imprimir como PDF
+1. Abrir la aplicación en el navegador.
+2. Iniciar sesión con usuario y clave (o usar la opción de recuperación de clave).
+3. Sincronizar catálogo desde Google Sheets si es necesario.
+4. Buscar y agregar productos, kits o servicios de instalación a la oferta.
+5. Completar los datos obligatorios del cliente (Razón Social, RUC/Cédula, Teléfono, Email).
+6. Configurar márgenes o descuentos según aplique.
+7. Guardar cotización en la nube, usar como plantilla o imprimir el PDF comercial.
 
-## Stack tecnico
+## Stack Técnico
 
-- **Frontend**: HTML5 + CSS3 + JavaScript ES6+ (SPA vanilla)
+- **Frontend**: HTML5 + CSS3 (Grid/Flexbox/Print) + JavaScript ES6+ (SPA Vanilla)
 - **Bundler**: Vite
-- **Base de datos**: Supabase (PostgreSQL + Auth + RLS)
-- **Datos**: Google Sheets como fuente, sincronizados via CSV export
-- **Hosting**: GitHub Pages (deploy automatico)
+- **Base de Datos**: Supabase (PostgreSQL + Auth + RLS)
+- **Fuente de Datos**: Google Sheets vía exportación CSV
+- **Hosting**: GitHub Pages (despliegue automático)
 
-## Desarrollo local
+## Desarrollo Local
 
 ```bash
 npm install
-npm run dev        # http://localhost:5174/
+npm run dev        # Dev server en http://localhost:5174/
+npm run test       # Vitest suite de pruebas unitarias
+npm run build      # Compilación para producción
 ```
 
 ## Despliegue
 
-Automatico via GitHub Pages al hacer push a la rama `master`.
+Automático vía GitHub Pages al hacer push a la rama `master`.

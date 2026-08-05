@@ -101,6 +101,10 @@ export function showSaveTemplateModal(prefix) {
     $('tplSaveDesc').value = '';
     $('tplSaveType').value = 'mediana';
     $('tplSaveIndustry').value = 'comercio';
+    $('tplSaveIndustryCustom').style.display = 'none';
+    $('tplSaveIndustryCustom').value = '';
+    $('tplSaveName').classList.remove('input-field-error');
+    $('tplSaveDesc').classList.remove('input-field-error');
     $('saveTemplateModal').classList.add('open');
   });
 }
@@ -109,15 +113,61 @@ export function showSaveTemplateModal(prefix) {
  * Resolve the save-template modal.
  * @param {Object|null} val - Template metadata or null to cancel
  */
+export function toggleTplIndustryCustom() {
+  const sel = $('tplSaveIndustry');
+  const custom = $('tplSaveIndustryCustom');
+  if (sel && custom) {
+    custom.style.display = sel.value === '__other__' ? 'block' : 'none';
+    if (sel.value === '__other__') custom.focus();
+  }
+}
+
+/**
+ * Resolve the save-template modal.
+ * @param {Object|null} val - Template metadata or null to cancel
+ */
+function highlightMissingField(input) {
+  if (!input) return;
+  input.classList.add('input-field-error');
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  input.focus();
+  const clearErr = () => {
+    input.classList.remove('input-field-error');
+    input.removeEventListener('input', clearErr);
+  };
+  input.addEventListener('input', clearErr);
+}
+
 export function resolveSaveTemplate(val) {
+  if (val === true) {
+    const fields = [
+      { id: 'tplSaveName', msg: 'Escribe un nombre para la plantilla' },
+      { id: 'tplSaveDesc', msg: 'Escribe una descripción para la plantilla' },
+    ];
+    for (const f of fields) {
+      const el = $(f.id);
+      const v = el ? el.value.trim() : '';
+      if (!v) {
+        highlightMissingField(el, f.msg);
+        toast(f.msg, 'warning');
+        return;
+      }
+    }
+  }
+
   $('saveTemplateModal').classList.remove('open');
   if (_saveTemplateResolve) {
     if (val === true) {
+      let industryVal = $('tplSaveIndustry')?.value || 'comercio';
+      if (industryVal === '__other__') {
+        const customInput = $('tplSaveIndustryCustom');
+        industryVal = customInput ? customInput.value.trim() || 'Otro' : 'Otro';
+      }
       _saveTemplateResolve({
         name: $('tplSaveName').value.trim(),
         desc: $('tplSaveDesc').value.trim(),
         type: $('tplSaveType').value,
-        industry: $('tplSaveIndustry').value,
+        industry: industryVal,
       });
     } else {
       _saveTemplateResolve(null);
@@ -145,5 +195,5 @@ export function generateCotNumber() {
   const key = 'cot_counter_' + dateStr;
   let count = parseInt(localStorage.getItem(key) || '0') + 1;
   localStorage.setItem(key, count);
-  return 'COT-' + dateStr + '-' + String(count).padStart(3, '0');
+  return 'COT-' + dateStr + '-' + String(count).padStart(4, '0');
 }

@@ -296,15 +296,28 @@ textarea {
 }
 .catalog-search {
   display: flex;
+  position: relative;
   gap: 8px;
   margin-bottom: 8px;
+  width: 100%;
+}
+.catalog-search .search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--muted);
+  pointer-events: none;
+  z-index: 2;
 }
 .catalog-search input {
   flex: 1;
-  padding: 8px 12px;
+  padding: 8px 12px 8px 32px !important;
   border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 13px;
+  box-sizing: border-box;
 }
 .catalog-search input:focus {
   outline: none;
@@ -1804,6 +1817,18 @@ textarea {
   cursor: pointer;
   text-decoration: underline;
 }
+.login-forgot {
+  display: block;
+  text-align: center;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--primary-mid);
+  cursor: pointer;
+  text-decoration: none;
+}
+.login-forgot:hover {
+  text-decoration: underline;
+}
 .login-spinner {
   display: inline-block;
   width: 16px;
@@ -2025,6 +2050,28 @@ textarea {
 }
 
 /* === CATALOG VIEWER (redesigned) === */
+.catalog-viewer-modal-header {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  gap: 8px;
+  padding: 12px 16px;
+}
+.viewer-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.viewer-header-top h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.viewer-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .viewer-body {
   flex: 1;
   overflow: hidden;
@@ -2218,6 +2265,19 @@ textarea {
 }
 .viewer-table tr:last-child td {
   border-bottom: none;
+}
+
+/* Responsive column title abbreviations */
+.col-short {
+  display: none;
+}
+@media (max-width: 640px) {
+  .col-full {
+    display: none;
+  }
+  .col-short {
+    display: inline;
+  }
 }
 
 /* Higher z-index for sub-modals opened on top of catalog viewer */
@@ -2600,6 +2660,59 @@ th:hover .col-resizer {
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  /* Viewer Modal Mobile */
+  .catalog-viewer-modal-header {
+    padding: 8px 10px 6px;
+    gap: 6px;
+  }
+  .viewer-header-top {
+    justify-content: space-between;
+  }
+  .viewer-header-top h2 {
+    font-size: 14px;
+  }
+  .viewer-result-count {
+    font-size: 10px;
+  }
+  /* Viewer Modal Mobile: las 3 pestañas entran en pantalla sin deslizar */
+  .viewer-tabs {
+    display: flex;
+    width: 100%;
+    gap: 4px;
+    margin-left: 0 !important;
+    overflow: visible;
+    padding-bottom: 0;
+    box-sizing: border-box;
+  }
+  .viewer-tab {
+    flex: 1 1 0px;
+    min-width: 0;
+    padding: 6px 2px;
+    font-size: 11px;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .viewer-toolbar {
+    padding: 8px 0;
+    gap: 6px;
+  }
+  .viewer-search input {
+    font-size: 12px;
+    padding: 8px 10px 8px 32px !important;
+  }
+  .viewer-filter {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .viewer-table th,
+  .viewer-table td {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
   .sync-status {
     order: 3;
     width: 100%;
@@ -2640,7 +2753,7 @@ th:hover .col-resizer {
   }
   .catalog-search input {
     font-size: 13px;
-    padding: 8px 10px;
+    padding: 8px 10px 8px 32px !important;
   }
   .catalog-filters {
     gap: 6px;
@@ -2911,12 +3024,194 @@ th:hover .col-resizer {
     font-size: 11px;
   }
 
-  /* Install config */
+  /* Install config mobile ultra-compacto */
   .install-config-row {
-    padding: 6px 10px;
+    padding: 0 !important;
+    margin-bottom: 6px;
+    border-radius: 6px;
+  }
+  .install-config-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 10px !important;
+    background: #fffbeb;
+  }
+  .install-info-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
   }
   .install-config-name {
+    font-size: 11px !important;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #1e293b;
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+    white-space: normal;
+  }
+  .install-del-btn {
+    width: 22px;
+    height: 22px;
     font-size: 11px;
+    padding: 0;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 1px solid #fcd34d;
+    background: #ffffff;
+    color: #92400e;
+  }
+  .install-info-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+  }
+  .install-config-meta {
+    font-size: 9px;
+    font-weight: 600;
+    color: #92400e;
+    background: #fef3c7;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #fde68a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .install-cost-badge {
+    font-size: 9px;
+    font-weight: 700;
+    color: #92400e;
+    background: #fef3c7;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #fde68a;
+    white-space: nowrap;
+  }
+
+  /* Fields row: content-fit grid */
+  .install-config-fields {
+    display: grid;
+    grid-template-columns: auto auto auto auto auto;
+    justify-content: space-between;
+    gap: 6px 8px;
+    padding: 4px 8px 6px;
+    align-items: end;
+    border-top: 1px solid #fde68a;
+  }
+
+  /* Each column: label in row 1, control in row 2 */
+  .install-config-fields .install-field {
+    display: contents;
+  }
+
+  /* Labels: row 1, centered */
+  .install-config-fields .install-field label {
+    grid-row: 1;
+    display: block;
+    font-size: 9px;
+    font-weight: 700;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1;
+    margin: 0;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* Inputs and values: row 2 */
+  .install-config-fields .install-field input,
+  .install-config-fields .install-field .margin-input-inline,
+  .install-config-fields .install-field .install-price {
+    grid-row: 2;
+  }
+
+  /* CANT input: small, centered */
+  .install-config-fields .install-field.field-cant input {
+    width: 28px;
+    height: 22px;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    box-sizing: border-box;
+    border: 1px solid #fde68a;
+    border-radius: 3px;
+    margin: 0;
+    background: white;
+  }
+
+  /* COSTO input: medium, right-aligned */
+  .install-config-fields .install-field.field-cost input {
+    width: 42px;
+    height: 22px;
+    padding: 0 3px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: right;
+    box-sizing: border-box;
+    border: 1px solid #fde68a;
+    border-radius: 3px;
+    margin: 0;
+    background: white;
+  }
+
+  /* MARGEN: small input + % attached */
+  .install-config-fields .install-field.field-margin .margin-input-inline {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+  }
+  .install-config-fields .install-field.field-margin .margin-input-inline input {
+    width: 26px;
+    height: 22px;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    box-sizing: border-box;
+    border: 1px solid #fde68a;
+    border-radius: 3px;
+    margin: 0;
+    background: white;
+  }
+  .install-config-fields .install-field.field-margin .margin-input-inline span {
+    font-size: 10px;
+    color: #92400e;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* All other inputs fallback */
+  .install-config-fields .install-field input:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+  }
+
+  /* Read-only values */
+  .install-config-fields .install-price {
+    font-size: 12px;
+    font-weight: 600;
+    color: #92400e;
+    white-space: nowrap;
+    text-align: center;
+    line-height: 22px;
+  }
+  .install-config-fields .install-total {
+    font-weight: 700;
+    color: #b45309;
   }
 
   /* History */
@@ -3541,7 +3836,7 @@ th:hover .col-resizer {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: #fffbeb;
 }
 .install-config-name {
@@ -3549,66 +3844,154 @@ th:hover .col-resizer {
   color: var(--text);
   flex: 1;
 }
-.install-cost-badge {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 700;
-  color: #92400e;
-  background: #fef3c7;
-  padding: 2px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-.install-config-meta {
-  font-size: 10px;
-  color: #92400e;
-  background: #fef3c7;
-  padding: 1px 6px;
-  border-radius: 3px;
-  white-space: nowrap;
-}
-.install-config-fields {
-  display: flex;
-  gap: 20px;
-  align-items: flex-end;
-  padding: 10px 14px 12px 46px;
-  border-top: 1px solid #fde68a;
-  background: white;
-}
-.install-config-fields .install-field {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.install-config-fields .install-field label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #92400e;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.install-config-fields .install-field input {
-  width: 100px;
-  padding: 6px 8px;
-  border: 1px solid #fde68a;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.install-config-fields .install-field input:focus {
-  outline: none;
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
-}
-.install-config-fields .install-price {
-  font-size: 14px;
-  font-weight: 700;
-  color: #92400e;
-  padding: 6px 0;
-}
-.install-config-fields .install-total {
-  color: #b45309;
-  font-size: 16px;
+@media (min-width: 641px) {
+  .install-config-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 16px;
+    background: #fffbeb;
+  }
+  .install-info-top {
+    display: contents;
+  }
+  .install-config-name {
+    order: 1;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .install-info-meta-row {
+    order: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .install-config-meta {
+    font-size: 10px;
+    font-weight: 700;
+    color: #92400e;
+    background: #fef3c7;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .install-cost-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #92400e;
+    background: #fef3c7;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .install-del-btn {
+    order: 3;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 1px solid #fcd34d;
+    background: #ffffff;
+    color: #92400e;
+  }
+  .install-config-fields {
+    display: grid;
+    grid-template-columns: 44px 64px 56px auto auto;
+    justify-content: space-evenly;
+    gap: 4px 24px;
+    padding: 6px 8px 8px 8px;
+    align-items: end;
+    border-top: 1px solid #fde68a;
+    background: white;
+  }
+  .install-config-fields .install-field {
+    display: contents;
+  }
+  .install-config-fields .install-field label {
+    grid-row: 1;
+    font-size: 10px;
+    font-weight: 700;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    text-align: center;
+  }
+  .install-config-fields .install-field input,
+  .install-config-fields .install-field .margin-input-inline,
+  .install-config-fields .install-field .install-price {
+    grid-row: 2;
+  }
+  .install-config-fields .install-field.field-cant input {
+    width: 44px;
+    height: 32px;
+    padding: 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    box-sizing: border-box;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    background: white;
+  }
+  .install-config-fields .install-field.field-cost input {
+    width: 64px;
+    height: 32px;
+    padding: 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+    box-sizing: border-box;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    background: white;
+  }
+  .install-config-fields .install-field.field-margin .margin-input-inline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .install-config-fields .install-field.field-margin .margin-input-inline input {
+    width: 44px;
+    height: 32px;
+    padding: 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    box-sizing: border-box;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    background: white;
+  }
+  .install-config-fields .install-field input:focus,
+  .install-config-fields .install-field .margin-input-inline input:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+  }
+  .install-config-fields .install-price {
+    font-size: 13px;
+    font-weight: 700;
+    color: #92400e;
+    text-align: center;
+    line-height: 32px;
+    white-space: nowrap;
+  }
+  .install-config-fields .install-total {
+    color: #b45309;
+    font-size: 14px;
+  }
 }
 .install-required {
   font-size: 11px;
@@ -3904,7 +4287,24 @@ th:hover .col-resizer {
   color: var(--primary-mid);
 }
 
-/* === INSTALL SERVICE ROWS === */
+/* Input field error animation & border */
+.input-field-error {
+  border: 2px solid var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+  animation: shakeError 0.3s ease-in-out;
+}
+@keyframes shakeError {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
 .install-service-row {
   background: #fef3c7 !important;
 }

@@ -115,6 +115,7 @@ import {
   showConfirm,
   resolveConfirm,
   resolveSaveTemplate,
+  toggleTplIndustryCustom,
   generateCotNumber,
   showSaveTemplateModal,
 } from './utils.js';
@@ -369,7 +370,8 @@ function removeItem(idx) {
 }
 
 function updateItemMargin(idx, val) {
-  cart[idx].customMargin = parseFloat(val) || null;
+  const parsed = parseFloat(val);
+  cart[idx].customMargin = isNaN(parsed) ? null : parsed;
   clearTimeout(window._marginRenderTimer);
   window._marginRenderTimer = setTimeout(() => {
     renderCart();
@@ -390,7 +392,8 @@ function updateInstallServiceQty(idx, val) {
 
 function updateSupplierMarginGlobal(supplier, val) {
   const key = supplier || 'Sin proveedor';
-  supplierMargins[key] = parseFloat(val) || 0;
+  const parsed = parseFloat(val);
+  supplierMargins[key] = isNaN(parsed) ? DEFAULT_SUPPLIER_MARGIN : parsed;
   clearTimeout(window._marginRenderTimer);
   window._marginRenderTimer = setTimeout(() => {
     renderCart();
@@ -497,6 +500,7 @@ function addInstallServiceToCart(serviceId) {
       serviceId: service.id,
       description: service.description,
       cost: service.cost,
+      customCost: service.cost,
       category: service.category || '',
       subcategory: service.subcategory || '',
       customMargin: DEFAULT_INSTALL_MARGIN,
@@ -545,6 +549,18 @@ function updateInstallServiceMargin(idx, val) {
   if (cart[idx] && cart[idx].isInstallService) {
     const parsed = parseFloat(val);
     cart[idx].customMargin = isNaN(parsed) ? DEFAULT_INSTALL_MARGIN : parsed;
+    clearTimeout(window._marginRenderTimer);
+    window._marginRenderTimer = setTimeout(() => {
+      renderCart();
+      saveDraft();
+    }, 300);
+  }
+}
+
+function updateInstallServiceCost(idx, val) {
+  if (cart[idx] && cart[idx].isInstallService) {
+    const parsed = parseFloat(val);
+    cart[idx].customCost = isNaN(parsed) ? cart[idx].cost : parsed;
     clearTimeout(window._marginRenderTimer);
     window._marginRenderTimer = setTimeout(() => {
       renderCart();
@@ -810,38 +826,40 @@ function renderMarginConfig() {
   installHtml += '</div>';
   installHtml += '</div>';
 
-  // Always show the indicator about items with install flag
+  // Show indicator about items with install flag ONLY when no install services are active
   const flagItems = cart.filter(c => {
     if (c.isKit) return c.kitComponents.some(cc => CATALOG[cc.catalogIdx]?.hasInstalacion);
     if (c.isInstallService) return false;
     return CATALOG[c.catalogIdx]?.hasInstalacion;
   });
-  if (flagItems.length > 0) {
+  if (flagItems.length > 0 && installServiceItems.length === 0) {
     installHtml += `<div class="margin-empty">Instalación desactivada. <strong>${flagItems.length} ítem(s)</strong> con flag de instalación disponibles.</div>`;
   }
 
-  if (installServiceItems.length === 0) {
-    installHtml +=
-      '<div class="margin-empty" style="margin-top:8px;">No hay servicios de instalación en la cotización. Usa el botón "+ Servicio de instalación" para agregar.</div>';
-  } else {
+  if (installServiceItems.length > 0) {
     installServiceItems.forEach((c, i) => {
       const cartIdx = cart.indexOf(c);
       const pricing = calcInstallServicePrice(c, c.customMargin ?? DEFAULT_INSTALL_MARGIN);
       const total = pricing.total * c.qty;
       installHtml += `<div class="install-config-row install-active-row">`;
       installHtml += `<div class="install-config-info">`;
+      installHtml += `<div class="install-info-top">`;
       installHtml += `<span class="install-config-name">🔧 ${esc(c.description)}</span>`;
+      installHtml += `<button class="viewer-action-btn delete install-del-btn" onclick="removeItem(${cartIdx})" title="Eliminar servicio">✕</button>`;
+      installHtml += `</div>`;
+      installHtml += `<div class="install-info-meta-row">`;
       if (c.category || c.subcategory) {
         installHtml += `<span class="install-config-meta">${esc(c.category || '')}${c.subcategory ? ' › ' + esc(c.subcategory) : ''}</span>`;
       }
       installHtml += `<span class="install-cost-badge">${fmt(pricing.baseCost)} × ${c.qty} + ${c.customMargin ?? DEFAULT_INSTALL_MARGIN}% = ${fmt(total)}</span>`;
       installHtml += `</div>`;
+      installHtml += `</div>`;
       installHtml += `<div class="install-config-fields">`;
-      installHtml += `<div class="install-field"><label>Cantidad</label><div class="margin-input-inline"><input type="number" min="1" step="1" value="${c.qty}" onchange="updateInstallServiceQty(${cartIdx}, this.value)"></div></div>`;
-      installHtml += `<div class="install-field"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${c.customMargin ?? DEFAULT_INSTALL_MARGIN}" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
-      installHtml += `<div class="install-field"><label>Ganancia</label><span class="install-price">${fmt(pricing.ganancia * c.qty)}</span></div>`;
-      installHtml += `<div class="install-field"><label>Total</label><span class="install-price install-total">${fmt(total)}</span></div>`;
-      installHtml += `<div class="install-field"><label></label><button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;border-color:var(--danger);color:var(--danger);" onclick="removeItem(${cartIdx})">✕ Eliminar</button></div>`;
+      installHtml += `<div class="install-field field-cant"><label>Cant</label><input type="number" min="1" step="1" value="${c.qty}" onchange="updateInstallServiceQty(${cartIdx}, this.value)"></div>`;
+      installHtml += `<div class="install-field field-cost"><label>Costo</label><input type="number" min="0" step="0.01" value="${c.customCost ?? c.cost}" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div>`;
+      installHtml += `<div class="install-field field-margin"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${c.customMargin ?? DEFAULT_INSTALL_MARGIN}" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
+      installHtml += `<div class="install-field field-ganancia"><label>Ganancia</label><span class="install-price">${fmt(pricing.ganancia * c.qty)}</span></div>`;
+      installHtml += `<div class="install-field field-total"><label>Total</label><span class="install-price install-total">${fmt(total)}</span></div>`;
       installHtml += `</div>`;
       installHtml += `</div>`;
     });
@@ -986,14 +1004,82 @@ function loadDraft() {
   }
 }
 
+async function generateNextCotNumberFromDB() {
+  const d = new Date();
+  const dateStr = d.toISOString().slice(0, 10).replace(/-/g, '');
+  const prefix = 'COT-' + dateStr + '-';
+
+  try {
+    const { data, error } = await supabase
+      .from('saved_quotes')
+      .select('cot_num')
+      .like('cot_num', prefix + '%');
+
+    let maxSeq = 0;
+    if (!error && data && data.length > 0) {
+      data.forEach(r => {
+        const parts = (r.cot_num || '').split('-');
+        if (parts.length >= 3) {
+          const seq = parseInt(parts[2]) || 0;
+          if (seq > maxSeq) maxSeq = seq;
+        }
+      });
+    }
+
+    const key = 'cot_counter_' + dateStr;
+    const localCount = parseInt(localStorage.getItem(key) || '0');
+    const nextSeq = Math.max(maxSeq, localCount) + 1;
+
+    localStorage.setItem(key, nextSeq);
+    return prefix + String(nextSeq).padStart(4, '0');
+  } catch (e) {
+    console.warn('[COT_NUM] Error querying DB, fallback to local generator:', e.message);
+    return generateCotNumber();
+  }
+}
+
+function highlightMissingClientFields(missingMap) {
+  let firstEl = null;
+
+  Object.entries(missingMap).forEach(([fieldId, isMissing]) => {
+    const el = $(fieldId);
+    if (!el) return;
+    if (isMissing) {
+      el.classList.add('input-field-error');
+      if (!firstEl) firstEl = el;
+
+      const clearErr = () => {
+        el.classList.remove('input-field-error');
+        el.removeEventListener('input', clearErr);
+      };
+      el.addEventListener('input', clearErr);
+    } else {
+      el.classList.remove('input-field-error');
+    }
+  });
+
+  if (firstEl) {
+    firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => firstEl.focus(), 300);
+  }
+}
+
 async function saveQuote() {
   const data = buildQuoteData();
-  if (!data.client.name || !data.client.ruc || !data.client.phone || !data.client.email) {
+  const missingMap = {
+    clientName: !data.client.name,
+    clientRuc: !data.client.ruc,
+    clientPhone: !data.client.phone,
+    clientEmail: !data.client.email,
+  };
+
+  if (Object.values(missingMap).some(Boolean)) {
     const missing = [];
-    if (!data.client.name) missing.push('Cliente');
-    if (!data.client.ruc) missing.push('RUC/Cédula');
-    if (!data.client.phone) missing.push('Teléfono');
-    if (!data.client.email) missing.push('Email');
+    if (missingMap.clientName) missing.push('Cliente');
+    if (missingMap.clientRuc) missing.push('RUC/Cédula');
+    if (missingMap.clientPhone) missing.push('Teléfono');
+    if (missingMap.clientEmail) missing.push('Email');
+    highlightMissingClientFields(missingMap);
     toast('Campos obligatorios: ' + missing.join(', '), 'danger');
     return;
   }
@@ -1002,7 +1088,7 @@ async function saveQuote() {
     return;
   }
   if (!data.cotNum) {
-    data.cotNum = generateCotNumber();
+    data.cotNum = await generateNextCotNumberFromDB();
     $('cotNum').value = data.cotNum;
   }
 
@@ -1015,6 +1101,7 @@ async function saveQuote() {
   try {
     const row = {
       user_id: userId,
+      vendor_name: currentSession?.nombre || currentSession?.user || '',
       cot_num: data.cotNum,
       cot_date: data.cotDate || null,
       client: data.client,
@@ -1029,6 +1116,7 @@ async function saveQuote() {
       const { error } = await supabase
         .from('saved_quotes')
         .update({
+          vendor_name: row.vendor_name,
           cot_num: row.cot_num,
           cot_date: row.cot_date,
           client: row.client,
@@ -1076,13 +1164,15 @@ async function saveQuote() {
           data.cotNum = generateCotNumber();
           $('cotNum').value = data.cotNum;
           row.cot_num = data.cotNum;
-          const { error } = await supabase.from('saved_quotes').insert(row);
+          const { data: inserted, error } = await supabase.from('saved_quotes').insert(row).select().single();
           if (error) throw error;
+          if (inserted && inserted.id) setCurrentQuoteId(inserted.id);
           toast('✓ Cotización nueva guardada', 'success');
         }
       } else {
-        const { error } = await supabase.from('saved_quotes').insert(row);
+        const { data: inserted, error } = await supabase.from('saved_quotes').insert(row).select().single();
         if (error) throw error;
+        if (inserted && inserted.id) setCurrentQuoteId(inserted.id);
         toast('✓ Cotización guardada: ' + data.cotNum, 'success');
         notifyCotizadorVsPdf();
       }
@@ -1123,9 +1213,12 @@ function notifyCotizadorVsPdf() {
         <div>Instalación (mismo valor)</div>
       </div>
     </div>`;
-  const quotePanel = document.querySelector('.quote-panel');
-  if (quotePanel) {
-    quotePanel.insertBefore(banner, quotePanel.querySelector('.actions-bar'));
+  const actionsBar = document.querySelector('.actions-bar');
+  if (actionsBar && actionsBar.parentNode) {
+    actionsBar.parentNode.insertBefore(banner, actionsBar);
+  } else {
+    const quotePanel = document.querySelector('.quote-panel');
+    if (quotePanel) quotePanel.appendChild(banner);
   }
   setTimeout(() => {
     const b = document.getElementById('cotizadorVsPdfBanner');
@@ -1415,10 +1508,10 @@ let viewerTab = 'products';
 
 const VIEWER_HEADERS = {
   products:
-    '<th style="width:100px">Código</th><th style="width:120px">Subcategoría</th><th>Descripción</th><th style="width:70px">Costo</th><th style="width:50px">Gan.</th><th style="width:50px">Inst.</th><th style="width:70px">PVP</th><th style="width:60px">IVA</th><th style="width:75px">Total</th><th style="width:65px;text-align:center;">Acciones</th>',
+    '<th style="width:100px">Código</th><th style="width:120px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th>Descripción</th><th style="width:70px"><span class="col-full">Costo</span><span class="col-short">C. Unit.</span></th><th style="width:50px">Gan.</th><th style="width:50px">Inst.</th><th style="width:70px">PVP</th><th style="width:60px">IVA</th><th style="width:75px">Total</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
   install:
-    '<th style="width:80px">Código</th><th>Nombre instalación</th><th style="width:100px">Categoría</th><th style="width:100px">Subcategoría</th><th style="width:80px" class="right">Costo</th><th>Observaciones</th><th style="width:65px;text-align:center;">Acciones</th>',
-  kits: '<th style="width:100px">Código</th><th>Nombre</th><th>Componentes</th><th style="width:80px">Costo</th><th style="width:65px;text-align:center;">Acciones</th>',
+    '<th style="width:80px">Código</th><th>Nombre instalación</th><th style="width:100px"><span class="col-full">Categoría</span><span class="col-short">Cat.</span></th><th style="width:100px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th style="width:80px" class="right"><span class="col-full">Costo</span><span class="col-short">C. Unit.</span></th><th>Observaciones</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
+  kits: '<th style="width:100px">Código</th><th>Nombre</th><th>Componentes</th><th style="width:80px"><span class="col-full">Costo</span><span class="col-short">Total</span></th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
 };
 
 function switchViewerTab(tab) {
@@ -2440,9 +2533,8 @@ function syncPrintView() {
     cotName.textContent =
       currentSession?.nombre || localStorage.getItem('usuario_nombre') || '[Nombre del responsable]';
   if (cotRole) {
-    const rol = currentSession?.rol || localStorage.getItem('usuario_rol') || '';
-    const rolLabels = { admin: 'Administrador', vendedor: 'Vendedor', ventas: 'Ventas' };
-    cotRole.textContent = rolLabels[rol] || rol || '[Cargo]';
+    const cargo = currentSession?.cargo || '';
+    cotRole.textContent = cargo || '[Cargo]';
   }
   const condEl = $('quoteConditions');
   const printCondEl = $('printConditions');
@@ -2508,15 +2600,13 @@ function enterApp(session) {
   const chipName = $('userChipName');
   chipName.textContent = session.nombre || session.user;
   chipName.classList.add('user-chip-name-full');
-  const roleLabel = session.rol === 'admin' ? 'Administrador' : 'Asesor';
+  const roleLabel = session.cargo || (session.rol === 'admin' ? 'Administrador' : 'Asesor');
   const roleBadge = $('userChipRole');
   if (roleBadge) roleBadge.textContent = roleLabel;
   const ddName = $('dropdownName');
   if (ddName) ddName.textContent = session.nombre || session.user;
   const ddRole = $('dropdownRole');
   if (ddRole) ddRole.textContent = roleLabel + ' · ' + (session.email || '');
-  const btnEditCatalog = $('btnEditCatalog');
-  if (btnEditCatalog) btnEditCatalog.style.display = 'block';
   const btnUserManagement = $('btnUserManagement');
   if (btnUserManagement) btnUserManagement.style.display = session.rol === 'admin' ? 'inline-block' : 'none';
   $('loginBtn').disabled = false;
@@ -2526,6 +2616,74 @@ function enterApp(session) {
   });
 }
 window._enterApp = enterApp;
+
+// === MY PROFILE / CARGO ===
+function openProfile() {
+  $('userDropdown').classList.remove('show');
+  const nameEl = $('ProfileName');
+  const emailEl = $('ProfileEmail');
+  const cargoSelect = $('ProfileCargo');
+  const cargoCustom = $('ProfileCargoCustom');
+  if (nameEl) nameEl.value = currentSession?.nombre || '';
+  if (emailEl) emailEl.value = currentSession?.email || '';
+  const currentCargo = currentSession?.cargo || 'Asesor';
+  const options = Array.from(cargoSelect.options).map(o => o.value);
+  if (options.includes(currentCargo)) {
+    cargoSelect.value = currentCargo;
+    cargoCustom.style.display = 'none';
+  } else {
+    cargoSelect.value = '__other__';
+    cargoCustom.value = currentCargo;
+    cargoCustom.style.display = 'block';
+  }
+  $('ProfileModal').classList.add('open');
+}
+
+function closeProfile() {
+  $('ProfileModal').classList.remove('open');
+  $('ProfileCargoCustom').style.display = 'none';
+  $('ProfileCargoCustom').value = '';
+}
+
+function toggleProfileCargoCustom() {
+  const sel = $('ProfileCargo');
+  const custom = $('ProfileCargoCustom');
+  if (sel && custom) {
+    custom.style.display = sel.value === '__other__' ? 'block' : 'none';
+    if (sel.value === '__other__') custom.focus();
+  }
+}
+
+async function saveProfileCargo() {
+  const sel = $('ProfileCargo');
+  const custom = $('ProfileCargoCustom');
+  let cargo = sel.value;
+  if (cargo === '__other__') {
+    cargo = custom ? custom.value.trim() : '';
+    if (!cargo) {
+      toast('Escribe un cargo', 'warning');
+      if (custom) {
+        custom.focus();
+        custom.classList.add('input-field-error');
+      }
+      return;
+    }
+  }
+  try {
+    const { error } = await supabase.from('profiles').update({ cargo }).eq('id', currentSession.userId);
+    if (error) throw error;
+    currentSession.cargo = cargo;
+    localStorage.setItem('session', JSON.stringify(currentSession));
+    toast('✅ Cargo actualizado: ' + cargo, 'success');
+    closeProfile();
+  } catch (e) {
+    toast('❌ Error al guardar: ' + e.message, 'danger');
+  }
+}
+window.openProfile = openProfile;
+window.closeProfile = closeProfile;
+window.toggleProfileCargoCustom = toggleProfileCargoCustom;
+window.saveProfileCargo = saveProfileCargo;
 
 // === CUSTOM CONFIRM MODAL ===
 // showConfirm and resolveConfirm imported from utils.js
@@ -2592,7 +2750,7 @@ function renderUsersTable() {
       <td>${rolBadge}</td>
       <td class="center">${estadoBadge}</td>
       <td>
-        <button class="btn btn-ghost" onclick='openEditUser(${JSON.stringify({ id: u.id, nombre: u.nombre || '', correo: u.correo || '', rol: u.rol || 'asesor', activo: u.activo !== false }).replace(/'/g, '&#39;')})' style="font-size:11px;padding:4px 10px;">✏️ Editar</button>
+        <button class="btn btn-ghost" onclick='openEditUser(${JSON.stringify({ id: u.id, nombre: u.nombre || '', correo: u.correo || '', rol: u.rol || 'asesor', cargo: u.cargo || '', activo: u.activo !== false }).replace(/'/g, '&#39;')})' style="font-size:11px;padding:4px 10px;">✏️ Editar</button>
       </td>
     </tr>`;
     })
@@ -2643,12 +2801,14 @@ async function createUser() {
     if (error) throw error;
 
     if (data.user) {
+      const cargoDefault = role === 'admin' ? 'Administrador' : 'Asesor';
       const { error: profileError } = await supabase.from('profiles').upsert(
         {
           id: data.user.id,
           correo: email,
           nombre,
           rol: role,
+          cargo: cargoDefault,
           activo: true,
         },
         { onConflict: 'id' }
@@ -2741,6 +2901,7 @@ function openEditUser(user) {
   $('editUserTitle').textContent = 'Editar: ' + (user.nombre || user.correo);
   $('editUserError').style.display = 'none';
   $('editUserModal').classList.add('open');
+  $('editUserModal')._currentCargo = user.cargo || '';
 }
 
 function closeEditUser() {
@@ -2767,7 +2928,8 @@ async function saveEditUser() {
   errEl.style.display = 'none';
 
   try {
-    const { error } = await supabase.from('profiles').update({ nombre, rol: role, activo }).eq('id', userId);
+    const cargo = $('editUserModal')._currentCargo || '';
+    const { error } = await supabase.from('profiles').update({ nombre, rol: role, activo, cargo }).eq('id', userId);
     if (error) throw error;
 
     if (newPassword) {
@@ -2848,6 +3010,7 @@ async function saveCurrentAsTemplate() {
 window.showConfirm = showConfirm;
 window.resolveConfirm = resolveConfirm;
 window.resolveSaveTemplate = resolveSaveTemplate;
+window.toggleTplIndustryCustom = toggleTplIndustryCustom;
 window.openProductDetail = openProductDetail;
 window.openCartItemDetail = openCartItemDetail;
 window.closeProductDetail = closeProductDetail;
@@ -2858,6 +3021,7 @@ window.openSavedModal = openSavedModal;
 window.closeSavedModal = closeSavedModal;
 window.newQuote = newQuote;
 window.saveQuote = saveQuote;
+window.loadQuoteData = loadQuoteData;
 window.doPrint = doPrint;
 window.loadDraft = loadDraft;
 window.resetCatalog = resetCatalog;
@@ -2936,6 +3100,7 @@ window.closeInstallServiceEditor = closeInstallServiceEditor;
 window.saveInstallServiceEditor = saveInstallServiceEditor;
 window.updateInstallServiceQty = updateInstallServiceQty;
 window.updateInstallServiceMargin = updateInstallServiceMargin;
+window.updateInstallServiceCost = updateInstallServiceCost;
 window.openInstallSyncPanel = openInstallSyncPanel;
 window.closeInstallSyncPanel = closeInstallSyncPanel;
 window.startInstallSync = startInstallSync;
