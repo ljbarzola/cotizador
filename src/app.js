@@ -661,7 +661,7 @@ function renderCart() {
           </td>
           <td class="center" style="font-size:11px;font-weight:600;color:var(--primary);">${it.unit || '—'}</td>
           <td class="right"><span class="print-hide-col">${fmt(compPricing.baseCost)}</span><span class="print-only">${fmt(compPricing.priceBeforeIva)}</span></td>
-          <td class="center"><input type="number" min="0" step="any" value="${compData.qty ?? 1}" class="qty-input" onchange="updateKitCompQty(${idx}, ${compIdx}, this.value)"></td>
+          <td class="center"><input type="number" min="0" step="any" value="${compData.qty ?? 1}" class="qty-input" aria-label="Cantidad de componente del kit" onchange="updateKitCompQty(${idx}, ${compIdx}, this.value)"></td>
           <td class="right"><span class="print-hide-col"><strong>${fmt(compPricing.baseCost * compQty)}</strong></span><span class="print-only"><strong>${fmt(compPricing.priceBeforeIva * compQty)}</strong></span></td>
           <td class="right print-hide-col">${marginCell}</td>
           <td class="right print-hide-col">${fmt(compPvp)}</td>
@@ -713,7 +713,7 @@ function renderCart() {
       </td>
       <td class="center" style="font-size:11px;font-weight:600;color:var(--primary);">${item.unit || '—'}</td>
       <td class="right"><span class="print-hide-col">${fmt(pricing.baseCost)}</span><span class="print-only">${fmt(pricing.priceBeforeIva)}</span></td>
-      <td class="center"><input type="number" min="0" step="any" value="${c.qty}" class="qty-input" onchange="updateQty(${idx}, this.value)"></td>
+      <td class="center"><input type="number" min="0" step="any" value="${c.qty}" class="qty-input" aria-label="Cantidad de producto" onchange="updateQty(${idx}, this.value)"></td>
       <td class="right"><span class="print-hide-col"><strong>${fmt(pricing.baseCost * c.qty)}</strong></span><span class="print-only"><strong>${fmt(pricing.priceBeforeIva * c.qty)}</strong></span></td>
       <td class="right print-hide-col">${marginCell}</td>
       <td class="right print-hide-col">${fmt(pvp)}</td>
@@ -788,7 +788,7 @@ function renderMarginConfig() {
       if (isSinProveedor) {
         supplierHtml += `<span class="supplier-hint">Margen individual por item ↓</span>`;
       } else {
-        supplierHtml += `<div class="supplier-margin-input"><input type="number" min="0" max="100" step="1" value="${margin}" oninput="updateSupplierMarginGlobal('${supplier.replace(/'/g, "\\'")}', this.value)"><span>%</span></div>`;
+        supplierHtml += `<div class="supplier-margin-input"><input type="number" min="0" max="100" step="1" value="${margin}" aria-label="Margen de proveedor global para ${supplier.replace(/"/g, '&quot;')}" oninput="updateSupplierMarginGlobal('${supplier.replace(/'/g, "\\'")}', this.value)"><span>%</span></div>`;
       }
       supplierHtml += `</div>`;
 
@@ -804,7 +804,7 @@ function renderMarginConfig() {
         supplierHtml += `<span class="sgi-code">${item.sourceId || ''}</span>`;
         supplierHtml += `<span class="sgi-desc">${esc(item.description.slice(0, 35))}${item.description.length > 35 ? '…' : ''}${isKit ? ' <small style="color:var(--muted);">(kit)</small>' : ''}</span>`;
         if (isSinProveedor && hasGanancia) {
-          supplierHtml += `<div class="supplier-margin-input sgi-margin-inline"><input type="number" min="0" max="100" step="1" value="${effectiveMargin}" oninput="${marginHandler}"><span>%</span></div>`;
+          supplierHtml += `<div class="supplier-margin-input sgi-margin-inline"><input type="number" min="0" max="100" step="1" value="${effectiveMargin}" aria-label="Margen de proveedor individual" oninput="${marginHandler}"><span>%</span></div>`;
         }
         supplierHtml += `<span class="sgi-cost">${fmt(item.cost)} → <strong>${fmt(pricing.priceBeforeIva)}</strong>${hasGanancia ? ' <span class="sgi-margin">+' + effectiveMargin + '%</span>' : ' <span class="sgi-no-margin">sin ganancia</span>'}</span>`;
         supplierHtml += `</div>`;
@@ -855,9 +855,9 @@ function renderMarginConfig() {
       installHtml += `</div>`;
       installHtml += `</div>`;
       installHtml += `<div class="install-config-fields">`;
-      installHtml += `<div class="install-field field-cant"><label>Cant</label><input type="number" min="1" step="1" value="${c.qty}" onchange="updateInstallServiceQty(${cartIdx}, this.value)"></div>`;
-      installHtml += `<div class="install-field field-cost"><label>Costo</label><input type="number" min="0" step="0.01" value="${c.customCost ?? c.cost}" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div>`;
-      installHtml += `<div class="install-field field-margin"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${c.customMargin ?? DEFAULT_INSTALL_MARGIN}" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
+      installHtml += `<div class="install-field field-cant"><label>Cant</label><input type="number" min="1" step="1" value="${c.qty}" aria-label="Cantidad de servicio" onchange="updateInstallServiceQty(${cartIdx}, this.value)"></div>`;
+      installHtml += `<div class="install-field field-cost"><label>Costo</label><input type="number" min="0" step="0.01" value="${c.customCost ?? c.cost}" aria-label="Costo del servicio" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div>`;
+      installHtml += `<div class="install-field field-margin"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${c.customMargin ?? DEFAULT_INSTALL_MARGIN}" aria-label="Margen de ganancia en porcentaje" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
       installHtml += `<div class="install-field field-ganancia"><label>Ganancia</label><span class="install-price">${fmt(pricing.ganancia * c.qty)}</span></div>`;
       installHtml += `<div class="install-field field-total"><label>Total</label><span class="install-price install-total">${fmt(total)}</span></div>`;
       installHtml += `</div>`;

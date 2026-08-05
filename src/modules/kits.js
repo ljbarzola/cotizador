@@ -363,14 +363,14 @@ export function renderKitComponents(kitIdx) {
       return `
     <div class="kit-comp-row" style="display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg,#f3f4f6);margin-bottom:8px;box-sizing:border-box;width:100%;">
       <div style="flex:1;min-width:0;">
-        <select class="kit-comp-select" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:white;" onchange="updateKitComp(${kitIdx},${i},'catalogIdx',this.value)">
+        <select class="kit-comp-select" aria-label="Seleccionar producto componente" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:white;" onchange="updateKitComp(${kitIdx},${i},'catalogIdx',this.value)">
           <option value="" ${defaultSelected}>Seleccionar producto...</option>
           ${options}
         </select>
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
         <span style="font-size:12px;font-weight:600;color:var(--muted);">Cant:</span>
-        <input type="number" min="1" step="1" value="${qtyVal}" style="width:60px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;text-align:center;background:white;" onchange="updateKitComp(${kitIdx},${i},'qty',this.value)">
+        <input type="number" min="1" step="1" value="${qtyVal}" aria-label="Cantidad de componente" style="width:60px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;text-align:center;background:white;" onchange="updateKitComp(${kitIdx},${i},'qty',this.value)">
       </div>
       <button class="viewer-action-btn delete" onclick="removeKitComp(${kitIdx},${i})" title="Quitar componente" style="flex-shrink:0;">✕</button>
     </div>`;

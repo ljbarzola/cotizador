@@ -126,7 +126,7 @@ export function renderHistoryList(quotes) {
           <div class="history-item-client">${esc(client.name || '(sin nombre)')}</div>
           <div class="history-item-meta">${esc(q.cot_num || '(sin número)')} · ${q.items?.length || 0} ítems · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}${vendor ? ' · <span style="color:var(--primary);font-weight:500;">' + esc(vendor) + '</span>' : ''}</div>
         </div>
-        <select class="status-select" onchange="changeStatus('${q.id}', this.value)">${statusOptions}</select>
+        <select class="status-select" aria-label="Cambiar estado de cotización" onchange="changeStatus('${q.id}', this.value)">${statusOptions}</select>
         <div class="history-item-actions">
           <button onclick="loadSaved('${q.id}')">Cargar</button>
           <button style="color:var(--danger);border-color:var(--danger);" onclick="deleteSaved('${q.id}')">Eliminar</button>

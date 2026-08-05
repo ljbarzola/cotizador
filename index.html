@@ -2,40 +2,68 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Cotizador GEMESEG Tecnología</title>
+    <link rel="author" type="text/plain" href="/llms.txt" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" href="/content/logo-gemeseg-back-white.png" as="image" type="image/png" fetchpriority="high" />
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+      />
+    </noscript>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
     <!-- LOGIN -->
     <div class="login-overlay" id="loginOverlay">
       <div class="login-card">
-        <div class="login-logo" id="loginLogo"></div>
+        <div class="login-logo" id="loginLogo">
+          <img
+            src="/content/logo-gemeseg-back-white.png"
+            alt="GEMESEG"
+            class="logo-img logo-img-login"
+            width="220"
+            height="48"
+            fetchpriority="high"
+            loading="eager"
+            decoding="async"
+            onerror="this.onerror=null; this.parentElement.innerHTML='GE<span class=&quot;m&quot;>M</span>ESEG';"
+          />
+        </div>
         <div class="login-tagline">Cotizador · Tecnología</div>
 
         <div id="loginNormal">
           <div class="login-error" id="loginError"></div>
           <div class="login-field">
-            <label>Usuario</label>
-            <input type="text" id="loginUser" autocomplete="username" placeholder="tu usuario" />
+            <label for="loginUser">Usuario</label>
+            <input type="text" id="loginUser" autocomplete="username" placeholder="tu usuario" aria-label="Usuario" />
           </div>
           <div class="login-field" style="position: relative">
-            <label>Clave</label>
+            <label for="loginPass">Clave</label>
             <input
               type="password"
               id="loginPass"
               autocomplete="current-password"
               placeholder="tu clave"
+              aria-label="Clave"
               style="padding-right: 44px"
             />
             <button type="button" id="togglePass" class="eye-toggle" title="Mostrar/ocultar clave">
@@ -81,8 +109,8 @@
         <div id="forgotStep1" style="display:none;">
           <div class="login-error" id="forgotError1"></div>
           <div class="login-field">
-            <label>Email</label>
-            <input type="text" id="forgotEmail" placeholder="tu usuario o email" />
+            <label for="forgotEmail">Email</label>
+            <input type="text" id="forgotEmail" placeholder="tu usuario o email" aria-label="Usuario o email para recuperación" />
           </div>
           <button class="login-btn" onclick="requestPasswordReset()">📧 Enviar enlace de recuperación</button>
           <a href="#" class="login-forgot" onclick="backToLogin(); return false;">← Volver al login</a>
@@ -106,12 +134,12 @@
           <div class="login-error" id="forgotError3"></div>
           <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Enlace verificado. Ingresa tu nueva contraseña:</p>
           <div class="login-field">
-            <label>Nueva contraseña</label>
-            <input type="password" id="forgotNewPass" placeholder="mínimo 6 caracteres" />
+            <label for="forgotNewPass">Nueva contraseña</label>
+            <input type="password" id="forgotNewPass" placeholder="mínimo 6 caracteres" aria-label="Nueva contraseña" />
           </div>
           <div class="login-field">
-            <label>Confirmar contraseña</label>
-            <input type="password" id="forgotConfirmPass" placeholder="repite la contraseña" />
+            <label for="forgotConfirmPass">Confirmar contraseña</label>
+            <input type="password" id="forgotConfirmPass" placeholder="repite la contraseña" aria-label="Confirmar contraseña" />
           </div>
           <button class="login-btn" onclick="setNewPassword()">🔒 Cambiar contraseña</button>
         </div>
@@ -121,9 +149,20 @@
     <div class="app">
       <!-- TOPBAR -->
       <header class="topbar">
-        <h1 class="brand" id="topbarLogo"></h1>
+        <h1 class="brand" id="topbarLogo">
+          <img
+            src="/content/logo-gemeseg-back-blue.png"
+            alt="GEMESEG"
+            class="logo-img logo-img-topbar"
+            width="180"
+            height="28"
+            loading="lazy"
+            decoding="async"
+            onerror="this.onerror=null; this.parentElement.innerHTML='GE<span class=&quot;m&quot;>M</span>ESEG <span class=&quot;brand-sub&quot;>Tecnología</span>';"
+          />
+        </h1>
         <div class="topbar-actions">
-          <div class="sync-status" id="syncStatus" onclick="handleSyncClick()" title="Ver catálogo">
+          <div class="sync-status" id="syncStatus" role="button" tabindex="0" onclick="handleSyncClick()" title="Ver catálogo" aria-label="Abrir catálogo">
             <span class="sync-icon" id="syncIcon">📦</span>
             <span id="syncLabel">Catálogo</span>
           </div>
@@ -134,7 +173,7 @@
             👥 Usuarios
           </button>
           <div class="user-chip" id="userChip">
-            <div class="user-chip-info" id="userChipToggle" style="cursor: pointer">
+            <div class="user-chip-info" id="userChipToggle" role="button" tabindex="0" aria-label="Menú de perfil de usuario" style="cursor: pointer">
               <span class="user-chip-icon">👤</span>
               <span id="userChipName">—</span>
               <span class="user-chip-role" id="userChipRole"></span>
@@ -170,21 +209,22 @@
                   type="text"
                   id="search"
                   placeholder="Buscar por código, modelo o descripción..."
+                  aria-label="Buscar productos por código, modelo o descripción"
                   autocomplete="off"
                 />
               </div>
               <div class="catalog-filters">
-                <select id="categoryFilter" class="catalog-select">
+                <select id="categoryFilter" class="catalog-select" aria-label="Filtrar por categoría">
                   <option value="">Todas las categorías</option>
                 </select>
-                <select id="subcategoryFilter" class="catalog-select">
+                <select id="subcategoryFilter" class="catalog-select" aria-label="Filtrar por subcategoría">
                   <option value="">Todas las subcategorías</option>
                 </select>
               </div>
               <div class="catalog-stats">
-                <label class="page-size-label"
+                <label class="page-size-label" for="pageSizeSelect"
                   >Mostrar
-                  <select id="pageSizeSelect" class="page-size-select" onchange="changePageSize(this.value)">
+                  <select id="pageSizeSelect" class="page-size-select" aria-label="Resultados por página" onchange="changePageSize(this.value)">
                     <option value="5">5</option>
                     <option value="10" selected>10</option>
                     <option value="20">20</option>
@@ -206,7 +246,7 @@
               <div style="font-size: 13px; color: var(--muted)">Kits de productos disponibles</div>
               <div class="search-box" style="position:relative;width:100%;">
                 <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted);pointer-events:none;">🔍</span>
-                <input type="text" id="kitsPanelSearch" placeholder="Buscar kit por nombre o código..." oninput="renderKitsCatalog()" style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border);border-radius:6px;font-size:12px;box-sizing:border-box;">
+                <input type="text" id="kitsPanelSearch" placeholder="Buscar kit por nombre o código..." aria-label="Buscar kit por nombre o código" oninput="renderKitsCatalog()" style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border);border-radius:6px;font-size:12px;box-sizing:border-box;">
               </div>
             </div>
             <div class="catalog-list" id="kitsCatalogList"></div>
@@ -221,7 +261,17 @@
           <div class="quote-scroll">
             <!-- ENCABEZADO PRINT-ONLY -->
             <div class="print-only print-header">
-              <div class="print-logo" id="printLogo"></div>
+              <div class="print-logo" id="printLogo">
+                <img
+                  src="/content/logo-gemeseg-back-white.png"
+                  alt="GEMESEG"
+                  class="logo-img logo-img-print"
+                  width="180"
+                  height="40"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
               <div class="print-header-right">
                 <div class="print-empresa-title">Cotizador GEMESEG</div>
                 <div class="empresa-info">📞 +593 99 897 4909</div>
@@ -246,12 +296,12 @@
               <div class="quote-section-body">
                 <div class="form-grid">
                   <div class="field">
-                    <label>N° Cotización</label>
-                    <input type="text" id="cotNum" placeholder="COT-AAAAMMDD-001" />
+                    <label for="cotNum">N° Cotización</label>
+                    <input type="text" id="cotNum" placeholder="COT-AAAAMMDD-001" aria-label="Número de cotización" />
                   </div>
                   <div class="field">
-                    <label>Fecha de emisión</label>
-                    <input type="date" id="cotDate" />
+                    <label for="cotDate">Fecha de emisión</label>
+                    <input type="date" id="cotDate" aria-label="Fecha de emisión" />
                   </div>
                 </div>
               </div>
@@ -263,28 +313,28 @@
               <div class="quote-section-body">
                 <div class="form-grid">
                   <div class="field" style="grid-column: 1/-1">
-                    <label>Cliente / Razón social <span class="required">*</span></label>
-                    <input type="text" id="clientName" placeholder="Nombre o razón social" required />
+                    <label for="clientName">Cliente / Razón social <span class="required">*</span></label>
+                    <input type="text" id="clientName" placeholder="Nombre o razón social" aria-label="Cliente o Razón social" required />
                   </div>
                   <div class="field">
-                    <label>RUC / Cédula <span class="required">*</span></label>
-                    <input type="text" id="clientRuc" placeholder="0991234567001" required />
+                    <label for="clientRuc">RUC / Cédula <span class="required">*</span></label>
+                    <input type="text" id="clientRuc" placeholder="0991234567001" aria-label="RUC o Cédula" required />
                   </div>
                   <div class="field">
-                    <label>Teléfono <span class="required">*</span></label>
-                    <input type="text" id="clientPhone" placeholder="0991234567" required />
+                    <label for="clientPhone">Teléfono <span class="required">*</span></label>
+                    <input type="text" id="clientPhone" placeholder="0991234567" aria-label="Teléfono" required />
                   </div>
                   <div class="field" style="grid-column: 1/-1">
-                    <label>Dirección</label>
-                    <input type="text" id="clientAddress" placeholder="Av. principal y secundaria" />
+                    <label for="clientAddress">Dirección</label>
+                    <input type="text" id="clientAddress" placeholder="Av. principal y secundaria" aria-label="Dirección" />
                   </div>
                   <div class="field">
-                    <label>Persona de contacto</label>
-                    <input type="text" id="clientContact" placeholder="Juan Pérez - Gerente" />
+                    <label for="clientContact">Persona de contacto</label>
+                    <input type="text" id="clientContact" placeholder="Juan Pérez - Gerente" aria-label="Persona de contacto" />
                   </div>
                   <div class="field">
-                    <label>Email <span class="required">*</span></label>
-                    <input type="email" id="clientEmail" placeholder="cliente@empresa.com" required />
+                    <label for="clientEmail">Email <span class="required">*</span></label>
+                    <input type="email" id="clientEmail" placeholder="cliente@empresa.com" aria-label="Email del cliente" required />
                   </div>
                 </div>
               </div>
@@ -337,9 +387,9 @@
 
             <!-- DESCUENTO -->
             <div class="quote-section" data-no-print>
-              <div class="quote-section-header">🏷️ Descuento</div>
+              <div class="quote-section-header"><h2>🏷️ Descuento</h2></div>
               <div class="discount-row">
-                <select id="discountType" onchange="updateDiscount()">
+                <select id="discountType" aria-label="Tipo de descuento" onchange="updateDiscount()">
                   <option value="none">Sin descuento</option>
                   <option value="percent">Porcentaje (%)</option>
                   <option value="fixed">Valor fijo ($)</option>
@@ -351,6 +401,7 @@
                   step="any"
                   value="0"
                   placeholder="0"
+                  aria-label="Valor de descuento"
                   oninput="updateDiscount()"
                   disabled
                 />
@@ -368,13 +419,15 @@
 
             <!-- CONDICIONES EDITABLES -->
             <div class="quote-section" data-no-print>
-              <div class="quote-section-header">📝 Condiciones Comerciales</div>
+              <div class="quote-section-header"><h2>📝 Condiciones Comerciales</h2></div>
               <div class="quote-section-body">
+                <label for="quoteConditions" class="conditions-label">Condiciones generales</label>
                 <textarea
                   id="quoteConditions"
                   class="quote-conditions-input"
                   rows="8"
                   placeholder="Condiciones comerciales de la cotización..."
+                  aria-label="Condiciones comerciales generales"
                 >
 Validez de la oferta: 15 días calendario desde la fecha de emisión.
 Forma de pago: 50% anticipo, 50% contra entrega (configurable según monto).
@@ -383,12 +436,13 @@ Garantía equipos: 12 a 24 meses según fabricante.
 Garantía mano de obra: 90 días.
 IVA: 15% incluido en el total.
 Moneda: Dólares de los Estados Unidos (USD).</textarea>
-                <label class="conditions-label">Notas</label>
+                <label for="quoteNotes" class="conditions-label">Notas</label>
                 <textarea
                   id="quoteNotes"
                   class="quote-conditions-input"
                   rows="3"
                   placeholder="Notas adicionales (opcional)..."
+                  aria-label="Notas adicionales opcionales"
                 ></textarea>
               </div>
             </div>
@@ -425,19 +479,19 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: HISTORIAL DE COTIZACIONES -->
-    <div class="modal-backdrop" id="savedModal">
+    <div class="modal-backdrop" id="savedModal" role="dialog" aria-modal="true" aria-labelledby="savedModalTitle">
       <div class="modal" style="max-width: 800px">
         <div class="modal-header">
-          <h2>📂 Historial de cotizaciones</h2>
-          <button class="modal-close" onclick="closeSavedModal()">✕</button>
+          <h2 id="savedModalTitle">📂 Historial de cotizaciones</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeSavedModal()">✕</button>
         </div>
         <div class="modal-body">
           <div class="history-filters" id="historyFilters">
-            <input type="text" id="filterClient" placeholder="Buscar cliente..." />
-            <input type="text" id="filterVendor" placeholder="Buscar vendedor..." />
-            <input type="date" id="filterDateFrom" title="Desde fecha" />
-            <input type="date" id="filterDateTo" title="Hasta fecha" />
-            <select id="filterStatus">
+            <input type="text" id="filterClient" placeholder="Buscar cliente..." aria-label="Filtrar por cliente" />
+            <input type="text" id="filterVendor" placeholder="Buscar vendedor..." aria-label="Filtrar por vendedor" />
+            <input type="date" id="filterDateFrom" title="Desde fecha" aria-label="Desde fecha" />
+            <input type="date" id="filterDateTo" title="Hasta fecha" aria-label="Hasta fecha" />
+            <select id="filterStatus" aria-label="Filtrar por estado">
               <option value="">Todos los estados</option>
               <option value="borrador">Borrador</option>
               <option value="enviada">Enviada</option>
@@ -457,14 +511,14 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: VISOR DE CATÁLOGO -->
-    <div class="modal-backdrop" id="catalogViewerModal">
+    <div class="modal-backdrop" id="catalogViewerModal" role="dialog" aria-modal="true" aria-labelledby="catalogViewerTitle">
       <div class="modal" style="max-width: 95vw; height: 90vh; display: flex; flex-direction: column">
         <div class="modal-header catalog-viewer-modal-header">
           <div class="viewer-header-top">
-            <h2>📦 Catálogo</h2>
+            <h2 id="catalogViewerTitle">📦 Catálogo</h2>
             <div class="viewer-header-right">
               <span id="viewerCount" class="viewer-result-count"></span>
-              <button class="modal-close" onclick="closeCatalogViewer()">✕</button>
+              <button class="modal-close" aria-label="Cerrar modal" onclick="closeCatalogViewer()">✕</button>
             </div>
           </div>
           <div class="viewer-tabs" id="viewerTabs">
@@ -488,13 +542,14 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
                 type="text"
                 id="viewerSearch"
                 placeholder="Buscar por código, nombre o descripción..."
+                aria-label="Buscar en el catálogo"
                 oninput="if(viewerTab==='install'){renderViewerInstallations()}else if(viewerTab==='kits'){renderViewerKits()}else{renderViewerTable()}"
               />
             </div>
-            <select id="viewerCategory" class="viewer-filter">
+            <select id="viewerCategory" class="viewer-filter" aria-label="Filtrar por categoría">
               <option value="">Todas las categorías</option>
             </select>
-            <select id="viewerSubcategory" class="viewer-filter">
+            <select id="viewerSubcategory" class="viewer-filter" aria-label="Filtrar por subcategoría">
               <option value="">Todas las subcategorías</option>
             </select>
             <div class="viewer-actions" id="viewerActionsProducts">
@@ -553,13 +608,13 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: EDITOR DE CATÁLOGO -->
-    <div class="modal-backdrop" id="catalogEditorModal">
+    <div class="modal-backdrop" id="catalogEditorModal" role="dialog" aria-modal="true" aria-labelledby="catalogEditorTitle">
       <div class="modal" style="max-width: 95vw; height: 90vh; display: flex; flex-direction: column">
         <div class="modal-header">
-          <h2>
+          <h2 id="catalogEditorTitle">
             ✏️ Editor de catálogo
           </h2>
-          <button class="modal-close" onclick="closeCatalogEditor()">✕</button>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeCatalogEditor()">✕</button>
         </div>
         <div
           class="modal-body"
@@ -568,6 +623,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
           <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center">
             <select
               id="editorCategory"
+              aria-label="Categoría del catálogo"
               onchange="renderEditorTable()"
               style="
                 padding: 7px 10px;
@@ -586,6 +642,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
               type="text"
               id="editorSearch"
               placeholder="Buscar código, modelo o descripción..."
+              aria-label="Buscar en editor de catálogo"
               oninput="renderEditorTable()"
               style="
                 flex: 1;
@@ -628,11 +685,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: EDITOR DE INSTALACIONES -->
-    <div class="modal-backdrop" id="installEditorModal">
+    <div class="modal-backdrop" id="installEditorModal" role="dialog" aria-modal="true" aria-labelledby="installEditorTitle">
       <div class="modal" style="max-width: 95vw; height: 90vh; display: flex; flex-direction: column">
         <div class="modal-header">
-          <h2>🔧 Editor de instalaciones</h2>
-          <button class="modal-close" onclick="closeInstallEditor()">✕</button>
+          <h2 id="installEditorTitle">🔧 Editor de instalaciones</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeInstallEditor()">✕</button>
         </div>
         <div
           class="modal-body"
@@ -643,6 +700,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
               type="text"
               id="installEditorSearch"
               placeholder="Buscar servicio..."
+              aria-label="Buscar en editor de instalaciones"
               oninput="renderInstallEditorTable()"
               style="
                 flex: 1;
@@ -689,22 +747,22 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: PLANTILLAS DE COTIZACIÓN -->
-    <div class="modal-backdrop" id="templatesModal">
+    <div class="modal-backdrop" id="templatesModal" role="dialog" aria-modal="true" aria-labelledby="templatesModalTitle">
       <div class="modal" style="max-width: 900px">
         <div class="modal-header">
-          <h2>📋 Plantillas de cotización</h2>
-          <button class="modal-close" onclick="closeTemplatesModal()">✕</button>
+          <h2 id="templatesModalTitle">📋 Plantillas de cotización</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeTemplatesModal()">✕</button>
         </div>
         <div class="modal-body">
           <div class="tpl-filters">
-            <input type="text" id="tplSearch" placeholder="Buscar plantilla..." oninput="filterTemplates()" />
-            <select id="tplType" onchange="filterTemplates()">
+            <input type="text" id="tplSearch" placeholder="Buscar plantilla..." aria-label="Buscar plantilla" oninput="filterTemplates()" />
+            <select id="tplType" aria-label="Filtrar por tamaño de plantilla" onchange="filterTemplates()">
               <option value="">Todos los tamaños</option>
               <option value="pequeña">Pequeña</option>
               <option value="mediana">Mediana</option>
               <option value="grande">Grande</option>
             </select>
-            <select id="tplIndustry" onchange="filterTemplates()">
+            <select id="tplIndustry" aria-label="Filtrar por industria" onchange="filterTemplates()">
               <option value="">Todas las industrias</option>
               <option value="banco">Banco</option>
               <option value="comercio">Comercio</option>
@@ -722,11 +780,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: VISTA PREVIA DE PLANTILLA -->
-    <div class="modal-backdrop" id="templatePreviewModal">
+    <div class="modal-backdrop" id="templatePreviewModal" role="dialog" aria-modal="true" aria-labelledby="tplPreviewTitle">
       <div class="modal" style="max-width: 750px">
         <div class="modal-header">
           <h2 id="tplPreviewTitle">Vista previa</h2>
-          <button class="modal-close" onclick="closeTemplatePreview()">✕</button>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeTemplatePreview()">✕</button>
         </div>
         <div class="modal-body" id="tplPreviewBody"></div>
         <div class="modal-footer">
@@ -738,33 +796,33 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: GUARDAR COMO PLANTILLA -->
-    <div class="modal-backdrop" id="saveTemplateModal">
+    <div class="modal-backdrop" id="saveTemplateModal" role="dialog" aria-modal="true" aria-labelledby="saveTemplateTitle">
       <div class="modal" style="max-width: 500px">
         <div class="modal-header">
-          <h2>Guardar como plantilla</h2>
-          <button class="modal-close" onclick="resolveSaveTemplate(false)">✕</button>
+          <h2 id="saveTemplateTitle">Guardar como plantilla</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="resolveSaveTemplate(false)">✕</button>
         </div>
         <div class="modal-body" style="overflow-y: auto; max-height: 75vh; padding: 16px;">
           <div class="form-grid">
             <div class="field" style="grid-column: 1/-1">
-              <label>Nombre de la plantilla</label>
-              <input type="text" id="tplSaveName" placeholder="Ej: Banco - Sistema Integral" />
+              <label for="tplSaveName">Nombre de la plantilla</label>
+              <input type="text" id="tplSaveName" placeholder="Ej: Banco - Sistema Integral" aria-label="Nombre de la plantilla" />
             </div>
             <div class="field" style="grid-column: 1/-1">
-              <label>Descripción</label>
-              <input type="text" id="tplSaveDesc" placeholder="Descripción breve del alcance" />
+              <label for="tplSaveDesc">Descripción</label>
+              <input type="text" id="tplSaveDesc" placeholder="Descripción breve del alcance" aria-label="Descripción de la plantilla" />
             </div>
             <div class="field">
-              <label>Tamaño del cliente</label>
-              <select id="tplSaveType">
+              <label for="tplSaveType">Tamaño del cliente</label>
+              <select id="tplSaveType" aria-label="Tamaño del cliente">
                 <option value="pequeña">Pequeña</option>
                 <option value="mediana" selected>Mediana</option>
                 <option value="grande">Grande</option>
               </select>
             </div>
             <div class="field">
-              <label>Industria</label>
-              <select id="tplSaveIndustry" onchange="toggleTplIndustryCustom()">
+              <label for="tplSaveIndustry">Industria</label>
+              <select id="tplSaveIndustry" aria-label="Industria de la plantilla" onchange="toggleTplIndustryCustom()">
                 <option value="comercio" selected>Comercio</option>
                 <option value="banco">Banco</option>
                 <option value="oficina">Oficina</option>
@@ -772,7 +830,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
                 <option value="salud">Salud</option>
                 <option value="__other__">+ Escribir otra opción...</option>
               </select>
-              <input type="text" id="tplSaveIndustryCustom" placeholder="Escribe la industria..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;" />
+              <input type="text" id="tplSaveIndustryCustom" placeholder="Escribe la industria..." aria-label="Industria personalizada" style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;" />
             </div>
           </div>
         </div>
@@ -784,11 +842,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: MANUAL DE USUARIO -->
-    <div class="modal-backdrop" id="helpModal">
+    <div class="modal-backdrop" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
       <div class="modal" style="max-width: 850px; width: 92vw;">
         <div class="modal-header">
-          <h2>❓ Guía del Cotizador y Manual de Uso</h2>
-          <button class="modal-close" onclick="closeHelpModal()">✕</button>
+          <h2 id="helpModalTitle">❓ Guía del Cotizador y Manual de Uso</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeHelpModal()">✕</button>
         </div>
         <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 16px;">
 
@@ -985,25 +1043,25 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: PERFIL / CARGO -->
-    <div class="modal-backdrop" id="ProfileModal">
+    <div class="modal-backdrop" id="ProfileModal" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
       <div class="modal" style="max-width: 400px">
         <div class="modal-header">
-          <h2>✏️ Perfil</h2>
-          <button class="modal-close" onclick="closeProfile()">✕</button>
+          <h2 id="profileModalTitle">✏️ Perfil</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeProfile()">✕</button>
         </div>
         <div class="modal-body">
           <div class="form-grid">
             <div class="field" style="grid-column: 1/-1">
-              <label>Nombre</label>
-              <input type="text" id="ProfileName" disabled style="background:#f3f4f6;cursor:not-allowed;" />
+              <label for="ProfileName">Nombre</label>
+              <input type="text" id="ProfileName" aria-label="Nombre del perfil" disabled style="background:#f3f4f6;cursor:not-allowed;" />
             </div>
             <div class="field" style="grid-column: 1/-1">
-              <label>Email</label>
-              <input type="text" id="ProfileEmail" disabled style="background:#f3f4f6;cursor:not-allowed;" />
+              <label for="ProfileEmail">Email</label>
+              <input type="text" id="ProfileEmail" aria-label="Email del perfil" disabled style="background:#f3f4f6;cursor:not-allowed;" />
             </div>
             <div class="field" style="grid-column: 1/-1">
-              <label>Cargo (aparece en la cotización)</label>
-              <select id="ProfileCargo" onchange="toggleProfileCargoCustom()">
+              <label for="ProfileCargo">Cargo (aparece en la cotización)</label>
+              <select id="ProfileCargo" aria-label="Cargo comercial" onchange="toggleProfileCargoCustom()">
                 <option value="Asesor">Asesor</option>
                 <option value="Administrador">Administrador</option>
                 <option value="Gerente de Ventas">Gerente de Ventas</option>
@@ -1011,7 +1069,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
                 <option value="Gerente General">Gerente General</option>
                 <option value="__other__">+ Escribir otro cargo...</option>
               </select>
-              <input type="text" id="ProfileCargoCustom" placeholder="Escribe tu cargo..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;" />
+              <input type="text" id="ProfileCargoCustom" placeholder="Escribe tu cargo..." aria-label="Cargo personalizado" style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;" />
             </div>
           </div>
         </div>
@@ -1023,11 +1081,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: GESTIÓN DE USUARIOS (solo admin) -->
-    <div class="modal-backdrop" id="userManagementModal">
+    <div class="modal-backdrop" id="userManagementModal" role="dialog" aria-modal="true" aria-labelledby="userManagementTitle">
       <div class="modal" style="max-width: 750px">
         <div class="modal-header">
-          <h2>👥 Gestión de usuarios</h2>
-          <button class="modal-close" onclick="closeUserManagement()">✕</button>
+          <h2 id="userManagementTitle">👥 Gestión de usuarios</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeUserManagement()">✕</button>
         </div>
         <div class="modal-body" style="max-height: 70vh; overflow-y: auto">
           <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center">
@@ -1052,20 +1110,20 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             <div style="font-weight: 600; font-size: 13px; margin-bottom: 10px">Crear nuevo usuario</div>
             <div class="form-grid" style="grid-template-columns: 1fr 1fr">
               <div class="field">
-                <label>Nombre</label>
-                <input type="text" id="newUserName" placeholder="Nombre completo" />
+                <label for="newUserName">Nombre</label>
+                <input type="text" id="newUserName" placeholder="Nombre completo" aria-label="Nombre del usuario" />
               </div>
               <div class="field">
-                <label>Email</label>
-                <input type="text" id="newUserEmail" placeholder="usuario@gemeseg.com" />
+                <label for="newUserEmail">Email</label>
+                <input type="text" id="newUserEmail" placeholder="usuario@gemeseg.com" aria-label="Email del usuario" />
               </div>
               <div class="field">
-                <label>Contraseña</label>
-                <input type="password" id="newUserPassword" placeholder="Contraseña" />
+                <label for="newUserPassword">Contraseña</label>
+                <input type="password" id="newUserPassword" placeholder="Contraseña" aria-label="Contraseña del usuario" />
               </div>
               <div class="field">
-                <label>Rol</label>
-                <select id="newUserRole">
+                <label for="newUserRole">Rol</label>
+                <select id="newUserRole" aria-label="Rol del usuario">
                   <option value="asesor">Asesor</option>
                   <option value="admin">Administrador</option>
                 </select>
@@ -1107,40 +1165,40 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: EDITAR USUARIO -->
-    <div class="modal-backdrop" id="editUserModal">
+    <div class="modal-backdrop" id="editUserModal" role="dialog" aria-modal="true" aria-labelledby="editUserTitle">
       <div class="modal" style="max-width: 480px">
         <div class="modal-header">
           <h2 id="editUserTitle">Editar usuario</h2>
-          <button class="modal-close" onclick="closeEditUser()">✕</button>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeEditUser()">✕</button>
         </div>
         <div class="modal-body">
           <input type="hidden" id="editUserId" />
           <div class="form-grid" style="grid-template-columns: 1fr">
             <div class="field">
-              <label>Nombre</label>
-              <input type="text" id="editUserName" placeholder="Nombre completo" />
+              <label for="editUserName">Nombre</label>
+              <input type="text" id="editUserName" placeholder="Nombre completo" aria-label="Nombre del usuario" />
             </div>
             <div class="field">
-              <label>Email (no editable)</label>
-              <input type="text" id="editUserEmail" disabled style="opacity: 0.6; cursor: not-allowed" />
+              <label for="editUserEmail">Email (no editable)</label>
+              <input type="text" id="editUserEmail" aria-label="Email del usuario" disabled style="opacity: 0.6; cursor: not-allowed" />
             </div>
             <div class="field">
-              <label>Contraseña</label>
-              <input type="password" id="editUserPassword" placeholder="Nueva contraseña (opcional)" />
+              <label for="editUserPassword">Contraseña</label>
+              <input type="password" id="editUserPassword" placeholder="Nueva contraseña (opcional)" aria-label="Nueva contraseña" />
               <div style="font-size: 10px; color: var(--muted); margin-top: 3px">
                 Para cambiar contraseña ir a Supabase Dashboard → Auth → Users
               </div>
             </div>
             <div class="field">
-              <label>Rol</label>
-              <select id="editUserRole">
+              <label for="editUserRole">Rol</label>
+              <select id="editUserRole" aria-label="Rol del usuario">
                 <option value="asesor">Asesor</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
             <div class="field">
-              <label>Estado</label>
-              <select id="editUserActive">
+              <label for="editUserActive">Estado</label>
+              <select id="editUserActive" aria-label="Estado del usuario">
                 <option value="true">Activo</option>
                 <option value="false">Inactivo</option>
               </select>
@@ -1156,11 +1214,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: CONFIRMAR ACCIÓN -->
-    <div class="modal-backdrop" id="confirmModal">
+    <div class="modal-backdrop" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
       <div class="modal" style="max-width: 400px">
         <div class="modal-header">
           <h2 id="confirmTitle">Confirmar</h2>
-          <button class="modal-close" onclick="resolveConfirm(false)">✕</button>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="resolveConfirm(false)">✕</button>
         </div>
         <div class="modal-body" style="text-align: center; padding: 24px">
           <p id="confirmMsg" style="font-size: 14px; margin: 0; line-height: 1.5"></p>
@@ -1173,11 +1231,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: DETALLE DE PRODUCTO -->
-    <div class="modal-backdrop" id="productDetailModal">
+    <div class="modal-backdrop" id="productDetailModal" role="dialog" aria-modal="true" aria-labelledby="productDetailTitle">
       <div class="modal" style="max-width: 600px">
         <div class="modal-header">
           <h2 id="productDetailTitle">Detalle del producto</h2>
-          <button class="modal-close" onclick="closeProductDetail()">✕</button>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeProductDetail()">✕</button>
         </div>
         <div class="modal-body" id="productDetailBody"></div>
         <div class="modal-footer">
@@ -1187,11 +1245,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: KITS -->
-    <div class="modal-backdrop" id="kitsModal">
+    <div class="modal-backdrop" id="kitsModal" role="dialog" aria-modal="true" aria-labelledby="kitsModalTitle">
       <div class="modal" style="max-width: 600px">
         <div class="modal-header">
-          <h2>📦 Kits</h2>
-          <button class="modal-close" onclick="closeKitsModal()">✕</button>
+          <h2 id="kitsModalTitle">📦 Kits</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeKitsModal()">✕</button>
         </div>
         <div class="modal-body">
           <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px">
@@ -1207,17 +1265,18 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: EDITAR KIT -->
-    <div class="modal-backdrop" id="kitEditorModal">
+    <div class="modal-backdrop" id="kitEditorModal" role="dialog" aria-modal="true" aria-labelledby="kitEditorTitle">
       <div class="modal" style="max-width: 850px; width: 92vw;">
         <div class="modal-header">
-          <h2>Editar Kit</h2>
-          <button class="modal-close" onclick="closeKitEditor()">✕</button>
+          <h2 id="kitEditorTitle">Editar Kit</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeKitEditor()">✕</button>
         </div>
         <div class="modal-body">
-          <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px">Nombre del kit</label>
+          <label for="kitEditName" style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px">Nombre del kit</label>
           <input
             type="text"
             id="kitEditName"
+            aria-label="Nombre del kit"
             style="
               width: 100%;
               border: 1px solid var(--border);
@@ -1228,10 +1287,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             "
             placeholder="Nombre del kit"
           />
-          <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px">Buscar producto</label>
+          <label for="kitSearchProduct" style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px">Buscar producto</label>
           <input
             type="text"
             id="kitSearchProduct"
+            aria-label="Buscar producto para agregar al kit"
             style="
               width: 100%;
               border: 1px solid var(--border);
@@ -1257,19 +1317,19 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: PICKER SERVICIOS INSTALACIÓN -->
-    <div class="modal-backdrop" id="installServicePickerModal">
+    <div class="modal-backdrop" id="installServicePickerModal" role="dialog" aria-modal="true" aria-labelledby="installPickerTitle">
       <div class="modal" style="max-width: 650px">
         <div class="modal-header">
-          <h2>🔧 Servicios de instalación</h2>
-          <button class="modal-close" onclick="closeInstallServicePicker()">✕</button>
+          <h2 id="installPickerTitle">🔧 Servicios de instalación</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeInstallServicePicker()">✕</button>
         </div>
         <div class="modal-body">
           <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-            <input type="text" id="installServiceSearch" placeholder="Buscar servicio..." style="flex:1;min-width:150px;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;" oninput="renderInstallServiceList()">
-            <select id="installServiceCategory" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;" onchange="renderInstallServiceList()">
+            <input type="text" id="installServiceSearch" placeholder="Buscar servicio..." aria-label="Buscar servicio de instalación" style="flex:1;min-width:150px;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;" oninput="renderInstallServiceList()">
+            <select id="installServiceCategory" aria-label="Filtrar por categoría" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;" onchange="renderInstallServiceList()">
               <option value="">Todas las categorías</option>
             </select>
-            <select id="installServiceSubcategory" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;" onchange="renderInstallServiceList()">
+            <select id="installServiceSubcategory" aria-label="Filtrar por subcategoría" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;" onchange="renderInstallServiceList()">
               <option value="">Todas las subcategorías</option>
             </select>
           </div>
@@ -1282,11 +1342,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: EDITAR SERVICIO INSTALACIÓN -->
-    <div class="modal-backdrop" id="installServiceEditorModal">
+    <div class="modal-backdrop" id="installServiceEditorModal" role="dialog" aria-modal="true" aria-labelledby="iseTitle">
       <div class="modal" style="max-width: 450px">
         <div class="modal-header">
-          <h2>🔧 Editar servicio de instalación</h2>
-          <button class="modal-close" onclick="closeInstallServiceEditor()">✕</button>
+          <h2 id="iseTitle">🔧 Editar servicio de instalación</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeInstallServiceEditor()">✕</button>
         </div>
         <div class="modal-body">
           <input type="hidden" id="iseIdx" value="">
@@ -1299,12 +1359,12 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             <div id="iseCost" style="font-size:14px;"></div>
           </div>
           <div style="margin-bottom:12px;">
-            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Cantidad</label>
-            <input type="number" id="iseQty" min="1" step="1" value="1" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;">
+            <label for="iseQty" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Cantidad</label>
+            <input type="number" id="iseQty" min="1" step="1" value="1" aria-label="Cantidad de servicios" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;">
           </div>
           <div>
-            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Margen de ganancia (%)</label>
-            <input type="number" id="iseMargin" min="0" max="100" step="1" value="35" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;">
+            <label for="iseMargin" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Margen de ganancia (%)</label>
+            <input type="number" id="iseMargin" min="0" max="100" step="1" value="35" aria-label="Margen de ganancia en porcentaje" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;">
           </div>
         </div>
         <div class="modal-footer">
@@ -1315,11 +1375,11 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: EDITAR ÍTEM INDIVIDUAL -->
-    <div class="modal-backdrop" id="editItemModal">
+    <div class="modal-backdrop" id="editItemModal" role="dialog" aria-modal="true" aria-labelledby="editItemTitle">
       <div class="modal" style="max-width:600px;">
         <div class="modal-header">
           <h2 id="editItemTitle">Editar ítem</h2>
-          <button class="modal-close" onclick="closeEditItemModal()">✕</button>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeEditItemModal()">✕</button>
         </div>
         <div class="modal-body" id="editItemBody" style="max-height:60vh;overflow-y:auto;"></div>
         <div class="modal-footer">
@@ -1330,16 +1390,16 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: CREAR NUEVO PRODUCTO -->
-    <div class="modal-backdrop" id="createProductModal">
+    <div class="modal-backdrop" id="createProductModal" role="dialog" aria-modal="true" aria-labelledby="createProductTitle">
       <div class="modal" style="max-width:650px;width:90vw;">
         <div class="modal-header">
-          <h2>➕ Crear nuevo producto</h2>
-          <button class="modal-close" onclick="closeCreateProductModal()">✕</button>
+          <h2 id="createProductTitle">➕ Crear nuevo producto</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeCreateProductModal()">✕</button>
         </div>
         <div class="modal-body" style="max-height:65vh;overflow-y:auto;padding:16px;">
           <div class="edit-item-field">
-            <label style="font-weight:700;font-size:13px;margin-bottom:6px;display:block;">1. Selecciona la categoría principal *</label>
-            <select id="newProdCategorySelect" onchange="onNewProdCategoryChange()" style="padding:10px;font-size:13px;font-weight:600;border:1px solid var(--border);border-radius:6px;width:100%;">
+            <label for="newProdCategorySelect" style="font-weight:700;font-size:13px;margin-bottom:6px;display:block;">1. Selecciona la categoría principal *</label>
+            <select id="newProdCategorySelect" aria-label="Categoría principal" onchange="onNewProdCategoryChange()" style="padding:10px;font-size:13px;font-weight:600;border:1px solid var(--border);border-radius:6px;width:100%;">
               <option value="">-- Selecciona Equipos, Materiales o Servicios --</option>
               <option value="equipos">Equipos</option>
               <option value="materiales">Materiales</option>
@@ -1356,40 +1416,40 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
     </div>
 
     <!-- MODAL: CREAR NUEVA INSTALACIÓN -->
-    <div class="modal-backdrop" id="createInstallModal">
+    <div class="modal-backdrop" id="createInstallModal" role="dialog" aria-modal="true" aria-labelledby="createInstallTitle">
       <div class="modal" style="max-width:650px;width:90vw;">
         <div class="modal-header">
-          <h2>🔧 Crear nueva instalación</h2>
-          <button class="modal-close" onclick="closeCreateInstallModal()">✕</button>
+          <h2 id="createInstallTitle">🔧 Crear nueva instalación</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeCreateInstallModal()">✕</button>
         </div>
         <div class="modal-body" style="max-height:65vh;overflow-y:auto;padding:16px;">
           <div class="edit-item-field">
-            <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Nombre del servicio de instalación *</label>
-            <input type="text" id="newInstallServicio" placeholder="Ej: Instalación de cámara IP..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+            <label for="newInstallServicio" style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Nombre del servicio de instalación *</label>
+            <input type="text" id="newInstallServicio" placeholder="Ej: Instalación de cámara IP..." aria-label="Nombre del servicio de instalación" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
           </div>
           <div class="edit-item-field">
-            <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo ($) *</label>
-            <input type="number" step="0.01" id="newInstallCosto" placeholder="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+            <label for="newInstallCosto" style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo ($) *</label>
+            <input type="number" step="0.01" id="newInstallCosto" placeholder="0.00" aria-label="Costo del servicio" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
           </div>
           <div class="edit-item-field">
-            <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Categoría (opcional)</label>
-            <select id="newInstallCatSelect" onchange="toggleInstallCatInput()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+            <label for="newInstallCatSelect" style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Categoría (opcional)</label>
+            <select id="newInstallCatSelect" aria-label="Categoría del servicio" onchange="toggleInstallCatInput()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
               <option value="">(Sin categoría / Ninguna)</option>
               <option value="__new__">+ Escribir nueva categoría...</option>
             </select>
-            <input type="text" id="newInstallCatCustom" placeholder="Escribe nueva categoría..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+            <input type="text" id="newInstallCatCustom" placeholder="Escribe nueva categoría..." aria-label="Categoría personalizada" style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
           </div>
           <div class="edit-item-field">
-            <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Subcategoría (opcional)</label>
-            <select id="newInstallSubSelect" onchange="toggleInstallSubInput()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+            <label for="newInstallSubSelect" style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Subcategoría (opcional)</label>
+            <select id="newInstallSubSelect" aria-label="Subcategoría del servicio" onchange="toggleInstallSubInput()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
               <option value="">(Sin subcategoría / Ninguna)</option>
               <option value="__new__">+ Escribir nueva subcategoría...</option>
             </select>
-            <input type="text" id="newInstallSubCustom" placeholder="Escribe nueva subcategoría..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+            <input type="text" id="newInstallSubCustom" placeholder="Escribe nueva subcategoría..." aria-label="Subcategoría personalizada" style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
           </div>
           <div class="edit-item-field">
-            <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Observaciones (opcional)</label>
-            <textarea id="newInstallObservaciones" placeholder="Detalles u observaciones adicionales..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;min-height:60px;font-size:13px;"></textarea>
+            <label for="newInstallObservaciones" style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Observaciones (opcional)</label>
+            <textarea id="newInstallObservaciones" placeholder="Detalles u observaciones adicionales..." aria-label="Observaciones" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;min-height:60px;font-size:13px;"></textarea>
           </div>
         </div>
         <div class="modal-footer">

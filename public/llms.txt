@@ -1,0 +1,24 @@
+# Cotizador GEMESEG Tecnología
+
+> Herramienta web para la elaboración y gestión de cotizaciones comerciales de soluciones de tecnología y seguridad electrónica.
+
+## Descripción General
+
+El Cotizador GEMESEG es una aplicación web que permite a los asesores comerciales buscar productos en un catálogo, elaborar propuestas comerciales, gestionar servicios de instalación, utilizar plantillas y exportar documentos en formato PDF para clientes.
+
+## Funcionalidades Principales
+
+- **Catálogo Comercial**: Consulta de equipos, materiales y servicios por categoría y subcategoría.
+- **Kits de Productos**: Selección de conjuntos preconfigurados de productos.
+- **Servicios de Instalación**: Inclusión de servicios de instalación en la oferta comercial.
+- **Gestión de Cotizaciones**: Creación, actualización y seguimiento de cotizaciones.
+- **Documento PDF**: Exportación de propuestas comerciales en formato PDF para el cliente.
+- **Historial y Plantillas**: Consulta de propuestas previas y uso de plantillas comerciales.
+
+## Secciones Principales
+
+- `/`: Área principal de cotización y catálogo.
+- `#catalogViewerModal`: Visor de catálogo.
+- `#savedModal`: Historial de cotizaciones.
+- `#templatesModal`: Plantillas comerciales.
+- `#helpModal`: Guía de uso.

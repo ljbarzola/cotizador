@@ -233,11 +233,11 @@ export function renderEditorTable() {
         if (c.type === 'readonly') {
           cells += `<td style="padding:4px 6px;color:var(--muted);font-size:12px;">${fmt(g(c.key))}</td>`;
         } else if (c.type === 'check') {
-          cells += `<td style="text-align:center;"><input type="checkbox" ${g(c.key) ? 'checked' : ''} onchange="editorField(${idx},'${c.key}',this.checked)"></td>`;
+          cells += `<td style="text-align:center;"><input type="checkbox" aria-label="${c.label || c.key}" ${g(c.key) ? 'checked' : ''} onchange="editorField(${idx},'${c.key}',this.checked)"></td>`;
         } else if (c.type === 'number') {
-          cells += `<td><input type="number" step="${c.step || '0.01'}" value="${g(c.key) || (c.key === 'cantidad_default' ? 1 : 0)}" onchange="editorField(${idx},'${c.key}',parseFloat(this.value)||${c.key === 'cantidad_default' ? 1 : 0})"></td>`;
+          cells += `<td><input type="number" aria-label="${c.label || c.key}" step="${c.step || '0.01'}" value="${g(c.key) || (c.key === 'cantidad_default' ? 1 : 0)}" onchange="editorField(${idx},'${c.key}',parseFloat(this.value)||${c.key === 'cantidad_default' ? 1 : 0})"></td>`;
         } else {
-          cells += `<td><input value="${escAttr(g(c.key))}" onchange="editorField(${idx},'${c.key}',this.value)"${c.placeholder ? ' placeholder="' + c.placeholder + '"' : ''}></td>`;
+          cells += `<td><input aria-label="${c.label || c.key}" value="${escAttr(g(c.key))}" onchange="editorField(${idx},'${c.key}',this.value)"${c.placeholder ? ' placeholder="' + c.placeholder + '"' : ''}></td>`;
         }
       });
       cells += `<td style="text-align:center;"><button class="del-btn" onclick="editorToggleDelete(${idx})" title="${isDel ? 'Restaurar' : 'Eliminar'}">${isDel ? '↩' : '✕'}</button></td>`;
@@ -529,11 +529,11 @@ export function renderInstallEditorTable() {
           const optionsHtml = opts
             .map(o => `<option value="${escAttr(o)}"${o === val ? ' selected' : ''}>${escAttr(o)}</option>`)
             .join('');
-          cells += `<td><select onchange="installEditorField(${origIdx},'${c.key}',this.value)"><option value="">—</option>${optionsHtml}</select></td>`;
+          cells += `<td><select aria-label="${c.label || c.key}" onchange="installEditorField(${origIdx},'${c.key}',this.value)"><option value="">—</option>${optionsHtml}</select></td>`;
         } else if (c.type === 'number') {
-          cells += `<td><input type="number" step="${c.step || '0.01'}" value="${g(c.key) || 0}" onchange="installEditorField(${origIdx},'${c.key}',parseFloat(this.value)||0)"></td>`;
+          cells += `<td><input type="number" aria-label="${c.label || c.key}" step="${c.step || '0.01'}" value="${g(c.key) || 0}" onchange="installEditorField(${origIdx},'${c.key}',parseFloat(this.value)||0)"></td>`;
         } else {
-          cells += `<td><input value="${escAttr(g(c.key))}" onchange="installEditorField(${origIdx},'${c.key}',this.value)"${c.placeholder ? ' placeholder="' + c.placeholder + '"' : ''}></td>`;
+          cells += `<td><input aria-label="${c.label || c.key}" value="${escAttr(g(c.key))}" onchange="installEditorField(${origIdx},'${c.key}',this.value)"${c.placeholder ? ' placeholder="' + c.placeholder + '"' : ''}></td>`;
         }
       });
       cells += `<td style="text-align:center;"><button class="del-btn" onclick="installEditorToggleDelete(${origIdx})" title="${isDel ? 'Restaurar' : 'Eliminar'}">${isDel ? '↩' : '✕'}</button></td>`;

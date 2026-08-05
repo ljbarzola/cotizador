@@ -15,12 +15,12 @@
   --bg: #f3f4f6;
   --surface: #ffffff;
   --text: #1f2937;
-  --muted: #6b7280;
+  --muted: #4b5563;
   --border: #e5e7eb;
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --gemeseg-font: 'Montserrat', 'Arial Black', sans-serif;
+  --gemeseg-font: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 html,
 body {
@@ -557,8 +557,8 @@ textarea {
 }
 .cat-item-install {
   font-size: 11px;
-  color: #d97706;
-  font-weight: 500;
+  color: #92400e;
+  font-weight: 600;
 }
 .cat-item-price {
   text-align: right;
@@ -2119,8 +2119,8 @@ textarea {
   background: #eff6ff;
 }
 .viewer-tab[data-tab='install'].active {
-  color: #d97706;
-  border-color: #d97706;
+  color: #92400e;
+  border-color: #b45309;
   background: #fffbeb;
 }
 .viewer-tab[data-tab='kits'].active {

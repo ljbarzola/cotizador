@@ -1,0 +1,15 @@
+# Cotizador GEMESEG Tecnología - Guía General
+
+> Resumen de capacidades y estructura general del Cotizador GEMESEG.
+
+## Visión General del Sistema
+
+Aplicación web diseñada para la preparación de ofertas comerciales de seguridad electrónica y tecnología. Permite la selección de partidas, configuración de propuestas y generación de documentos en PDF.
+
+## Módulos Principales
+
+- **Buscador de Catálogo**: Búsqueda por código, modelo o descripción en las categorías disponibles.
+- **Detalle de Oferta**: Registro de información del cliente, selección de ítems y aplicación de condiciones comerciales.
+- **Servicios de Instalación**: Incorporación de servicios técnicos adicionales.
+- **Emisión de Documentos**: Generación del documento final en formato PDF para presentación al cliente.
+- **Administración**: Historial de propuestas emitidas y gestión de plantillas.
