@@ -666,8 +666,8 @@ function renderCart() {
             : '<span style="color:var(--muted);">—</span>';
         const installCell = it.hasInstalacion
           ? compInstallActive
-            ? `<button type="button" class="install-toggle-btn install-btn-active" onclick="toggleKitCompInstall(${idx}, ${compIdx})" title="Desactivar instalación">🟩 SI (${fmt(compPricing.instalacionPrice)})</button>`
-            : `<button type="button" class="install-toggle-btn install-btn-inactive" onclick="toggleKitCompInstall(${idx}, ${compIdx})" title="Activar instalación">⬜ NO</button>`
+            ? `<button type="button" class="install-toggle-btn install-btn-active" onclick="toggleKitCompInstall(${idx}, ${compIdx})" title="Instalación activa (click para cambiar)">🔧</button>`
+            : `<button type="button" class="install-toggle-btn install-btn-inactive" onclick="toggleKitCompInstall(${idx}, ${compIdx})" title="Sin instalación (click para cambiar)">⚪</button>`
           : '<span style="color:var(--muted);">—</span>';
         html += `<tr class="kit-row">
           <td class="producto-num">${rowNum}</td>
@@ -717,8 +717,8 @@ function renderCart() {
 
     const installCell = item.hasInstalacion
       ? c.installActive
-        ? `<button type="button" class="install-toggle-btn install-btn-active" onclick="toggleCartItemInstall(${idx})" title="Desactivar instalación">🟩 SI (${fmt(pricing.instalacionPrice)})</button>`
-        : `<button type="button" class="install-toggle-btn install-btn-inactive" onclick="toggleCartItemInstall(${idx})" title="Activar instalación">⬜ NO</button>`
+        ? `<button type="button" class="install-toggle-btn install-btn-active" onclick="toggleCartItemInstall(${idx})" title="Instalación activa (click para cambiar)">🔧</button>`
+        : `<button type="button" class="install-toggle-btn install-btn-inactive" onclick="toggleCartItemInstall(${idx})" title="Sin instalación (click para cambiar)">⚪</button>`
       : '<span style="color:var(--muted);">—</span>';
 
     html += `<tr>
@@ -873,7 +873,7 @@ function renderMarginConfig() {
       installHtml += `</div>`;
       installHtml += `<div class="install-config-fields">`;
       installHtml += `<div class="install-field field-cant"><label>Cant</label><input type="number" min="1" step="1" value="${c.qty}" aria-label="Cantidad de servicio" onchange="updateInstallServiceQty(${cartIdx}, this.value)"></div>`;
-      installHtml += `<div class="install-field field-cost"><label>Costo</label><input type="number" min="0" step="0.01" value="${c.customCost ?? c.cost}" aria-label="Costo del servicio" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div>`;
+      installHtml += `<div class="install-field field-cost"><label>Costo ($)</label><input type="number" min="0" step="0.01" value="${c.customCost ?? c.cost}" aria-label="Costo del servicio" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div>`;
       installHtml += `<div class="install-field field-margin"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${c.customMargin ?? DEFAULT_INSTALL_MARGIN}" aria-label="Margen de ganancia en porcentaje" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
       installHtml += `<div class="install-field field-ganancia"><label>Ganancia</label><span class="install-price">${fmt(pricing.ganancia * c.qty)}</span></div>`;
       installHtml += `<div class="install-field field-total"><label>Total</label><span class="install-price install-total">${fmt(total)}</span></div>`;

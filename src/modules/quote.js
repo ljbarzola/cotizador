@@ -95,7 +95,21 @@ async function deleteTemplate(id) {
 function resolveTemplateProductos(templateItems, catalog) {
   const cart = [];
   const unmatched = [];
-  for (const ti of templateItems) {
+  for (const ti of templateItems || []) {
+    if (ti.isInstallService) {
+      cart.push({
+        isInstallService: true,
+        id: ti.sourceId || ti.id || 'inst-' + Math.random().toString(36).slice(2, 7),
+        description: ti.description || ti.servicio || 'Servicio de Instalación',
+        category: ti.category || 'INSTALACIONES',
+        subcategory: ti.subcategory || '',
+        cost: ti.cost || ti.costo_unitario || 0,
+        qty: ti.qty || 1,
+        customCost: ti.customCost ?? null,
+        customMargin: ti.customMargin ?? null,
+      });
+      continue;
+    }
     const catIdx = catalog.findIndex(c => c.sourceId === ti.sourceId);
     if (catIdx >= 0) {
       cart.push({
@@ -130,14 +144,24 @@ async function generateDefaultTemplates(catalog) {
         (item.subcategory || '')
       ).toLowerCase();
       if (keywords.some(kw => text.includes(kw))) {
-        found.push({ sourceId: item.sourceId, qty: 2, installActive: false, techCost: 0 });
+        found.push({
+          sourceId: item.sourceId,
+          qty: 2,
+          installActive: !!item.hasInstalacion,
+          techCost: item.hasInstalacion ? 15 : 0,
+        });
       }
     }
     if (found.length < 2) {
       for (const item of catalog) {
         if (found.length >= max) break;
         if (!found.some(f => f.sourceId === item.sourceId)) {
-          found.push({ sourceId: item.sourceId, qty: 2, installActive: false, techCost: 0 });
+          found.push({
+            sourceId: item.sourceId,
+            qty: 2,
+            installActive: !!item.hasInstalacion,
+            techCost: item.hasInstalacion ? 15 : 0,
+          });
         }
       }
     }

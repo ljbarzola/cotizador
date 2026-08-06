@@ -27,33 +27,34 @@ export function openProductDetail(idx) {
   const item = CATALOG[idx];
   if (!item) return;
   const price = calcItemPrice(item);
-  const fmt2 = v => '$' + (v || 0).toFixed(2);
   const nl2br = s => esc(s).replace(/\n/g, '<br>');
 
   let html = `<div class="detail-grid">
     <div class="detail-row"><span class="label">Código:</span><span class="value" style="font-family:ui-monospace,monospace;">${esc(item.sourceId)}</span></div>`;
   if (item.model)
     html += `<div class="detail-row"><span class="label">Modelo:</span><span class="value">${esc(item.model)}</span></div>`;
-  html += `<div class="detail-row" style="grid-column:1/-1;"><span class="label">Descripción:</span><span class="value" style="font-weight:600;">${esc(item.description)}</span></div>`;
+  html += `<div class="detail-row" style="grid-column:1/-1;"><span class="label">${item.isService ? 'Servicio:' : 'Producto:'}</span><span class="value" style="font-weight:600;">${esc(item.description)}</span></div>`;
   html += `<div class="detail-row"><span class="label">Categoría:</span><span class="value">${esc(item.category)}</span></div>`;
   html += `<div class="detail-row"><span class="label">Subcategoría:</span><span class="value">${esc(item.subcategory)}</span></div>`;
   if (item.supplier)
     html += `<div class="detail-row"><span class="label">Proveedor:</span><span class="value">${esc(item.supplier)}</span></div>`;
   if (item.unit)
     html += `<div class="detail-row"><span class="label">Unidad:</span><span class="value">${esc(item.unit)}</span></div>`;
+  if (item.descriptionExtended) {
+    html += `<div class="detail-obs" style="grid-column:1/-1;"><span class="label">Descripción detallada:</span><div class="detail-obs-text">${nl2br(item.descriptionExtended)}</div></div>`;
+  }
   if (item.observations) {
-    const label = item.isService ? 'Descripción detallada:' : 'Observaciones:';
-    html += `<div class="detail-obs" style="grid-column:1/-1;"><span class="label">${label}</span><div class="detail-obs-text">${nl2br(item.observations)}</div></div>`;
+    html += `<div class="detail-obs" style="grid-column:1/-1;"><span class="label">Observaciones:</span><div class="detail-obs-text">${nl2br(item.observations)}</div></div>`;
   }
   if (item.lastUpdate)
     html += `<div class="detail-row"><span class="label">Última act.:</span><span class="value">${esc(item.lastUpdate)}</span></div>`;
 
   html += `<div class="detail-divider"></div>`;
-  html += `<div class="detail-row"><span class="label">Costo base:</span><span class="value">${fmt2(price.baseCost)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">Costo base:</span><span class="value">${fmt(price.baseCost)}</span></div>`;
   if (price.gananciaProveedor > 0)
-    html += `<div class="detail-row"><span class="label">Ganancia proveedor:</span><span class="value">${fmt2(price.gananciaProveedor)}</span></div>`;
-  html += `<div class="detail-row"><span class="label">IVA (15%):</span><span class="value">${fmt2(price.iva)}</span></div>`;
-  html += `<div class="detail-row"><span class="label">PVP (con IVA):</span><span class="value" style="font-weight:700;color:var(--primary);font-size:14px;">${fmt2(price.subtotalEquipo)}</span></div>`;
+    html += `<div class="detail-row"><span class="label">Ganancia proveedor:</span><span class="value">${fmt(price.gananciaProveedor)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">IVA (15%):</span><span class="value">${fmt(price.iva)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">PVP (con IVA):</span><span class="value" style="font-weight:700;color:var(--primary);font-size:14px;">${fmt(price.subtotalEquipo)}</span></div>`;
   if (price.hasInstalacion)
     html += `<div class="detail-row"><span class="label">Requiere instalación:</span><span class="value">🟩 Sí</span></div>`;
   if (price.hasGanancia)
@@ -89,40 +90,38 @@ export function openCartItemDetail(idx) {
     techCost: c.techCost,
     installActive: c.installActive,
   });
-  const fmt2 = v => '$' + (v || 0).toFixed(2);
   const nl2br = s => esc(s).replace(/\n/g, '<br>');
 
   let html = `<div class="detail-grid">
     <div class="detail-row"><span class="label">Código:</span><span class="value" style="font-family:ui-monospace,monospace;">${esc(item.sourceId)}</span></div>`;
   if (item.model)
     html += `<div class="detail-row"><span class="label">Modelo:</span><span class="value">${esc(item.model)}</span></div>`;
-  html += `<div class="detail-row" style="grid-column:1/-1;"><span class="label">Descripción:</span><span class="value" style="font-weight:600;">${esc(item.description)}</span></div>`;
+  html += `<div class="detail-row" style="grid-column:1/-1;"><span class="label">${item.isService ? 'Servicio:' : 'Producto:'}</span><span class="value" style="font-weight:600;">${esc(item.description)}</span></div>`;
   html += `<div class="detail-row"><span class="label">Categoría:</span><span class="value">${esc(item.category)}</span></div>`;
   html += `<div class="detail-row"><span class="label">Subcategoría:</span><span class="value">${esc(item.subcategory)}</span></div>`;
   if (item.supplier)
     html += `<div class="detail-row"><span class="label">Proveedor:</span><span class="value">${esc(item.supplier)}</span></div>`;
   if (!item.supplier)
     html += `<div class="detail-row"><span class="label">Proveedor:</span><span class="value" style="color:#d97706;">Sin proveedor</span></div>`;
+  if (item.descriptionExtended) {
+    html += `<div class="detail-obs" style="grid-column:1/-1;"><span class="label">Descripción detallada:</span><div class="detail-obs-text">${nl2br(item.descriptionExtended)}</div></div>`;
+  }
   if (item.observations) {
-    const label = item.isService ? 'Descripción detallada:' : 'Observaciones:';
-    html += `<div class="detail-obs" style="grid-column:1/-1;"><span class="label">${label}</span><div class="detail-obs-text">${nl2br(item.observations)}</div></div>`;
+    html += `<div class="detail-obs" style="grid-column:1/-1;"><span class="label">Observaciones:</span><div class="detail-obs-text">${nl2br(item.observations)}</div></div>`;
   }
 
   html += `<div class="detail-divider"></div>`;
-  html += `<div class="detail-row"><span class="label">Costo Unit.:</span><span class="value">${fmt2(pricing.baseCost)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">Costo Unit.:</span><span class="value">${fmt(pricing.baseCost)}</span></div>`;
   if (item.hasGanancia)
-    html += `<div class="detail-row"><span class="label">Margen (${effectiveMargin}%):</span><span class="value">${fmt2(pricing.gananciaProveedor)}</span></div>`;
+    html += `<div class="detail-row"><span class="label">Margen (${effectiveMargin}%):</span><span class="value">${fmt(pricing.gananciaProveedor)}</span></div>`;
   html += `<div class="detail-row"><span class="label">Cantidad:</span><span class="value">${c.qty}</span></div>`;
-  html += `<div class="detail-row"><span class="label">Costo Total:</span><span class="value" style="font-weight:700;">${fmt2(pricing.baseCost * c.qty)}</span></div>`;
-  html += `<div class="detail-row"><span class="label">Ganancia:</span><span class="value">${fmt2(pricing.gananciaProveedor * c.qty)}</span></div>`;
-  html += `<div class="detail-row"><span class="label">PVP:</span><span class="value" style="font-weight:700;color:var(--primary);">${fmt2(pricing.priceBeforeIva * c.qty)}</span></div>`;
+  html += `<div class="detail-row"><span class="label">Costo Total:</span><span class="value" style="font-weight:700;">${fmt(pricing.baseCost * c.qty)}</span></div>`;
+  if (item.hasGanancia) {
+    html += `<div class="detail-row"><span class="label">Ganancia:</span><span class="value">${fmt(pricing.gananciaProveedor * c.qty)}</span></div>`;
+  }
+  html += `<div class="detail-row"><span class="label">PVP:</span><span class="value" style="font-weight:700;color:var(--primary);">${fmt(pricing.priceBeforeIva * c.qty)}</span></div>`;
   if (item.hasInstalacion) {
     html += `<div class="detail-row"><span class="label">Instalación:</span><span class="value">${c.installActive ? '🟩 Activa' : '⬛ Inactiva'}</span></div>`;
-    if (c.installActive) {
-      html += `<div class="detail-row"><span class="label">Costo técnico:</span><span class="value">${fmt2(c.techCost)}</span></div>`;
-      html += `<div class="detail-row"><span class="label">Margen instalación (${installationMarginPct}%):</span><span class="value">${fmt2(pricing.gananciaInstalacion)}</span></div>`;
-      html += `<div class="detail-row"><span class="label">Instalación total:</span><span class="value" style="font-weight:600;">${fmt2(pricing.instalacionPrice * c.qty)}</span></div>`;
-    }
   }
   html += `</div>`;
 
@@ -301,8 +300,9 @@ export async function openTemplatePreview(id) {
   let totalIVA = 0;
   let totalInstCost = 0;
   let totalInstProfit = 0;
+  let rowNum = 1;
 
-  tpl.productos.forEach((item, i) => {
+  tpl.productos.forEach(item => {
     const catItem = CATALOG.find(c => c.sourceId === item.sourceId);
     if (!catItem) return;
     const qty = item.qty || 1;
@@ -321,21 +321,16 @@ export async function openTemplatePreview(id) {
       totalInstProfit += pricing.gananciaInstalacion * qty;
     }
 
-    let installInfo = '—';
-    if (item.installActive && pricing.instalacionPrice > 0) {
-      installInfo = `🟩 $${pricing.instalacionPrice.toFixed(2)}/u`;
-    } else if (item.installActive) {
-      installInfo = '🟩 Sí';
-    }
+    const installInfo = item.installActive ? '🟩 Req.' : '—';
 
     html += `<tr>
-      <td>${i + 1}</td>
+      <td>${rowNum++}</td>
       <td style="font-family:ui-monospace,monospace;font-size:11px;">${esc(catItem.sourceId)}</td>
       <td>${esc(catItem.description)}</td>
       <td>${qty}</td>
-      <td>$${catItem.cost.toFixed(2)}</td>
-      <td>$${pricing.subtotalEquipo.toFixed(2)}</td>
-      <td>$${(pricing.subtotalEquipo * qty).toFixed(2)}</td>
+      <td>${fmt(catItem.cost)}</td>
+      <td>${fmt(pricing.subtotalEquipo)}</td>
+      <td>${fmt(pricing.subtotalEquipo * qty)}</td>
       <td>${installInfo}</td>
     </tr>`;
   });
@@ -344,13 +339,13 @@ export async function openTemplatePreview(id) {
 
   const grandTotal = totalEquipos + totalIVA + totalInstCost + totalInstProfit;
   html += `<div class="tpl-preview-totals">
-    <div class="tpl-preview-total-row"><span>Equipos/Materiales:</span><span>$${totalEquipos.toFixed(2)}</span></div>
-    <div class="tpl-preview-total-row"><span>IVA (15%):</span><span>$${totalIVA.toFixed(2)}</span></div>`;
+    <div class="tpl-preview-total-row"><span>Equipos/Materiales:</span><span>${fmt(totalEquipos)}</span></div>
+    <div class="tpl-preview-total-row"><span>IVA (15%):</span><span>${fmt(totalIVA)}</span></div>`;
   if (totalInstCost > 0) {
-    html += `<div class="tpl-preview-total-row"><span>Costo instalación:</span><span>$${totalInstCost.toFixed(2)}</span></div>`;
-    html += `<div class="tpl-preview-total-row"><span>Margen instalación (${tplInstallMargin}%):</span><span>$${totalInstProfit.toFixed(2)}</span></div>`;
+    html += `<div class="tpl-preview-total-row"><span>Costo instalación:</span><span>${fmt(totalInstCost)}</span></div>`;
+    html += `<div class="tpl-preview-total-row"><span>Margen instalación (${tplInstallMargin}%):</span><span>${fmt(totalInstProfit)}</span></div>`;
   }
-  html += `<div class="tpl-preview-total-row tpl-preview-total-final"><span>Total:</span><span>$${grandTotal.toFixed(2)}</span></div>
+  html += `<div class="tpl-preview-total-row tpl-preview-total-final"><span>Total:</span><span>${fmt(grandTotal)}</span></div>
   </div>`;
 
   $('tplPreviewBody').innerHTML = html;

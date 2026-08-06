@@ -59,7 +59,7 @@ const EDITOR_COLS = {
     { key: 'categoria', label: 'Categoría', w: '110px', type: 'select' },
     { key: 'subcategoria', label: 'Subcategoría', w: '100px', type: 'select' },
     { key: 'servicio', label: 'Servicio', w: 'auto', type: 'text' },
-    { key: 'costo_unitario', label: 'Costo', w: '80px', type: 'number' },
+    { key: 'costo_unitario', label: 'Costo ($)', w: '80px', type: 'number' },
     { key: 'observaciones', label: 'Observaciones', w: 'auto', type: 'text' },
   ],
 };

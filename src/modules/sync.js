@@ -105,11 +105,12 @@ const EQUIPOS_HEADER_MAP = {
   observaciones: 'observaciones',
 };
 
-// MATERIALES CSV: Id,Categoría,Subcategoría,Producto,Unds,Cant.,Costo Unitario,Costo,Gan. Prov.,Gan. Inst.,Observaciones
+// MATERIALES CSV: Id,Categoría,Subcategoría,Modelo,Producto,Unds,Cant.,Costo Unitario,Costo,Gan. Prov.,Gan. Inst.,Observaciones
 const MATERIALES_HEADER_MAP = {
   id: 'source_id',
   categoria: 'categoria',
   subcategoria: 'subcategoria',
+  modelo: 'modelo',
   producto: 'producto',
   unds: 'unidades',
   'cant.': 'cantidad_default',
@@ -127,9 +128,11 @@ const SERVICIOS_HEADER_MAP = {
   subcategoria: 'subcategoria',
   servicio: 'servicio',
   descripcion: 'descripcion',
+  descripción: 'descripcion',
   'costo mensual': 'costo_mensual',
   'costo anual': 'costo_anual',
   observaciones: 'observaciones',
+  observacion: 'observaciones',
 };
 
 function buildEquipo(mapped) {
@@ -703,8 +706,9 @@ export async function loadAllProducts() {
         sourceId: r.source_id || '',
         category: normalizeCategory(r.categoria, 'materiales'),
         subcategory: r.subcategoria || '',
-        model: '',
+        model: r.modelo || '',
         description: r.producto || '',
+        descriptionExtended: '',
         unit: r.unidades || '',
         cantidadDefault: r.cantidad_default || 1,
         cost: r.costo_unitario || 0,
@@ -735,13 +739,14 @@ export async function loadAllProducts() {
         subcategory: r.subcategoria || '',
         model: '',
         description: r.servicio || '',
+        descriptionExtended: r.descripcion || '',
         unit: 'servicio',
         cost: effectiveCost,
         hasGanancia: false,
         hasInstalacion: false,
         lastUpdate: null,
         supplier: '',
-        observations: r.descripcion || r.observaciones || '',
+        observations: r.observaciones || '',
         isService: true,
         monthlyCost: mensual,
         annualCost: anual,
