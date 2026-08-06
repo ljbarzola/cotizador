@@ -180,8 +180,8 @@ async function generateDefaultTemplates(catalog) {
 
   const sampleTemplates = [
     {
-      name: 'Comercio Pequeño - Seguridad Básica',
-      description: 'Cámaras de vigilancia, cable y grabación para tiendas y locales.',
+      name: '[Ejemplo] Comercio Pequeño - Seguridad Básica',
+      description: 'Cámaras de vigilancia, cable y servicio de instalación para tiendas y locales.',
       clientType: 'pequeña',
       industry: 'comercio',
       client: {
@@ -198,8 +198,8 @@ async function generateDefaultTemplates(catalog) {
       isSample: true,
     },
     {
-      name: 'Oficina Mediana - Solución Integral',
-      description: 'Cámaras IP, alarmas, control de acceso y cableado para oficinas.',
+      name: '[Ejemplo] Oficina Mediana - Solución Integral',
+      description: 'Cámaras IP, alarmas, control de acceso y servicio de instalación para oficinas.',
       clientType: 'mediana',
       industry: 'oficina',
       client: {
@@ -216,7 +216,7 @@ async function generateDefaultTemplates(catalog) {
       isSample: true,
     },
     {
-      name: 'Banco - Seguridad Avanzada',
+      name: '[Ejemplo] Banco - Seguridad Avanzada',
       description: 'Cámaras, alarmas, control de acceso, grabación y cableado para bancos.',
       clientType: 'grande',
       industry: 'banco',

@@ -292,8 +292,12 @@ export async function openTemplatePreview(id) {
     <div><span class="label">Industria:</span> <span class="value">${industryLabels[tpl.industry] || tpl.industry}</span></div>
   </div>`;
 
+  // Separate products from installation services
+  const productItems = tpl.productos.filter(item => !item.isInstallService);
+  const installItems = tpl.productos.filter(item => item.isInstallService);
+
   html += `<table class="tpl-preview-table"><thead><tr>
-    <th>#</th><th>ID</th><th>Descripción</th><th>Cant.</th><th>Costo U.</th><th>PVP U.</th><th>Subtotal</th><th>Instalación</th>
+    <th>#</th><th>ID</th><th>Nombre</th><th>Cant.</th><th>Costo U.</th><th>PVP U.</th><th>Subtotal</th>
   </tr></thead><tbody>`;
 
   let totalEquipos = 0;
@@ -302,7 +306,7 @@ export async function openTemplatePreview(id) {
   let totalInstProfit = 0;
   let rowNum = 1;
 
-  tpl.productos.forEach(item => {
+  productItems.forEach(item => {
     const catItem = CATALOG.find(c => c.sourceId === item.sourceId);
     if (!catItem) return;
     const qty = item.qty || 1;
@@ -321,8 +325,6 @@ export async function openTemplatePreview(id) {
       totalInstProfit += pricing.gananciaInstalacion * qty;
     }
 
-    const installInfo = item.installActive ? '🟩 Req.' : '—';
-
     html += `<tr>
       <td>${rowNum++}</td>
       <td style="font-family:ui-monospace,monospace;font-size:11px;">${esc(catItem.sourceId)}</td>
@@ -331,11 +333,32 @@ export async function openTemplatePreview(id) {
       <td>${fmt(catItem.cost)}</td>
       <td>${fmt(pricing.subtotalEquipo)}</td>
       <td>${fmt(pricing.subtotalEquipo * qty)}</td>
-      <td>${installInfo}</td>
     </tr>`;
   });
 
   html += `</tbody></table>`;
+
+  // Installation services section
+  if (installItems.length > 0) {
+    html += `<div class="tpl-preview-install-section">
+      <div class="tpl-preview-install-title">🔧 Servicios de Instalación</div>
+      <table class="tpl-preview-table"><thead><tr>
+        <th>#</th><th>Servicio</th><th>Cant.</th><th>Precio Total</th>
+      </tr></thead><tbody>`;
+    let instRow = 1;
+    installItems.forEach(item => {
+      const svcName = item.description || item.sourceId || 'Servicio';
+      const svcQty = item.qty || 1;
+      const svcCost = item.cost || 0;
+      html += `<tr>
+        <td>${instRow++}</td>
+        <td>${esc(svcName)}</td>
+        <td>${svcQty}</td>
+        <td>${fmt(svcCost * svcQty)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
 
   const grandTotal = totalEquipos + totalIVA + totalInstCost + totalInstProfit;
   html += `<div class="tpl-preview-totals">
@@ -396,6 +419,20 @@ export async function loadTemplateDirect(id) {
   // Resolve template items to cart (skip missing silently)
   cart.length = 0;
   for (const ti of tpl.productos) {
+    if (ti.isInstallService) {
+      cart.push({
+        isInstallService: true,
+        id: ti.sourceId || ti.id || 'inst-' + Math.random().toString(36).slice(2, 7),
+        description: ti.description || ti.servicio || 'Servicio de Instalación',
+        category: ti.category || 'INSTALACIONES',
+        subcategory: ti.subcategory || '',
+        cost: ti.cost || ti.costo_unitario || 0,
+        qty: ti.qty || 1,
+        customCost: ti.customCost ?? null,
+        customMargin: ti.customMargin ?? null,
+      });
+      continue;
+    }
     const catIdx = CATALOG.findIndex(c => c.sourceId === ti.sourceId);
     if (catIdx >= 0) {
       cart.push({

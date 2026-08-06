@@ -130,6 +130,14 @@ Cotizador/
     - **Sección SERVICIOS DE INSTALACIÓN en PDF**: En el PDF impreso del cliente se genera la tabla titulada **SERVICIOS DE INSTALACIÓN** que mapea la sección interna **🔧 Ganancia por instalación** del cotizador, mostrando la lista limpia (`# | Servicio / Descripción | Cant | Precio Total`) con precios públicos al cliente, sin revelar costos internos ni ganancias.
     - **Visualización de Servicios**: Los servicios muestran tanto su Nombre corto (`servicio`) como su Descripción extendida (`descripcion`) formateada en listas tanto en el panel de catálogo como en la tabla de cotización.
     - **Formato de Costo**: Todos los inputs de costo y celdas muestran el prefijo `$` y formato decimal con centavos (`.00`).
+30. **Mejoras de Visor de Catálogo, Selección de Categoría y Edición de Servicios**:
+    - **Paginación Inicial**: El catálogo inicia por defecto mostrando 10 resultados por página alineado al selector.
+    - **Vistas por Categoría en Visor**: Columnas dinámicas según categoría seleccionada. Para `SERVICIOS` muestra _Categoría | Subcategoría | Nombre | Descripción | Costo Mensual | Costo Anual | Observaciones | Acciones_. `MATERIALES` omite la columna Modelo.
+    - **Respeto de Listas Multi-Línea**: Soporte `white-space: pre-line` en celdas y tarjetas para descripciones de servicios con viñetas o saltos de línea.
+    - **Edición de Servicios**: Modal de edición mapea correctamente `descriptionExtended` a un campo `<textarea>` amplio y ajustable verticalmente.
+    - **Eliminación de Instalaciones**: Corrección de mapeo de IDs (`_id` / `id`) garantizando el borrado atómico en Supabase y refresco inmediato del catálogo.
+    - **Edición de Kits**: Dropdowns de componentes estilizados con delimitación de texto y etiquetas limpias `($0.00)`.
+    - **Diseño de Barra Superior y Separadores**: Botones de la barra superior uniformes con efecto hover sutil; separadores de kits y productos diferenciados en pantalla e impresión PDF.
 
 ### Flujo de precios (confirmado)
 

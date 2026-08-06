@@ -29,7 +29,8 @@ export function calcItemTotals(
   cart.forEach(c => {
     if (c.isInstallService) {
       if (calcInstallServicePriceFn) {
-        const pricing = calcInstallServicePriceFn(c, installationMarginPct);
+        const margin = c.customMargin ?? installationMarginPct;
+        const pricing = calcInstallServicePriceFn(c, margin);
         totalInstalacionesCat += pricing.total * (c.qty || 1);
       }
       return;
@@ -110,7 +111,8 @@ export function calcSubtotal(
   cart.forEach(c => {
     if (c.isInstallService) {
       if (calcInstallServicePriceFn) {
-        const pricing = calcInstallServicePriceFn(c, installationMarginPct);
+        const margin = c.customMargin ?? installationMarginPct;
+        const pricing = calcInstallServicePriceFn(c, margin);
         subtotal += pricing.total * (c.qty || 1);
       }
       return;

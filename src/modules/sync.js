@@ -94,8 +94,14 @@ const EQUIPOS_HEADER_MAP = {
   modelo: 'modelo',
   'producto / servicio': 'producto',
   producto: 'producto',
+  nombre: 'producto',
+  descripcion: 'producto',
+  descripción: 'producto',
+  equipo: 'producto',
   unds: 'unidades',
+  unidades: 'unidades',
   'cant.': 'cantidad_default',
+  cantidad: 'cantidad_default',
   'costo unitario': 'costo_unitario',
   costo: 'costo_total',
   'gan. prov.': 'ganancia_flag',
@@ -112,8 +118,14 @@ const MATERIALES_HEADER_MAP = {
   subcategoria: 'subcategoria',
   modelo: 'modelo',
   producto: 'producto',
+  nombre: 'producto',
+  material: 'producto',
+  descripcion: 'producto',
+  descripción: 'producto',
   unds: 'unidades',
+  unidades: 'unidades',
   'cant.': 'cantidad_default',
+  cantidad: 'cantidad_default',
   'costo unitario': 'costo_unitario',
   costo: 'costo_total',
   'gan. prov.': 'ganancia_flag',
@@ -127,10 +139,12 @@ const SERVICIOS_HEADER_MAP = {
   categoria: 'categoria',
   subcategoria: 'subcategoria',
   servicio: 'servicio',
+  nombre: 'servicio',
   descripcion: 'descripcion',
   descripción: 'descripcion',
   'costo mensual': 'costo_mensual',
   'costo anual': 'costo_anual',
+  'costo unitario': 'costo_unitario',
   observaciones: 'observaciones',
   observacion: 'observaciones',
 };
@@ -141,7 +155,7 @@ function buildEquipo(mapped) {
     categoria: txt(mapped.categoria),
     subcategoria: txt(mapped.subcategoria),
     modelo: txt(mapped.modelo),
-    producto: txt(mapped.producto),
+    producto: txt(mapped.producto) || txt(mapped.nombre),
     unidades: txt(mapped.unidades),
     cantidad_default: num(mapped.cantidad_default) || 1,
     costo_unitario: num(mapped.costo_unitario),
@@ -159,7 +173,8 @@ function buildMaterial(mapped) {
     source_id: txt(mapped.source_id) || null,
     categoria: txt(mapped.categoria),
     subcategoria: txt(mapped.subcategoria),
-    producto: txt(mapped.producto),
+    modelo: txt(mapped.modelo),
+    producto: txt(mapped.producto) || txt(mapped.nombre),
     unidades: txt(mapped.unidades),
     cantidad_default: num(mapped.cantidad_default) || 1,
     costo_unitario: num(mapped.costo_unitario),
@@ -175,7 +190,7 @@ function buildServicio(mapped) {
     source_id: txt(mapped.source_id) || null,
     categoria: txt(mapped.categoria) || 'SERVICIOS',
     subcategoria: txt(mapped.subcategoria),
-    servicio: txt(mapped.servicio),
+    servicio: txt(mapped.servicio) || txt(mapped.nombre),
     descripcion: txt(mapped.descripcion),
     costo_mensual: num(mapped.costo_mensual),
     costo_anual: num(mapped.costo_anual),
@@ -354,15 +369,32 @@ export async function syncFromGoogleSheets(onProgress, signal) {
 
       const headerFields = csvRows[0];
 
-      // INSTALACIONES: position-based mapping (no proper headers)
+      // INSTALACIONES: has proper headers — map by header name
       let posToDbField = [];
       let builder;
       if (sheet.table === 'instalaciones') {
-        // The sheet has no headers — row 0 is data, not headers
-        // Use all rows as data, map by position: col0=servicio, col1=costo_unitario
+        // CSV headers: "Nombre Instalación","Precio ","Categoria ","Subcategoria ","Observaciones"
+        const INST_HEADER_MAP = {
+          'nombre instalacion': 'servicio',
+          'nombre instalación': 'servicio',
+          servicio: 'servicio',
+          precio: 'costo_unitario',
+          'costo unitario': 'costo_unitario',
+          categoria: 'categoria',
+          categoría: 'categoria',
+          subcategoria: 'subcategoria',
+          subcategoría: 'subcategoria',
+          observaciones: 'observaciones',
+        };
         builder = buildInstalacion;
-        // Treat first row as data too (no header row in this sheet)
-        sheetLog.downloaded = csvRows.length;
+        for (let i = 0; i < headerFields.length; i++) {
+          const normalized = headerFields[i]
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+          posToDbField.push(INST_HEADER_MAP[normalized] || null);
+        }
       } else {
         const headerMapConfig =
           sheet.table === 'equipos'
@@ -385,7 +417,7 @@ export async function syncFromGoogleSheets(onProgress, signal) {
       }
 
       const csvItems = [];
-      const startRow = sheet.table === 'instalaciones' ? 0 : 1;
+      const startRow = 1; // All tables (including instalaciones) have header row
       for (let i = startRow; i < csvRows.length; i++) {
         if (signal && signal.aborted) {
           aborted = true;
@@ -395,18 +427,12 @@ export async function syncFromGoogleSheets(onProgress, signal) {
         if (fields.length < 2 || !fields[0]) continue;
 
         const mapped = {};
-        if (sheet.table === 'instalaciones') {
-          // Position-based: servicio, costo_unitario, categoria, subcategoria, observaciones
-          mapped.servicio = fields[0] || '';
-          mapped.costo_unitario = fields[1] || '0';
-          mapped.categoria = fields[2] || 'SERVICIOS TÉCNICOS';
-          mapped.subcategoria = fields[3] || '';
-          mapped.observaciones = fields[4] || '';
-          mapped.source_id = 'INST-' + String(i + 1).padStart(3, '0');
-        } else {
-          for (let j = 0; j < fields.length; j++) {
-            if (posToDbField[j]) mapped[posToDbField[j]] = fields[j];
-          }
+        for (let j = 0; j < fields.length; j++) {
+          if (posToDbField[j]) mapped[posToDbField[j]] = fields[j];
+        }
+        // Generate source_id for instalaciones (CSV has no Id column)
+        if (sheet.table === 'instalaciones' && !mapped.source_id) {
+          mapped.source_id = 'INST-' + String(csvItems.length + 1).padStart(3, '0');
         }
         if (!mapped.source_id) continue;
 
@@ -529,45 +555,45 @@ export async function syncInstalacionesOnly(onProgress, signal) {
       log(`${sheet.name}: vacía`, 'error');
       return results;
     }
-    sheetLog.downloaded = csvRows.length;
-    sheetLog.parsed = csvRows.length;
+    sheetLog.downloaded = csvRows.length - 1;
+    sheetLog.parsed = 0;
+
+    // Parse headers
+    const headerFields = csvRows[0];
+    const INST_HEADER_MAP = {
+      'nombre instalacion': 'servicio',
+      'nombre instalación': 'servicio',
+      servicio: 'servicio',
+      precio: 'costo_unitario',
+      'costo unitario': 'costo_unitario',
+      categoria: 'categoria',
+      categoría: 'categoria',
+      subcategoria: 'subcategoria',
+      subcategoría: 'subcategoria',
+      observaciones: 'observaciones',
+    };
+    const posToDbField = [];
+    for (let i = 0; i < headerFields.length; i++) {
+      const normalized = headerFields[i]
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+      posToDbField.push(INST_HEADER_MAP[normalized] || null);
+    }
 
     const csvItems = [];
     let validRowIndex = 0;
-    for (let i = 0; i < csvRows.length; i++) {
+    for (let i = 1; i < csvRows.length; i++) {
       if (signal && signal.aborted) break;
       const fields = csvRows[i];
       if (fields.length < 2 || !fields[0]) continue;
 
-      const f0 = String(fields[0] || '')
-        .toLowerCase()
-        .trim();
-      const f1 = String(fields[1] || '')
-        .toLowerCase()
-        .trim();
-
-      // Skip header row if present
-      if (
-        f0 === 'servicio' ||
-        f0 === 'instalacion' ||
-        f0 === 'instalación' ||
-        f0 === 'descripcion' ||
-        f1 === 'costo' ||
-        f1 === 'costo_unitario' ||
-        f1 === 'costo unitario' ||
-        f1 === 'precio' ||
-        isNaN(parseFloat(f1.replace(/[^\d.-]/g, '')))
-      ) {
-        if (i === 0) continue; // Skip header row
-      }
-
       validRowIndex++;
       const mapped = {};
-      mapped.servicio = fields[0] || '';
-      mapped.costo_unitario = fields[1] || '0';
-      mapped.categoria = normalizeCategory(fields[2] || '', 'instalaciones');
-      mapped.subcategoria = fields[3] || '';
-      mapped.observaciones = fields[4] || '';
+      for (let j = 0; j < fields.length; j++) {
+        if (posToDbField[j]) mapped[posToDbField[j]] = fields[j];
+      }
       mapped.source_id = 'INST-' + String(validRowIndex).padStart(3, '0');
       try {
         csvItems.push(buildInstalacion(mapped));
@@ -576,6 +602,7 @@ export async function syncInstalacionesOnly(onProgress, signal) {
         sheetLog.failed++;
       }
     }
+    sheetLog.parsed = csvItems.length;
 
     if (signal && signal.aborted) {
       results.aborted = true;
@@ -682,7 +709,7 @@ export async function loadAllProducts() {
         category: normalizeCategory(r.categoria, 'equipos'),
         subcategory: r.subcategoria || '',
         model: r.modelo || '',
-        description: r.producto || '',
+        description: r.producto || r.servicio || r.nombre || '',
         unit: r.unidades || '',
         cantidadDefault: r.cantidad_default || 1,
         cost: r.costo_unitario || 0,
@@ -707,7 +734,7 @@ export async function loadAllProducts() {
         category: normalizeCategory(r.categoria, 'materiales'),
         subcategory: r.subcategoria || '',
         model: r.modelo || '',
-        description: r.producto || '',
+        description: r.producto || r.servicio || r.nombre || '',
         descriptionExtended: '',
         unit: r.unidades || '',
         cantidadDefault: r.cantidad_default || 1,
@@ -822,6 +849,7 @@ export async function loadAllInstalaciones() {
   }
 
   return validRows.map(r => ({
+    _id: r.id,
     id: r.id,
     sourceId: r.source_id || '',
     category: normalizeCategory(r.categoria, 'instalaciones'),

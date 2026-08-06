@@ -34,6 +34,7 @@ body {
 button {
   font-family: inherit;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 input,
 select,
@@ -41,6 +42,32 @@ textarea {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* === LAYOUT === */
@@ -230,12 +257,37 @@ textarea {
 .btn-ghost:hover {
   background: var(--bg);
 }
-.topbar-actions .btn-ghost {
-  border-color: rgba(255, 255, 255, 0.3);
-  color: white;
+.topbar-actions .btn,
+.topbar-actions .btn-ghost,
+.topbar-actions .sync-status {
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  line-height: 1.2;
 }
-.topbar-actions .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.15);
+.topbar-actions .btn:hover,
+.topbar-actions .btn-ghost:hover,
+.topbar-actions .sync-status:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+.topbar-actions .btn:active,
+.topbar-actions .btn-ghost:active,
+.topbar-actions .sync-status:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 .main {
@@ -282,11 +334,12 @@ textarea {
   flex-direction: column;
   overflow: hidden;
 }
-#catalogItemsTab,
+#catalogProductosTab,
 #catalogKitsTab {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 .catalog-header {
@@ -517,6 +570,9 @@ textarea {
   flex: 1;
   overflow-y: auto;
   padding: 8px;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
 }
 .cat-producto {
   display: grid;
@@ -546,6 +602,7 @@ textarea {
   color: var(--text);
   line-height: 1.3;
   word-break: break-word;
+  white-space: pre-line;
 }
 .cat-producto-meta {
   font-size: 11px;
@@ -1061,13 +1118,21 @@ textarea {
 }
 .kit-comp-select {
   flex: 3;
+  width: 100%;
+  max-width: 100%;
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 8px;
+  border-radius: 6px;
+  padding: 6px 10px;
   font-size: 13px;
   font-family: inherit;
-  background: var(--card);
-  min-height: 36px;
+  background: #ffffff;
+  color: var(--text);
+  min-height: 38px;
+  box-sizing: border-box;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
 }
 .kit-row td {
   border-bottom: 1px dashed var(--border);
@@ -1075,7 +1140,7 @@ textarea {
 }
 .kit-header-row td {
   background: rgba(var(--primary-rgb), 0.08);
-  border-top: 2px solid var(--primary);
+  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 8px;
 }
@@ -1084,61 +1149,19 @@ textarea {
   border: none;
 }
 .kit-productos-divider {
-  height: 3px;
-  margin: 6px 0;
-  background: var(--primary);
-  border-radius: 2px;
-  opacity: 0.3;
+  height: 1px;
+  margin: 8px 0;
+  background: #000000;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.kit-header-row + .kit-header-row td {
+  border-top: 1px solid #cbd5e1;
 }
 #kitsCatalogList .catalog-producto + .catalog-producto {
   border-top: 1px solid var(--border);
   padding-top: 8px;
   margin-top: 4px;
-}
-
-.cotizador-vs-pdf-banner {
-  background: #e8f4fd;
-  border: 1px solid #b3d9f2;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  font-size: 12px;
-  animation: slideDown 0.3s ease;
-}
-.cotizador-vs-pdf-banner .banner-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.cotizador-vs-pdf-banner .banner-header strong {
-  font-size: 13px;
-  color: #1a5276;
-}
-.cotizador-vs-pdf-banner .banner-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  color: #1a5276;
-  padding: 2px 6px;
-}
-.cotizador-vs-pdf-banner .banner-close:hover {
-  color: #c0392b;
-}
-.cotizador-vs-pdf-banner .banner-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.cotizador-vs-pdf-banner .banner-title {
-  font-weight: 700;
-  margin-bottom: 4px;
-  color: #1a5276;
-}
-.cotizador-vs-pdf-banner .banner-col div {
-  font-size: 11px;
-  line-height: 1.6;
 }
 
 .catalog-tabs {
@@ -1182,11 +1205,15 @@ textarea {
 
 /* === TOTALES === */
 .totals {
-  background: var(--primary);
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
   color: white;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 14px;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 .totals-row {
   display: flex;
@@ -1201,10 +1228,11 @@ textarea {
 }
 .totals-row.total {
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 800;
   border-top: 2px solid var(--accent);
-  padding-top: 10px;
-  margin-top: 8px;
+  padding-top: 12px;
+  margin-top: 10px;
+  letter-spacing: -0.3px;
 }
 .totals-row.total .accent {
   color: var(--accent);
@@ -1215,29 +1243,40 @@ textarea {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 .actions-bar button {
   flex: 1;
   min-width: 110px;
   padding: 10px 14px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: white;
   color: var(--text);
   font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .actions-bar button:hover {
-  background: var(--bg);
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+}
+.actions-bar button:active {
+  transform: translateY(0);
 }
 .actions-bar .btn-print {
-  background: var(--primary);
+  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
   color: white;
-  border-color: var(--primary);
+  border-color: #0f172a;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.2);
 }
 .actions-bar .btn-print:hover {
-  background: var(--primary-dark);
+  background: linear-gradient(135deg, #2e2a72 0%, #1e293b 100%);
+  border-color: #1e293b;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.3);
 }
 .actions-bar .btn-save {
   background: var(--accent);
@@ -1569,6 +1608,17 @@ textarea {
 .tpl-preview-table tr:nth-child(even) td {
   background: rgba(0, 0, 0, 0.02);
 }
+.tpl-preview-install-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 2px solid var(--primary);
+}
+.tpl-preview-install-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
 .tpl-preview-totals {
   margin-top: 12px;
   padding-top: 10px;
@@ -1642,20 +1692,10 @@ textarea {
 
 /* === SYNC STATUS === */
 .sync-status {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.9);
-  transition: background 0.15s;
-}
-.sync-status:hover {
-  background: rgba(255, 255, 255, 0.18);
 }
 .sync-status.syncing .sync-icon {
   animation: spin 1s linear infinite;
@@ -1859,6 +1899,7 @@ textarea {
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  transition: opacity 0.2s ease;
 }
 .modal-backdrop.open {
   display: flex;
@@ -1868,14 +1909,27 @@ textarea {
 }
 .modal {
   background: white;
-  border-radius: 10px;
+  border-radius: 12px;
   max-width: 700px;
   width: 100%;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.2),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  animation: modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 .modal-header {
   padding: 16px 20px;
@@ -1896,9 +1950,13 @@ textarea {
   border: none;
   width: 28px;
   height: 28px;
-  border-radius: 4px;
-  font-size: 18px;
+  border-radius: 6px;
+  font-size: 16px;
   line-height: 1;
+  transition: background 0.15s ease;
+}
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 .modal-body {
   padding: 20px;
@@ -2596,7 +2654,20 @@ th:hover .col-resizer {
   .catalog-panel {
     border-right: none;
     border-bottom: 1px solid var(--border);
+    height: 50vh;
     max-height: 50vh;
+  }
+  #catalogProductosTab,
+  #catalogKitsTab {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .catalog-list {
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    flex: 1;
+    min-height: 0;
   }
   .form-grid {
     grid-template-columns: 1fr;
@@ -3123,119 +3194,113 @@ th:hover .col-resizer {
     white-space: nowrap;
   }
 
-  /* Fields row: content-fit grid */
+  /* Fields row: flex row with label and control stacked in flex-column */
   .install-config-fields {
-    display: grid;
-    grid-template-columns: auto auto auto auto auto;
-    justify-content: space-between;
-    gap: 6px 8px;
-    padding: 4px 8px 6px;
-    align-items: end;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 8px 16px;
+    padding: 8px 12px;
     border-top: 1px solid #fde68a;
+    background: #fffbeb;
+    border-radius: 0 0 6px 6px;
   }
 
-  /* Each column: label in row 1, control in row 2 */
   .install-config-fields .install-field {
-    display: contents;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
   }
 
-  /* Labels: row 1, centered */
   .install-config-fields .install-field label {
-    grid-row: 1;
-    display: block;
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
     color: #92400e;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
-    line-height: 1;
-    margin: 0;
+    letter-spacing: 0.4px;
     text-align: center;
-    white-space: nowrap;
+    margin: 0;
   }
 
-  /* Inputs and values: row 2 */
-  .install-config-fields .install-field input,
-  .install-config-fields .install-field .margin-input-inline,
-  .install-config-fields .install-field .install-price {
-    grid-row: 2;
+  /* COSTO input: with $ prefix */
+  .install-config-fields .cost-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 2px;
   }
-
-  /* CANT input: small, centered */
-  .install-config-fields .install-field.field-cant input {
-    width: 28px;
-    height: 22px;
-    padding: 0;
+  .install-config-fields .cost-input-wrapper .input-currency {
     font-size: 12px;
     font-weight: 600;
-    text-align: center;
-    box-sizing: border-box;
-    border: 1px solid #fde68a;
-    border-radius: 3px;
-    margin: 0;
-    background: white;
+    color: #92400e;
+    flex-shrink: 0;
   }
-
-  /* COSTO input: medium, right-aligned */
   .install-config-fields .install-field.field-cost input {
-    width: 42px;
-    height: 22px;
-    padding: 0 3px;
-    font-size: 12px;
+    width: 76px !important;
+    height: 28px;
+    padding: 0 6px !important;
+    font-size: 13px;
     font-weight: 600;
     text-align: right;
     box-sizing: border-box;
-    border: 1px solid #fde68a;
-    border-radius: 3px;
-    margin: 0;
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
     background: white;
   }
 
-  /* MARGEN: small input + % attached */
-  .install-config-fields .install-field.field-margin .margin-input-inline {
-    display: flex;
-    align-items: center;
-    gap: 1px;
-  }
-  .install-config-fields .install-field.field-margin .margin-input-inline input {
-    width: 26px;
-    height: 22px;
+  /* CANT input */
+  .install-config-fields .install-field.field-cant input {
+    width: 44px;
+    height: 28px;
     padding: 0;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     text-align: center;
     box-sizing: border-box;
-    border: 1px solid #fde68a;
-    border-radius: 3px;
-    margin: 0;
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
+    background: white;
+  }
+
+  /* MARGEN: input + % attached */
+  .install-config-fields .install-field.field-margin .margin-input-inline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .install-config-fields .install-field.field-margin .margin-input-inline input {
+    width: 44px;
+    height: 28px;
+    padding: 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    box-sizing: border-box;
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
     background: white;
   }
   .install-config-fields .install-field.field-margin .margin-input-inline span {
-    font-size: 10px;
-    color: #92400e;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-
-  /* All other inputs fallback */
-  .install-config-fields .install-field input:focus {
-    outline: none;
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
-  }
-
-  /* Read-only values */
-  .install-config-fields .install-price {
     font-size: 12px;
-    font-weight: 600;
     color: #92400e;
-    white-space: nowrap;
-    text-align: center;
-    line-height: 22px;
+    font-weight: 700;
   }
-  .install-config-fields .install-total {
+
+  /* Read-only values: GANANCIA & TOTAL */
+  .install-config-fields .install-price {
+    font-size: 13px;
     font-weight: 700;
     color: #b45309;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  .install-config-fields .install-total {
+    font-size: 14px;
+    font-weight: 800;
+    color: #92400e;
   }
 
   /* History */
@@ -3962,54 +4027,63 @@ th:hover .col-resizer {
     color: #92400e;
   }
   .install-config-fields {
-    display: grid;
-    grid-template-columns: 44px 64px 56px auto auto;
-    justify-content: space-evenly;
-    gap: 4px 24px;
-    padding: 6px 8px 8px 8px;
-    align-items: end;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 8px 16px;
+    padding: 8px 12px;
     border-top: 1px solid #fde68a;
-    background: white;
+    background: #fffbeb;
+    border-radius: 0 0 6px 6px;
   }
   .install-config-fields .install-field {
-    display: contents;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
   }
   .install-config-fields .install-field label {
-    grid-row: 1;
     font-size: 10px;
     font-weight: 700;
     color: #92400e;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.4px;
     text-align: center;
+    margin: 0;
   }
-  .install-config-fields .install-field input,
-  .install-config-fields .install-field .margin-input-inline,
-  .install-config-fields .install-field .install-price {
-    grid-row: 2;
+  .install-config-fields .cost-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .install-config-fields .cost-input-wrapper .input-currency {
+    font-size: 12px;
+    font-weight: 600;
+    color: #92400e;
+    flex-shrink: 0;
   }
   .install-config-fields .install-field.field-cant input {
     width: 44px;
-    height: 32px;
-    padding: 0 4px;
+    height: 28px;
+    padding: 0;
     font-size: 13px;
     font-weight: 600;
     text-align: center;
     box-sizing: border-box;
-    border: 1px solid #fde68a;
-    border-radius: 6px;
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
     background: white;
   }
   .install-config-fields .install-field.field-cost input {
-    width: 64px;
-    height: 32px;
-    padding: 0 6px;
+    width: 76px !important;
+    height: 28px;
+    padding: 0 6px !important;
     font-size: 13px;
     font-weight: 600;
     text-align: right;
     box-sizing: border-box;
-    border: 1px solid #fde68a;
-    border-radius: 6px;
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
     background: white;
   }
   .install-config-fields .install-field.field-margin .margin-input-inline {
@@ -4019,14 +4093,14 @@ th:hover .col-resizer {
   }
   .install-config-fields .install-field.field-margin .margin-input-inline input {
     width: 44px;
-    height: 32px;
+    height: 28px;
     padding: 0 4px;
     font-size: 13px;
     font-weight: 600;
     text-align: center;
     box-sizing: border-box;
-    border: 1px solid #fde68a;
-    border-radius: 6px;
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
     background: white;
   }
   .install-config-fields .install-field input:focus,
@@ -4371,8 +4445,11 @@ th:hover .col-resizer {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 8px;
-  max-height: 400px;
+  max-height: 420px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
 }
 .install-service-card {
   border: 1px solid var(--border);
@@ -4405,58 +4482,63 @@ th:hover .col-resizer {
 
 /* === INTERACTIVE INSTALLATION SQUARE TOGGLE BUTTON === */
 .install-sq-btn {
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
   cursor: pointer;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   vertical-align: middle;
-  transition: all 0.15s ease;
+  transition: all 0.15s ease-in-out;
   user-select: none;
   border: 1px solid transparent;
   padding: 0;
   line-height: 1;
+  outline: none;
 }
 
 .install-sq-active {
-  background-color: #10b981 !important;
-  border-color: #059669 !important;
-  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border-color: #047857 !important;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.4);
+  color: #ffffff !important;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
 .install-sq-active:hover {
-  background-color: #059669 !important;
+  background: #047857 !important;
+  transform: scale(1.08);
 }
 
 .install-sq-inactive {
-  background-color: #e5e7eb !important;
-  border-color: #9ca3af !important;
+  background: #f3f4f6 !important;
+  border-color: #cbd5e1 !important;
+  color: #94a3b8 !important;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
 .install-sq-inactive:hover {
-  background-color: #d1d5db !important;
+  background: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+  transform: scale(1.08);
 }
 
 /* Cost input wrapper with $ symbol */
 .cost-input-wrapper {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  position: relative;
+  gap: 2px;
   width: 100%;
 }
 .cost-input-wrapper .input-currency {
-  position: absolute;
-  left: 8px;
   font-size: 12px;
   font-weight: 600;
   color: #4b5563;
-  pointer-events: none;
-  z-index: 1;
+  flex-shrink: 0;
 }
 .cost-input-wrapper input {
-  padding-left: 20px !important;
+  padding-left: 6px !important;
   width: 100%;
 }
 
@@ -4552,5 +4634,21 @@ th:hover .col-resizer {
     background-color: #e5e7eb !important;
     color: #4b5563 !important;
     border-color: #d1d5db !important;
+  }
+  .kit-productos-separator td {
+    padding: 0 !important;
+    border: none !important;
+  }
+  .kit-productos-divider {
+    height: 1px !important;
+    background: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .kit-header-row td {
+    border-top: 1px solid #cbd5e1 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }

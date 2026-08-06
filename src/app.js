@@ -606,7 +606,7 @@ function renderCart() {
   // === TABLA DE DETALLE ===
   html += '<table class="productos-table"><thead><tr>';
   html += '<th class="producto-num">#</th>';
-  html += '<th>Descripción</th>';
+  html += '<th>Nombre</th>';
   html += '<th class="center" style="width:36px;">Und</th>';
   html += '<th class="right" style="width:60px;">Costo Unit.</th>';
   html += '<th class="center" style="width:40px;">Cant</th>';
@@ -879,8 +879,9 @@ function renderMarginConfig() {
       installHtml += `<div class="install-config-fields">`;
       installHtml += `<div class="install-field field-cant"><label>Cant</label><input type="number" min="1" step="1" value="${c.qty}" aria-label="Cantidad de servicio" onchange="updateInstallServiceQty(${cartIdx}, this.value)"></div>`;
       const costVal = Number(c.customCost ?? c.cost).toFixed(2);
-      installHtml += `<div class="install-field field-cost"><label>Costo ($)</label><div class="cost-input-wrapper"><span class="input-currency">$</span><input type="number" min="0" step="0.01" value="${costVal}" aria-label="Costo del servicio" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div></div>`;
-      installHtml += `<div class="install-field field-margin"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${c.customMargin ?? DEFAULT_INSTALL_MARGIN}" aria-label="Margen de ganancia en porcentaje" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
+      const marginVal = Math.round(c.customMargin ?? DEFAULT_INSTALL_MARGIN);
+      installHtml += `<div class="install-field field-cost"><label>Costo</label><div class="cost-input-wrapper"><span class="input-currency">$</span><input type="number" min="0" step="0.01" value="${costVal}" aria-label="Costo del servicio" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div></div>`;
+      installHtml += `<div class="install-field field-margin"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${marginVal}" aria-label="Margen de ganancia en porcentaje" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
       installHtml += `<div class="install-field field-ganancia"><label>Ganancia</label><span class="install-price">${fmt(pricing.ganancia * c.qty)}</span></div>`;
       installHtml += `<div class="install-field field-total"><label>Total</label><span class="install-price install-total">${fmt(total)}</span></div>`;
       installHtml += `</div>`;
@@ -903,7 +904,7 @@ function renderTotals() {
     calcInstallServicePrice
   );
 
-  const totalGeneral = subtotalEquipo + totalIva + totalInstalacion + totalInstalacionesCat;
+  const totalGeneral = subtotalEquipo + totalIva + totalInstalacionesCat;
   const discountAmount = calcDiscount(totalGeneral, discountType, discountValue);
   const totalFinal = totalGeneral - discountAmount;
 
@@ -912,9 +913,6 @@ function renderTotals() {
   breakdownHtml += `<div class="totals-row totals-sub totals-sub-detail"><span>&nbsp;&nbsp;IVA 15%</span><span>${fmt(totalIva)}</span></div>`;
   breakdownHtml += `<div class="totals-row totals-sub"><span>Subtotal (PVP + IVA)</span><span>${fmt(subtotalEquipo + totalIva)}</span></div>`;
 
-  if (totalInstalacion > 0) {
-    breakdownHtml += `<div class="totals-row totals-sub totals-install"><span>🔧 Instalación (Productos)</span><span>${fmt(totalInstalacion)}</span></div>`;
-  }
   if (totalInstalacionesCat > 0) {
     breakdownHtml += `<div class="totals-row totals-sub totals-install"><span>🔧 Servicios de instalación</span><span>${fmt(totalInstalacionesCat)}</span></div>`;
   }
@@ -1117,7 +1115,6 @@ async function saveQuote() {
         .eq('id', currentQuoteId);
       if (error) throw error;
       toast('✓ Cotización actualizada: ' + data.cotNum, 'success');
-      notifyCotizadorVsPdf();
     } else {
       const { data: existing } = await supabase
         .from('saved_quotes')
@@ -1148,7 +1145,6 @@ async function saveQuote() {
           if (error) throw error;
           setCurrentQuoteId(existing.id);
           toast('✓ Cotización actualizada', 'success');
-          notifyCotizadorVsPdf();
         } else {
           data.cotNum = await generateNextCotNumberFromDB();
           $('cotNum').value = data.cotNum;
@@ -1163,61 +1159,11 @@ async function saveQuote() {
         if (error) throw error;
         if (inserted && inserted.id) setCurrentQuoteId(inserted.id);
         toast('✓ Cotización guardada: ' + data.cotNum, 'success');
-        notifyCotizadorVsPdf();
       }
     }
   } catch (e) {
     toast('Error al guardar: ' + e.message, 'danger');
   }
-}
-
-function notifyCotizadorVsPdf() {
-  const existing = document.getElementById('cotizadorVsPdfBanner');
-  if (existing) existing.remove();
-  const banner = document.createElement('div');
-  banner.id = 'cotizadorVsPdfBanner';
-  banner.className = 'cotizador-vs-pdf-banner';
-  banner.innerHTML = `
-    <div class="banner-header">
-      <strong>Cotizador vs PDF (Cliente)</strong>
-      <button onclick="this.parentElement.parentElement.remove()" class="banner-close">✕</button>
-    </div>
-    <div class="banner-body">
-      <div class="banner-col">
-        <div class="banner-title">Cotizador (usted ve):</div>
-        <div>Costo Unit. (costo real del producto, sin ganancia)</div>
-        <div>Cant</div>
-        <div>Costo Total (Costo Unit. x Cant)</div>
-        <div>Ganancia (margen proveedor x Cant)</div>
-        <div>PVP (Costo Total + Ganancia)</div>
-        <div>Instalación</div>
-      </div>
-      <div class="banner-col">
-        <div class="banner-title">Cliente (PDF):</div>
-        <div>Costo Unit. (mismo valor)</div>
-        <div>Cant (mismo valor)</div>
-        <div>Costo Total (mismo valor)</div>
-        <div style="color:var(--muted);">Ganancia (NO visible)</div>
-        <div style="color:var(--muted);">PVP (NO visible)</div>
-        <div>Instalación (mismo valor)</div>
-      </div>
-    </div>`;
-  const actionsBar = document.querySelector('.actions-bar');
-  if (actionsBar && actionsBar.parentNode) {
-    actionsBar.parentNode.insertBefore(banner, actionsBar);
-  } else {
-    const quotePanel = document.querySelector('.quote-panel');
-    if (quotePanel) quotePanel.appendChild(banner);
-  }
-  setTimeout(() => {
-    const b = document.getElementById('cotizadorVsPdfBanner');
-    if (b) b.remove();
-  }, 8000);
-}
-
-function doPrint() {
-  window.print();
-  setTimeout(() => notifyCotizadorVsPdf(), 500);
 }
 
 // === HISTORY ===
@@ -1448,6 +1394,15 @@ function renderViewerTable() {
   const q = $('viewerSearch').value.toLowerCase().trim();
   const cat = $('viewerCategory').value;
   const sub = $('viewerSubcategory')?.value || '';
+  const tbody = $('viewerBody');
+
+  if (!cat) {
+    $('viewerCount').textContent = 'Seleccione una categoría';
+    tbody.innerHTML =
+      '<tr><td colspan="11" style="text-align:center;padding:60px 20px;color:var(--muted);"><div style="font-size:28px;margin-bottom:10px;">📂</div>Seleccione una categoría para ver los productos</td></tr>';
+    return;
+  }
+
   let filtered = viewerProducts.map((p, i) => ({ ...p, _viewerIdx: i }));
   if (cat) filtered = filtered.filter(p => p.category === cat);
   if (sub) filtered = filtered.filter(p => p.subcategory === sub);
@@ -1466,28 +1421,62 @@ function renderViewerTable() {
   $('viewerCount').textContent = countLabel;
   const tabCount = $('viewerCountProducts');
   if (tabCount) tabCount.textContent = viewerProducts.length;
-  const tbody = $('viewerBody');
+
   if (filtered.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="10" style="text-align:center;padding:40px 20px;color:var(--muted);"><div style="font-size:24px;margin-bottom:8px;">📦</div>No se encontraron productos<br><small>Intenta ajustar los filtros de búsqueda</small></td></tr>';
+      '<tr><td colspan="11" style="text-align:center;padding:40px 20px;color:var(--muted);"><div style="font-size:24px;margin-bottom:8px;">📦</div>No se encontraron productos<br><small>Intenta ajustar los filtros de búsqueda</small></td></tr>';
     return;
   }
+
+  const isServicios = cat === 'SERVICIOS';
+  const isMateriales = cat === 'MATERIALES';
   tbody.innerHTML = filtered
     .map(p => {
       const pricing = calcItemPrice(p);
       const idx = p._viewerIdx;
+      if (isServicios) {
+        const nombre = p.description || p.servicio || '';
+        const desc = p.descriptionExtended || p.descripcion || '';
+        const mCost = p.monthlyCost != null ? fmt(p.monthlyCost) : '$0.00';
+        const aCost = p.annualCost != null ? fmt(p.annualCost) : '$0.00';
+        return `<tr>
+          <td>${esc(p.category || 'SERVICIOS')}</td>
+          <td>${esc(p.subcategory || '')}</td>
+          <td style="white-space:pre-line;line-height:1.4;">${esc(nombre)}</td>
+          <td style="white-space:pre-line;line-height:1.4;">${esc(desc)}</td>
+          <td class="right">${mCost}</td>
+          <td class="right">${aCost}</td>
+          <td style="white-space:pre-line;line-height:1.4;">${esc(p.observations || '')}</td>
+          <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="openEditProductoModal('product',${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteViewerProducto('product',${idx})" title="Eliminar">✕</button></div></td>
+        </tr>`;
+      }
+      if (isMateriales) {
+        return `<tr>
+          <td>${p.sourceId || ''}</td>
+          <td>${p.subcategory || ''}</td>
+          <td>${p.description || ''}</td>
+          <td class="right">${fmt(p.cost || 0)}</td>
+          <td class="center">${p.hasGanancia ? '✅' : '—'}</td>
+          <td class="center">${p.hasInstalacion ? '✅' : '—'}</td>
+          <td class="right">${fmt(pricing.priceBeforeIva)}</td>
+          <td class="right">${fmt(pricing.iva)}</td>
+          <td class="right"><strong>${fmt(pricing.subtotalEquipo)}</strong></td>
+          <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="openEditProductoModal('product',${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteViewerProducto('product',${idx})" title="Eliminar">✕</button></div></td>
+        </tr>`;
+      }
       return `<tr>
-      <td>${p.sourceId || ''}</td>
-      <td>${p.subcategory || ''}</td>
-      <td>${p.description || ''}${p.model ? ' <small>(' + p.model + ')</small>' : ''}</td>
-      <td class="right">${fmt(p.cost || 0)}</td>
-      <td class="center">${p.hasGanancia ? '✅' : '—'}</td>
-      <td class="center">${p.hasInstalacion ? '✅' : '—'}</td>
-      <td class="right">${fmt(pricing.priceBeforeIva)}</td>
-      <td class="right">${fmt(pricing.iva)}</td>
-      <td class="right"><strong>${fmt(pricing.subtotalEquipo)}</strong></td>
-      <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="openEditProductoModal('product',${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteViewerProducto('product',${idx})" title="Eliminar">✕</button></div></td>
-    </tr>`;
+        <td>${p.sourceId || ''}</td>
+        <td>${p.subcategory || ''}</td>
+        <td>${p.model || ''}</td>
+        <td>${p.description || ''}</td>
+        <td class="right">${fmt(p.cost || 0)}</td>
+        <td class="center">${p.hasGanancia ? '✅' : '—'}</td>
+        <td class="center">${p.hasInstalacion ? '✅' : '—'}</td>
+        <td class="right">${fmt(pricing.priceBeforeIva)}</td>
+        <td class="right">${fmt(pricing.iva)}</td>
+        <td class="right"><strong>${fmt(pricing.subtotalEquipo)}</strong></td>
+        <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="openEditProductoModal('product',${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteViewerProducto('product',${idx})" title="Eliminar">✕</button></div></td>
+      </tr>`;
     })
     .join('');
   makeTableColumnsResizable($('viewerTable'));
@@ -1496,8 +1485,12 @@ function renderViewerTable() {
 let viewerTab = 'products';
 
 const VIEWER_HEADERS = {
-  products:
-    '<th style="width:100px">Código</th><th style="width:120px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th>Descripción</th><th style="width:70px"><span class="col-full">Costo</span><span class="col-short">C. Unit.</span></th><th style="width:50px">Gan.</th><th style="width:50px">Inst.</th><th style="width:70px">PVP</th><th style="width:60px">IVA</th><th style="width:75px">Total</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
+  products_equipos:
+    '<th style="width:100px">Código</th><th style="width:120px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th style="width:120px">Modelo</th><th>Nombre</th><th style="width:70px"><span class="col-full">Costo</span><span class="col-short">C. Unit.</span></th><th style="width:50px">Gan.</th><th style="width:50px">Inst.</th><th style="width:70px">PVP</th><th style="width:60px">IVA</th><th style="width:75px">Total</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
+  products_materiales:
+    '<th style="width:100px">Código</th><th style="width:120px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th>Nombre</th><th style="width:70px"><span class="col-full">Costo</span><span class="col-short">C. Unit.</span></th><th style="width:50px">Gan.</th><th style="width:50px">Inst.</th><th style="width:70px">PVP</th><th style="width:60px">IVA</th><th style="width:75px">Total</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
+  products_servicios:
+    '<th style="width:100px">Categoría</th><th style="width:120px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th>Nombre</th><th>Descripción</th><th style="width:95px" class="right">Costo Mensual</th><th style="width:95px" class="right">Costo Anual</th><th>Observaciones</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
   install:
     '<th style="width:80px">Código</th><th>Nombre instalación</th><th style="width:100px"><span class="col-full">Categoría</span><span class="col-short">Cat.</span></th><th style="width:100px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th style="width:80px" class="right"><span class="col-full">Costo</span><span class="col-short">C. Unit.</span></th><th>Observaciones</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
   kits: '<th style="width:100px">Código</th><th>Nombre</th><th>Componentes</th><th style="width:80px"><span class="col-full">Costo</span><span class="col-short">Total</span></th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
@@ -1536,7 +1529,16 @@ function switchViewerTab(tab) {
 
   // Set table header
   const viewerThead = $('viewerThead');
-  if (viewerThead) viewerThead.innerHTML = VIEWER_HEADERS[tab] || VIEWER_HEADERS.products;
+  if (viewerThead) {
+    if (tab === 'products') {
+      const cat = $('viewerCategory').value;
+      const headerKey =
+        cat === 'SERVICIOS' ? 'products_servicios' : cat === 'MATERIALES' ? 'products_materiales' : 'products_equipos';
+      viewerThead.innerHTML = VIEWER_HEADERS[headerKey] || VIEWER_HEADERS.products_equipos;
+    } else {
+      viewerThead.innerHTML = VIEWER_HEADERS[tab] || VIEWER_HEADERS.products_equipos;
+    }
+  }
 
   // Render content
   if (tab === 'products') renderViewerTable();
@@ -2068,7 +2070,7 @@ function getProductoDBValue(item, key) {
     case 'servicio':
       return item.description || item.producto || item.servicio || '';
     case 'descripcion':
-      return item.observations || item.descripcion || '';
+      return item.descriptionExtended || item.descripcion || '';
     case 'modelo':
       return item.model || item.modelo || '';
     case 'unidades':
@@ -2143,25 +2145,37 @@ function openEditProductoModal(type, idx) {
 
       return `<div class="${fieldClass}"><label>${c.label}</label>
         <select id="editField_subcategoria_select" onchange="toggleSubcatCustomInput('editField')" ${readonly ? 'disabled' : ''}>
+          <option value="">—</option>
           ${allSubs.map(o => `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
           <option value="__new__">+ Escribir nueva subcategoría...</option>
         </select>
         <input type="text" id="editField_subcategoria_custom" placeholder="Escribe nueva subcategoría..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
         </div>`;
     } else if (c.type === 'select' || c.key === 'categoria') {
-      const validCats = ['EQUIPOS', 'MATERIALES', 'SERVICIOS'];
-      const currentCategoryVal = String(val || '').toUpperCase();
-      const allCats = validCats.includes(currentCategoryVal)
-        ? validCats
-        : [currentCategoryVal, ...validCats].filter(Boolean);
+      let allCats;
+      if (table === 'instalaciones') {
+        const instCats = [...new Set((instalacionesCatalog || []).map(i => i.category).filter(Boolean))].sort();
+        const currentVal = String(val || '');
+        allCats = instCats.includes(currentVal) ? instCats : [currentVal, ...instCats].filter(Boolean);
+      } else {
+        const validCats = ['EQUIPOS', 'MATERIALES', 'SERVICIOS'];
+        const currentCategoryVal = String(val || '').toUpperCase();
+        allCats = validCats.includes(currentCategoryVal)
+          ? validCats
+          : [currentCategoryVal, ...validCats].filter(Boolean);
+      }
 
       return `<div class="${fieldClass}"><label>${c.label}</label>
         <select id="editField_${c.key}" ${readonly ? 'disabled' : ''}>
+          <option value="">—</option>
           ${allCats.map(o => `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
         </select></div>`;
     } else if (c.type === 'number') {
       return `<div class="${fieldClass}"><label>${c.label}</label>
         <input type="number" step="${c.step || '0.01'}" id="editField_${c.key}" value="${val}" ${readonly ? 'disabled class="field-readonly"' : ''}></div>`;
+    } else if (c.key === 'descripcion' || c.key === 'observaciones') {
+      return `<div class="${fieldClass}"><label>${c.label}</label>
+        <textarea id="editField_${c.key}" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;min-height:80px;resize:vertical;font-size:13px;font-family:inherit;" ${readonly ? 'disabled class="field-readonly"' : ''} ${c.placeholder ? 'placeholder="' + c.placeholder + '"' : ''}>${esc(val)}</textarea></div>`;
     } else {
       return `<div class="${fieldClass}"><label>${c.label}</label>
         <input type="text" id="editField_${c.key}" value="${escAttr(val)}" ${readonly ? 'disabled class="field-readonly"' : ''} ${c.placeholder ? 'placeholder="' + c.placeholder + '"' : ''}></div>`;
@@ -2319,8 +2333,9 @@ async function deleteViewerProducto(type, idx) {
     const name = (item.description || item.sourceId || '').slice(0, 60);
     const ok = await showConfirm('¿Eliminar "' + name + '"?', 'Eliminar producto', 'Eliminar');
     if (!ok) return;
-    if (item._id) {
-      const { error } = await supabase.from(item._table).delete().eq('id', item._id);
+    const targetId = item._id || item.id;
+    if (targetId) {
+      const { error } = await supabase.from(item._table).delete().eq('id', targetId);
       if (error) {
         toast('Error al eliminar: ' + error.message, 'danger');
         return;
@@ -2343,8 +2358,9 @@ async function deleteViewerProducto(type, idx) {
     const name = (item.description || item.sourceId || '').slice(0, 60);
     const ok = await showConfirm('¿Eliminar "' + name + '"?', 'Eliminar instalación', 'Eliminar');
     if (!ok) return;
-    if (item._id) {
-      const { error } = await supabase.from('instalaciones').delete().eq('id', item._id);
+    const targetId = item._id || item.id;
+    if (targetId) {
+      const { error } = await supabase.from('instalaciones').delete().eq('id', targetId);
       if (error) {
         toast('Error al eliminar: ' + error.message, 'danger');
         return;
@@ -2478,6 +2494,13 @@ async function bootApp() {
   });
   $('viewerCategory').addEventListener('change', () => {
     renderViewerSubcategories($('viewerCategory').value);
+    const cat = $('viewerCategory').value;
+    const viewerThead = $('viewerThead');
+    if (viewerThead) {
+      const headerKey =
+        cat === 'SERVICIOS' ? 'products_servicios' : cat === 'MATERIALES' ? 'products_materiales' : 'products_equipos';
+      viewerThead.innerHTML = VIEWER_HEADERS[headerKey] || VIEWER_HEADERS.products_equipos;
+    }
     renderViewerTable();
   });
   if ($('viewerSubcategory')) $('viewerSubcategory').addEventListener('change', renderViewerTable);
@@ -2570,9 +2593,7 @@ function syncPrintView() {
       });
       instHtml += '</tbody></table>';
       printInstSection.innerHTML = instHtml;
-      printInstSection.style.display = 'block';
     } else {
-      printInstSection.style.display = 'none';
       printInstSection.innerHTML = '';
     }
   }
@@ -3034,7 +3055,6 @@ window.closeSavedModal = closeSavedModal;
 window.newQuote = newQuote;
 window.saveQuote = saveQuote;
 window.loadQuoteData = loadQuoteData;
-window.doPrint = doPrint;
 window.loadDraft = loadDraft;
 window.resetCatalog = resetCatalog;
 window.addToCart = addToCart;

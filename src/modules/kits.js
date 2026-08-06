@@ -268,7 +268,7 @@ export function openKitDetail(idx) {
   </div>`;
   html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
   html +=
-    '<tr style="background:var(--border);"><th style="text-align:left;padding:6px;">#</th><th style="text-align:left;padding:6px;">Código</th><th style="text-align:left;padding:6px;">Descripción</th><th style="text-align:right;padding:6px;">Costo</th><th style="text-align:center;padding:6px;">Incluido</th></tr>';
+    '<tr style="background:var(--border);"><th style="text-align:left;padding:6px;">#</th><th style="text-align:left;padding:6px;">Código</th><th style="text-align:left;padding:6px;">Nombre</th><th style="text-align:right;padding:6px;">Costo</th><th style="text-align:center;padding:6px;">Incluido</th></tr>';
   validComps.forEach((c, ci) => {
     const item = CATALOG[c.catalogIdx];
     if (!item) return;
@@ -348,22 +348,34 @@ export function renderKitComponents(kitIdx) {
   const kit = kits[kitIdx];
   const el = $('kitComponentsList');
   if (!el) return;
-  const filtered = getFilteredKitProducts();
+
+  // Always build dropdown options from all CATALOG products so assigned items never vanish
+  const optionsHtml = CATALOG.map((item, idx) => {
+    const code = item.sourceId ? item.sourceId + ' — ' : '';
+    const desc = item.description || '';
+    const shortDesc = desc.length > 50 ? desc.slice(0, 47) + '...' : desc;
+    return {
+      idx,
+      item,
+      code,
+      label: `${esc(code)}${esc(shortDesc)} (${fmt(item.cost)})`,
+    };
+  });
+
   el.innerHTML = kit.components
     .map((c, i) => {
-      const options = filtered
-        .map(({ item, idx }) => {
+      const options = optionsHtml
+        .map(({ idx, label }) => {
           const selected = c.catalogIdx === idx ? 'selected' : '';
-          const code = item.sourceId ? item.sourceId + ' — ' : '';
-          return `<option value="${idx}" ${selected}>${esc(code)}${esc(item.description)} [${fmt(item.cost)}]</option>`;
+          return `<option value="${idx}" ${selected}>${label}</option>`;
         })
         .join('');
       const defaultSelected = c.catalogIdx === null || c.catalogIdx === undefined ? 'selected' : '';
       const qtyVal = c.qty || 1;
       return `
-    <div class="kit-comp-row" style="display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg,#f3f4f6);margin-bottom:8px;box-sizing:border-box;width:100%;">
+    <div class="kit-comp-row" style="display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:#f8fafc;margin-bottom:8px;box-sizing:border-box;width:100%;">
       <div style="flex:1;min-width:0;">
-        <select class="kit-comp-select" aria-label="Seleccionar producto componente" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:white;" onchange="updateKitComp(${kitIdx},${i},'catalogIdx',this.value)">
+        <select class="kit-comp-select" aria-label="Seleccionar producto componente" onchange="updateKitComp(${kitIdx},${i},'catalogIdx',this.value)">
           <option value="" ${defaultSelected}>Seleccionar producto...</option>
           ${options}
         </select>
@@ -429,8 +441,6 @@ export function updateKitComp(kitIdx, compIdx, field, val) {
  */
 export function filterKitProducts() {
   _kitSearchTerm = ($('kitSearchProduct')?.value || '').toLowerCase().trim();
-  const kitIdx = parseInt($('kitEditName')?.dataset?.idx);
-  if (!isNaN(kitIdx)) renderKitComponents(kitIdx);
   renderKitSearchResults();
 }
 
@@ -459,7 +469,7 @@ function renderKitSearchResults() {
         ? `<strong style="color:var(--primary);font-weight:700;">${esc(item.sourceId)}</strong> `
         : '';
       const model = item.model ? `<span style="font-size:11px;color:var(--muted);"> (${esc(item.model)})</span>` : '';
-      return `<div class="kit-search-result-producto" onclick="addKitComponentFromSearch(${idx})" style="padding:10px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;line-height:1.4;" onmouseover="this.style.background='rgba(var(--primary-rgb),0.08)'" onmouseout="this.style.background=''">
+      return `<div class="kit-search-result-producto" onclick="addKitComponentFromSearch(${idx})" style="padding:10px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);background:#ffffff;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;line-height:1.4;" onmouseover="this.style.background='rgba(var(--primary-rgb),0.08)'" onmouseout="this.style.background='#ffffff'">
         <div style="flex:1;min-width:0;word-break:break-word;">
           <div>${code}${model}</div>
           <div style="color:var(--text);margin-top:2px;font-size:12px;font-weight:500;">${esc(item.description)}</div>
