@@ -121,13 +121,13 @@ export function renderHistoryList(quotes) {
         s => `<option value="${s}" ${s === status ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`
       ).join('');
       return `
-      <div class="history-item">
-        <div class="history-item-info">
-          <div class="history-item-client">${esc(client.name || '(sin nombre)')}</div>
-          <div class="history-item-meta">${esc(q.cot_num || '(sin número)')} · ${q.productos?.length || 0} Productos · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}${vendor ? ' · <span style="color:var(--primary);font-weight:500;">' + esc(vendor) + '</span>' : ''}</div>
+      <div class="history-item history-producto">
+        <div class="history-item-info history-producto-info">
+          <div class="history-item-client history-producto-client">${esc(client.name || '(sin nombre)')}</div>
+          <div class="history-item-meta history-producto-meta">${esc(q.cot_num || '(sin número)')} · ${q.productos?.length || 0} Productos · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}${vendor ? ' · <span style="color:var(--primary);font-weight:500;">' + esc(vendor) + '</span>' : ''}</div>
         </div>
         <select class="status-select" aria-label="Cambiar estado de cotización" onchange="changeStatus('${q.id}', this.value)">${statusOptions}</select>
-        <div class="history-item-actions">
+        <div class="history-item-actions history-producto-actions">
           <button onclick="loadSaved('${q.id}')">Cargar</button>
           <button style="color:var(--danger);border-color:var(--danger);" onclick="deleteSaved('${q.id}')">Eliminar</button>
         </div>

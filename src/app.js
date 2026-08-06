@@ -371,6 +371,21 @@ function removeItem(idx) {
   saveDraft();
 }
 
+function toggleCartItemInstall(idx) {
+  const c = cart[idx];
+  if (!c) return;
+  const item = CATALOG[c.catalogIdx];
+  if (!item || !item.hasInstalacion) return;
+  c.installActive = !c.installActive;
+  if (c.installActive && (!c.techCost || c.techCost === 0)) {
+    c.techCost = 15;
+  }
+  renderCart();
+  syncPrintView();
+  saveDraft();
+}
+window.toggleCartItemInstall = toggleCartItemInstall;
+
 function updateItemMargin(idx, val) {
   const parsed = parseFloat(val);
   cart[idx].customMargin = isNaN(parsed) ? null : parsed;
@@ -651,8 +666,8 @@ function renderCart() {
             : '<span style="color:var(--muted);">—</span>';
         const installCell = it.hasInstalacion
           ? compInstallActive
-            ? `<span class="install-active">🟩 ${fmt(compPricing.instalacionPrice)}</span>`
-            : '<span class="install-pending">⬛</span>'
+            ? `<button type="button" class="install-toggle-btn install-btn-active" onclick="toggleKitCompInstall(${idx}, ${compIdx})" title="Desactivar instalación">🟩 SI (${fmt(compPricing.instalacionPrice)})</button>`
+            : `<button type="button" class="install-toggle-btn install-btn-inactive" onclick="toggleKitCompInstall(${idx}, ${compIdx})" title="Activar instalación">⬜ NO</button>`
           : '<span style="color:var(--muted);">—</span>';
         html += `<tr class="kit-row">
           <td class="producto-num">${rowNum}</td>
@@ -702,8 +717,8 @@ function renderCart() {
 
     const installCell = item.hasInstalacion
       ? c.installActive
-        ? `<span class="install-active">🟩 ${fmt(pricing.instalacionPrice)}</span>`
-        : '<span class="install-pending">⬛</span>'
+        ? `<button type="button" class="install-toggle-btn install-btn-active" onclick="toggleCartItemInstall(${idx})" title="Desactivar instalación">🟩 SI (${fmt(pricing.instalacionPrice)})</button>`
+        : `<button type="button" class="install-toggle-btn install-btn-inactive" onclick="toggleCartItemInstall(${idx})" title="Activar instalación">⬜ NO</button>`
       : '<span style="color:var(--muted);">—</span>';
 
     html += `<tr>
@@ -804,7 +819,7 @@ function renderMarginConfig() {
           : `updateItemMargin(${kitIdx}, this.value)`;
         supplierHtml += `<div class="supplier-group-producto${hasGanancia ? ' sgi-active' : ''}${hasCustom ? ' sgi-custom' : ''}">`;
         supplierHtml += `<span class="sgi-code">${item.sourceId || ''}</span>`;
-        supplierHtml += `<span class="sgi-desc">${esc(item.description.slice(0, 35))}${item.description.length > 35 ? '…' : ''}${isKit ? ' <small style="color:var(--muted);">(kit)</small>' : ''}</span>`;
+        supplierHtml += `<span class="sgi-desc">${esc(item.description)}${isKit ? ' <small style="color:var(--muted);">(kit)</small>' : ''}</span>`;
         if (isSinProveedor && hasGanancia) {
           supplierHtml += `<div class="supplier-margin-input sgi-margin-inline"><input type="number" min="0" max="100" step="1" value="${effectiveMargin}" aria-label="Margen de proveedor individual" oninput="${marginHandler}"><span>%</span></div>`;
         }
@@ -2530,6 +2545,72 @@ function syncPrintView() {
       printNotesEl.style.display = 'block';
     } else {
       printNotesEl.style.display = 'none';
+    }
+  }
+
+  // Sync print-only applied installations section
+  const printInstSection = $('printInstalacionesSection');
+  if (printInstSection) {
+    const installServices = cart.filter(c => c.isInstallService);
+    const itemInstalls = [];
+    cart.forEach(c => {
+      if (c.isKit) {
+        (c.kitComponents || []).forEach(comp => {
+          if (comp.installActive) {
+            const item = CATALOG[comp.catalogIdx];
+            if (item) {
+              const pricing = calcItemPrice(item, {
+                supplierMargin: comp.customMargin ?? getSupplierMargin(item.supplier),
+                installMargin: installationMarginPct,
+                techCost: comp.techCost,
+                installActive: true,
+              });
+              itemInstalls.push({
+                desc: 'Instalación: ' + (item.description || item.sourceId),
+                qty: (comp.qty || 1) * (c.qty || 1),
+                total: pricing.instalacionPrice * (comp.qty || 1) * (c.qty || 1),
+              });
+            }
+          }
+        });
+      } else if (c.installActive && !c.isInstallService) {
+        const item = CATALOG[c.catalogIdx];
+        if (item) {
+          const pricing = calcItemPrice(item, {
+            supplierMargin: c.customMargin ?? getSupplierMargin(item.supplier),
+            installMargin: installationMarginPct,
+            techCost: c.techCost,
+            installActive: true,
+          });
+          itemInstalls.push({
+            desc: 'Instalación: ' + (item.description || item.sourceId),
+            qty: c.qty || 1,
+            total: pricing.instalacionPrice * (c.qty || 1),
+          });
+        }
+      }
+    });
+
+    const hasInstalls = installServices.length > 0 || itemInstalls.length > 0;
+    if (hasInstalls) {
+      let instHtml = '<div class="print-instalaciones-title">🔧 SERVICIOS DE INSTALACIÓN INCLUIDOS</div>';
+      instHtml +=
+        '<table class="productos-table print-inst-table"><thead><tr><th>#</th><th>Servicio / Descripción de Instalación</th><th class="center">Cant</th><th class="right">Precio Total</th></tr></thead><tbody>';
+      let rowNum = 1;
+      installServices.forEach(s => {
+        const pricing = calcInstallServicePrice(s, s.customMargin ?? DEFAULT_INSTALL_MARGIN);
+        const total = pricing.total * s.qty;
+        instHtml += `<tr><td class="producto-num">${rowNum++}</td><td><strong>${esc(s.description)}</strong>${s.category || s.subcategory ? ' <small style="color:#64748b;">(' + esc(s.category || '') + (s.subcategory ? ' › ' + esc(s.subcategory) : '') + ')</small>' : ''}</td><td class="center">${s.qty}</td><td class="right"><strong>${fmt(total)}</strong></td></tr>`;
+      });
+      itemInstalls.forEach(inst => {
+        instHtml += `<tr><td class="producto-num">${rowNum++}</td><td>${esc(inst.desc)}</td><td class="center">${inst.qty}</td><td class="right"><strong>${fmt(inst.total)}</strong></td></tr>`;
+      });
+      instHtml += '</tbody></table>';
+      printInstSection.innerHTML = instHtml;
+      printInstSection.style.display = 'block';
+    } else {
+      printInstSection.style.display = 'none';
+      printInstSection.innerHTML = '';
     }
   }
   const clientName = $('clientName').value.trim();
