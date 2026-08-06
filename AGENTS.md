@@ -138,6 +138,8 @@ Cotizador/
     - **Eliminación de Instalaciones**: Corrección de mapeo de IDs (`_id` / `id`) garantizando el borrado atómico en Supabase y refresco inmediato del catálogo.
     - **Edición de Kits**: Dropdowns de componentes estilizados con delimitación de texto y etiquetas limpias `($0.00)`.
     - **Diseño de Barra Superior y Separadores**: Botones de la barra superior uniformes con efecto hover sutil; separadores de kits y productos diferenciados en pantalla e impresión PDF.
+    - **Cálculo de Totales en Vista Previa de Plantillas**: Corrección en el cálculo de `grandTotal` en `openTemplatePreview` para incluir el costo total de los servicios de instalación (`totalInstallServicesPvp`), haciendo que el total del modal coincida al 100% con el total del carrito al cargar la plantilla.
+    - **Guardar como Plantilla**: Corrección en `saveCurrentAsTemplate()` enviando la propiedad `productos` en lugar de la clave obsoleta `items`, permitiendo guardar correctamente tanto productos regulares como servicios de instalación en Supabase.
 
 ### Flujo de precios (confirmado)
 

@@ -53,7 +53,7 @@ async function saveTemplate(tpl, session) {
     client_type: tpl.clientType || 'mediana',
     industry: tpl.industry || 'comercio',
     client: tpl.client || {},
-    productos: tpl.productos || [],
+    productos: tpl.productos || tpl.items || [],
     supplier_margins: tpl.supplierMargins || {},
     install_margin: tpl.installMargin ?? 35,
     is_sample: tpl.isSample ?? false,

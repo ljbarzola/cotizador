@@ -12,7 +12,7 @@ import {
   setInstallationMarginPct,
 } from '../state.js';
 import { $, fmt, esc, toast, showConfirm } from '../utils.js';
-import { calcItemPrice, getSupplierMargin, marginBadge } from './helpers.js';
+import { calcItemPrice, getSupplierMargin, marginBadge, calcInstallServicePrice } from './helpers.js';
 import { getAllTemplates, getTemplate, saveTemplate, deleteTemplate } from './quote.js';
 
 let _currentPreviewTemplateId = null;
@@ -339,6 +339,7 @@ export async function openTemplatePreview(id) {
   html += `</tbody></table>`;
 
   // Installation services section
+  let totalInstallServicesPvp = 0;
   if (installItems.length > 0) {
     html += `<div class="tpl-preview-install-section">
       <div class="tpl-preview-install-title">🔧 Servicios de Instalación</div>
@@ -349,24 +350,30 @@ export async function openTemplatePreview(id) {
     installItems.forEach(item => {
       const svcName = item.description || item.sourceId || 'Servicio';
       const svcQty = item.qty || 1;
-      const svcCost = item.cost || 0;
+      const svcMargin = item.customMargin ?? tplInstallMargin;
+      const pricing = calcInstallServicePrice(item, svcMargin);
+      const svcTotal = pricing.total * svcQty;
+      totalInstallServicesPvp += svcTotal;
       html += `<tr>
         <td>${instRow++}</td>
         <td>${esc(svcName)}</td>
         <td>${svcQty}</td>
-        <td>${fmt(svcCost * svcQty)}</td>
+        <td>${fmt(svcTotal)}</td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
   }
 
-  const grandTotal = totalEquipos + totalIVA + totalInstCost + totalInstProfit;
+  const grandTotal = totalEquipos + totalIVA + totalInstCost + totalInstProfit + totalInstallServicesPvp;
   html += `<div class="tpl-preview-totals">
     <div class="tpl-preview-total-row"><span>Equipos/Materiales:</span><span>${fmt(totalEquipos)}</span></div>
     <div class="tpl-preview-total-row"><span>IVA (15%):</span><span>${fmt(totalIVA)}</span></div>`;
-  if (totalInstCost > 0) {
-    html += `<div class="tpl-preview-total-row"><span>Costo instalación:</span><span>${fmt(totalInstCost)}</span></div>`;
+  if (totalInstCost > 0 || totalInstProfit > 0) {
+    html += `<div class="tpl-preview-total-row"><span>Costo instalación (técnica):</span><span>${fmt(totalInstCost)}</span></div>`;
     html += `<div class="tpl-preview-total-row"><span>Margen instalación (${tplInstallMargin}%):</span><span>${fmt(totalInstProfit)}</span></div>`;
+  }
+  if (totalInstallServicesPvp > 0) {
+    html += `<div class="tpl-preview-total-row"><span>Servicios de instalación:</span><span>${fmt(totalInstallServicesPvp)}</span></div>`;
   }
   html += `<div class="tpl-preview-total-row tpl-preview-total-final"><span>Total:</span><span>${fmt(grandTotal)}</span></div>
   </div>`;

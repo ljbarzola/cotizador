@@ -3001,16 +3001,35 @@ async function saveCurrentAsTemplate() {
   const result = await showSaveTemplateModal(clientName + ' - ');
   if (!result || !result.name) return;
 
-  const items = cart
-    .map(c => ({
-      sourceId: CATALOG[c.catalogIdx]?.sourceId || '',
-      qty: c.qty,
-      installActive: c.installActive,
-      techCost: c.techCost,
-    }))
-    .filter(it => it.sourceId);
+  const productos = cart
+    .map(c => {
+      if (c.isInstallService) {
+        return {
+          isInstallService: true,
+          sourceId: c.id || c.sourceId || '',
+          id: c.id,
+          description: c.description,
+          category: c.category || 'INSTALACIONES',
+          subcategory: c.subcategory || '',
+          cost: c.cost,
+          qty: c.qty,
+          customCost: c.customCost ?? null,
+          customMargin: c.customMargin ?? null,
+        };
+      }
+      const catItem = CATALOG[c.catalogIdx];
+      if (!catItem) return null;
+      return {
+        sourceId: catItem.sourceId || '',
+        qty: c.qty,
+        installActive: c.installActive || false,
+        techCost: c.techCost || 0,
+        customMargin: c.customMargin ?? null,
+      };
+    })
+    .filter(Boolean);
 
-  if (!items.length) {
+  if (!productos.length) {
     toast('No se pudieron resolver los productos', 'warning');
     return;
   }
@@ -3028,15 +3047,20 @@ async function saveCurrentAsTemplate() {
       phone: $('clientPhone').value.trim(),
       email: $('clientEmail').value.trim(),
     },
-    items,
+    productos,
     supplierMargins: { ...supplierMargins },
     installMargin: installationMarginPct,
     isTemplate: true,
   };
 
-  await window.saveTemplate(tpl, currentSession);
-  toast('Plantilla guardada: ' + result.name, 'success');
-  renderTemplateList();
+  try {
+    await window.saveTemplate(tpl, currentSession);
+    toast('✓ Plantilla guardada: ' + result.name, 'success');
+    if (window.renderTemplateList) window.renderTemplateList();
+  } catch (e) {
+    console.error('[SAVE TEMPLATE] Error:', e);
+    toast('Error al guardar plantilla: ' + e.message, 'danger');
+  }
 }
 
 // === EXPORTS ===
