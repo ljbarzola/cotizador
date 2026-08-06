@@ -215,11 +215,17 @@ function renderCatalog() {
         ? '<div class="cost">' + fmt(item.annualCost) + '/año → ' + fmt(item.cost) + '/mes</div>'
         : '<div class="cost">costo ' + fmt(item.cost) + '</div>';
 
+      const nl2br = s => esc(s || '').replace(/\n/g, '<br>');
+      const extDescHtml = item.descriptionExtended
+        ? `<div class="cat-producto-extended-desc">${nl2br(item.descriptionExtended)}</div>`
+        : '';
+
       return `
       <div class="cat-producto">
         <div class="cat-producto-info" onclick="openProductDetail(${realIdx})" style="cursor:pointer;">
           <div class="cat-producto-code">${code} ${modelLabel}</div>
           <div class="cat-producto-desc">${esc(item.description)}</div>
+          ${extDescHtml}
           <div class="cat-producto-meta">
             ${subcatLabel}
             ${unitsLabel}
@@ -377,9 +383,6 @@ function toggleCartItemInstall(idx) {
   const item = CATALOG[c.catalogIdx];
   if (!item || !item.hasInstalacion) return;
   c.installActive = !c.installActive;
-  if (c.installActive && (!c.techCost || c.techCost === 0)) {
-    c.techCost = 15;
-  }
   renderCart();
   syncPrintView();
   saveDraft();
@@ -666,13 +669,14 @@ function renderCart() {
             : '<span style="color:var(--muted);">—</span>';
         const installCell = it.hasInstalacion
           ? compInstallActive
-            ? `<button type="button" class="install-toggle-btn install-btn-active" onclick="toggleKitCompInstall(${idx}, ${compIdx})" title="Instalación activa (click para cambiar)">🔧</button>`
-            : `<button type="button" class="install-toggle-btn install-btn-inactive" onclick="toggleKitCompInstall(${idx}, ${compIdx})" title="Sin instalación (click para cambiar)">⚪</button>`
+            ? `<button type="button" class="install-sq-btn install-sq-active" onclick="toggleKitCompInstall(${idx}, ${compIdx})" title="Instalación requerida (activa)"></button>`
+            : `<button type="button" class="install-sq-btn install-sq-inactive" onclick="toggleKitCompInstall(${idx}, ${compIdx})" title="Sin instalación"></button>`
           : '<span style="color:var(--muted);">—</span>';
         html += `<tr class="kit-row">
           <td class="producto-num">${rowNum}</td>
           <td class="producto-desc producto-desc-click" onclick="openCartItemDetail(${idx})" title="Ver detalle">
             <span class="producto-desc-text">${esc(it.description)}</span>
+            ${it.descriptionExtended ? `<div class="producto-desc-extended">${esc(it.descriptionExtended).replace(/\n/g, '<br>')}</div>` : ''}
             <div class="producto-badges">${badges}</div>
             <small>${it.sourceId || ''}${it.supplier ? ' · ' + it.supplier : ''}</small>
           </td>
@@ -717,14 +721,15 @@ function renderCart() {
 
     const installCell = item.hasInstalacion
       ? c.installActive
-        ? `<button type="button" class="install-toggle-btn install-btn-active" onclick="toggleCartItemInstall(${idx})" title="Instalación activa (click para cambiar)">🔧</button>`
-        : `<button type="button" class="install-toggle-btn install-btn-inactive" onclick="toggleCartItemInstall(${idx})" title="Sin instalación (click para cambiar)">⚪</button>`
+        ? `<button type="button" class="install-sq-btn install-sq-active" onclick="toggleCartItemInstall(${idx})" title="Instalación requerida (activa)"></button>`
+        : `<button type="button" class="install-sq-btn install-sq-inactive" onclick="toggleCartItemInstall(${idx})" title="Sin instalación"></button>`
       : '<span style="color:var(--muted);">—</span>';
 
     html += `<tr>
       <td class="producto-num">${rowNum}</td>
       <td class="producto-desc producto-desc-click" onclick="openCartItemDetail(${idx})" title="Ver detalle">
         <span class="producto-desc-text">${esc(item.description)}</span>
+        ${item.descriptionExtended ? `<div class="producto-desc-extended">${esc(item.descriptionExtended).replace(/\n/g, '<br>')}</div>` : ''}
         <div class="producto-badges">${badges}</div>
         <small>${item.sourceId || ''}${item.supplier ? ' · ' + item.supplier : ''}</small>
       </td>
@@ -873,7 +878,8 @@ function renderMarginConfig() {
       installHtml += `</div>`;
       installHtml += `<div class="install-config-fields">`;
       installHtml += `<div class="install-field field-cant"><label>Cant</label><input type="number" min="1" step="1" value="${c.qty}" aria-label="Cantidad de servicio" onchange="updateInstallServiceQty(${cartIdx}, this.value)"></div>`;
-      installHtml += `<div class="install-field field-cost"><label>Costo ($)</label><input type="number" min="0" step="0.01" value="${c.customCost ?? c.cost}" aria-label="Costo del servicio" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div>`;
+      const costVal = Number(c.customCost ?? c.cost).toFixed(2);
+      installHtml += `<div class="install-field field-cost"><label>Costo ($)</label><div class="cost-input-wrapper"><span class="input-currency">$</span><input type="number" min="0" step="0.01" value="${costVal}" aria-label="Costo del servicio" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div></div>`;
       installHtml += `<div class="install-field field-margin"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${c.customMargin ?? DEFAULT_INSTALL_MARGIN}" aria-label="Margen de ganancia en porcentaje" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
       installHtml += `<div class="install-field field-ganancia"><label>Ganancia</label><span class="install-price">${fmt(pricing.ganancia * c.qty)}</span></div>`;
       installHtml += `<div class="install-field field-total"><label>Total</label><span class="install-price install-total">${fmt(total)}</span></div>`;
@@ -2552,58 +2558,15 @@ function syncPrintView() {
   const printInstSection = $('printInstalacionesSection');
   if (printInstSection) {
     const installServices = cart.filter(c => c.isInstallService);
-    const itemInstalls = [];
-    cart.forEach(c => {
-      if (c.isKit) {
-        (c.kitComponents || []).forEach(comp => {
-          if (comp.installActive) {
-            const item = CATALOG[comp.catalogIdx];
-            if (item) {
-              const pricing = calcItemPrice(item, {
-                supplierMargin: comp.customMargin ?? getSupplierMargin(item.supplier),
-                installMargin: installationMarginPct,
-                techCost: comp.techCost,
-                installActive: true,
-              });
-              itemInstalls.push({
-                desc: 'Instalación: ' + (item.description || item.sourceId),
-                qty: (comp.qty || 1) * (c.qty || 1),
-                total: pricing.instalacionPrice * (comp.qty || 1) * (c.qty || 1),
-              });
-            }
-          }
-        });
-      } else if (c.installActive && !c.isInstallService) {
-        const item = CATALOG[c.catalogIdx];
-        if (item) {
-          const pricing = calcItemPrice(item, {
-            supplierMargin: c.customMargin ?? getSupplierMargin(item.supplier),
-            installMargin: installationMarginPct,
-            techCost: c.techCost,
-            installActive: true,
-          });
-          itemInstalls.push({
-            desc: 'Instalación: ' + (item.description || item.sourceId),
-            qty: c.qty || 1,
-            total: pricing.instalacionPrice * (c.qty || 1),
-          });
-        }
-      }
-    });
-
-    const hasInstalls = installServices.length > 0 || itemInstalls.length > 0;
-    if (hasInstalls) {
-      let instHtml = '<div class="print-instalaciones-title">🔧 SERVICIOS DE INSTALACIÓN INCLUIDOS</div>';
+    if (installServices.length > 0) {
+      let instHtml = '<div class="print-instalaciones-title">SERVICIOS DE INSTALACIÓN</div>';
       instHtml +=
-        '<table class="productos-table print-inst-table"><thead><tr><th>#</th><th>Servicio / Descripción de Instalación</th><th class="center">Cant</th><th class="right">Precio Total</th></tr></thead><tbody>';
+        '<table class="productos-table print-inst-table"><thead><tr><th>#</th><th>Servicio / Descripción</th><th class="center">Cant</th><th class="right">Precio Total</th></tr></thead><tbody>';
       let rowNum = 1;
       installServices.forEach(s => {
         const pricing = calcInstallServicePrice(s, s.customMargin ?? DEFAULT_INSTALL_MARGIN);
         const total = pricing.total * s.qty;
         instHtml += `<tr><td class="producto-num">${rowNum++}</td><td><strong>${esc(s.description)}</strong>${s.category || s.subcategory ? ' <small style="color:#64748b;">(' + esc(s.category || '') + (s.subcategory ? ' › ' + esc(s.subcategory) : '') + ')</small>' : ''}</td><td class="center">${s.qty}</td><td class="right"><strong>${fmt(total)}</strong></td></tr>`;
-      });
-      itemInstalls.forEach(inst => {
-        instHtml += `<tr><td class="producto-num">${rowNum++}</td><td>${esc(inst.desc)}</td><td class="center">${inst.qty}</td><td class="right"><strong>${fmt(inst.total)}</strong></td></tr>`;
       });
       instHtml += '</tbody></table>';
       printInstSection.innerHTML = instHtml;

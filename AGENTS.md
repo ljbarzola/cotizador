@@ -126,10 +126,10 @@ Cotizador/
 27. **Visor de catálogo con edición e interactividad**: El catálogo (modal) tiene 3 pestañas: Productos, Instalaciones, Kits. Cada pestaña muestra una tabla con botones ✏️ (editar) y ✕ (eliminar) lado a lado en cada fila. Botones `[+ Nuevo]` en la barra superior abren modales dedicados (`createProductModal` con selección previa de categoría obligatoria y subcategoría libre, y `createInstallModal` con categoría/subcategoría opcionales). Redimensión de columnas arrastrando bordes. Carga inteligente de datos en modales vía `getProductoDBValue`. Estructura visual de edición agrupada por secciones. Actualización en tiempo real con `setCatalog(updated)` sin recargar pantalla.
 28. **Gestión de estado centralizado**: `setCatalog(c)` muta `CATALOG` en lugar en `state.js` para que todos los módulos y listas se refresquen al instante.
 29. **Mejoras de Impresión PDF e Interacción de Instalaciones**:
-    - **Botón interactivo de instalación**: La columna `Inst.` en la tabla de cotización es un botón directo que cambia entre Verde (SI / activada) y Gris (NO / inactiva) al hacer clic. Mantiene su color en el PDF impreso (`-webkit-print-color-adjust: exact`).
-    - **Sección de Instalaciones en PDF**: En la impresión PDF se genera una tabla limpia con los servicios de instalación aplicados y sus precios totales al público, sin revelar costos internos ni márgenes de ganancia.
-    - **Visualización completa de producto**: En la sección de ganancia por proveedores se muestra el nombre/descripción del producto completo sin truncar, ocupando el ancho disponible y envolviendo en múltiples líneas de ser necesario.
-    - **Tipografía ampliada en PDF**: Aumento de tamaño de fuente para los datos del cliente y la tabla de productos en la versión impresa/PDF para mayor legibilidad.
+    - **Botón indicador de instalación**: La columna `Inst.` en la tabla de cotización es un botón cuadrado interactivo (`🟩` Verde para requerida / `⬜` Gris para inactiva) que funciona como un flag/indicador visual sin alterar los costos de la fila del producto. Mantiene su color cuadrado en el PDF impreso.
+    - **Sección SERVICIOS DE INSTALACIÓN en PDF**: En el PDF impreso del cliente se genera la tabla titulada **SERVICIOS DE INSTALACIÓN** que mapea la sección interna **🔧 Ganancia por instalación** del cotizador, mostrando la lista limpia (`# | Servicio / Descripción | Cant | Precio Total`) con precios públicos al cliente, sin revelar costos internos ni ganancias.
+    - **Visualización de Servicios**: Los servicios muestran tanto su Nombre corto (`servicio`) como su Descripción extendida (`descripcion`) formateada en listas tanto en el panel de catálogo como en la tabla de cotización.
+    - **Formato de Costo**: Todos los inputs de costo y celdas muestran el prefijo `$` y formato decimal con centavos (`.00`).
 
 ### Flujo de precios (confirmado)
 

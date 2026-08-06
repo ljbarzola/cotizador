@@ -855,6 +855,14 @@ textarea {
   word-break: break-word;
   line-height: 1.3;
 }
+.cat-producto-extended-desc,
+.producto-desc-extended {
+  font-size: 11px;
+  color: #4b5563;
+  margin-top: 3px;
+  line-height: 1.35;
+  white-space: pre-line;
+}
 .productos-table .producto-desc small {
   display: block;
   color: var(--muted);
@@ -4395,7 +4403,63 @@ th:hover .col-resizer {
   color: var(--primary);
 }
 
-/* === INTERACTIVE INSTALLATION TOGGLE BUTTON === */
+/* === INTERACTIVE INSTALLATION SQUARE TOGGLE BUTTON === */
+.install-sq-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: inline-block;
+  vertical-align: middle;
+  transition: all 0.15s ease;
+  user-select: none;
+  border: 1px solid transparent;
+  padding: 0;
+  line-height: 1;
+}
+
+.install-sq-active {
+  background-color: #10b981 !important;
+  border-color: #059669 !important;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.3);
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+.install-sq-active:hover {
+  background-color: #059669 !important;
+}
+
+.install-sq-inactive {
+  background-color: #e5e7eb !important;
+  border-color: #9ca3af !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+.install-sq-inactive:hover {
+  background-color: #d1d5db !important;
+}
+
+/* Cost input wrapper with $ symbol */
+.cost-input-wrapper {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+.cost-input-wrapper .input-currency {
+  position: absolute;
+  left: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  pointer-events: none;
+  z-index: 1;
+}
+.cost-input-wrapper input {
+  padding-left: 20px !important;
+  width: 100%;
+}
+
 .install-toggle-btn {
   display: inline-flex;
   align-items: center;
@@ -4456,6 +4520,22 @@ th:hover .col-resizer {
 }
 
 @media print {
+  .install-sq-btn {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 2px !important;
+    border-width: 1px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .install-sq-active {
+    background-color: #10b981 !important;
+    border-color: #059669 !important;
+  }
+  .install-sq-inactive {
+    background-color: #e5e7eb !important;
+    border-color: #9ca3af !important;
+  }
   .install-toggle-btn {
     border-width: 1px !important;
     padding: 2px 6px !important;

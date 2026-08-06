@@ -148,7 +148,7 @@ async function generateDefaultTemplates(catalog) {
           sourceId: item.sourceId,
           qty: 2,
           installActive: !!item.hasInstalacion,
-          techCost: item.hasInstalacion ? 15 : 0,
+          techCost: 0,
         });
       }
     }
@@ -160,11 +160,21 @@ async function generateDefaultTemplates(catalog) {
             sourceId: item.sourceId,
             qty: 2,
             installActive: !!item.hasInstalacion,
-            techCost: item.hasInstalacion ? 15 : 0,
+            techCost: 0,
           });
         }
       }
     }
+    found.push({
+      isInstallService: true,
+      id: 'INST-001',
+      description: 'Servicio de Instalación y Configuración',
+      category: 'INSTALACIONES',
+      subcategory: 'MANO DE OBRA',
+      cost: 50,
+      qty: 1,
+      customMargin: 35,
+    });
     return found;
   }
 
