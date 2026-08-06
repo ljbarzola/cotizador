@@ -221,9 +221,9 @@ export async function renderTemplateList() {
       const isSample = t.isSample;
       const canDelete = true;
       const creatorInfo = t.createdByName
-        ? `<span class="tpl-badge tpl-badge-items" style="background:#f3f4f6;color:#374151;"> por ${esc(t.createdByName)}</span>`
+        ? `<span class="tpl-badge tpl-badge-productos" style="background:#f3f4f6;color:#374151;"> por ${esc(t.createdByName)}</span>`
         : '';
-      const resolvedCount = (t.items || []).filter(ti => CATALOG.some(c => c.sourceId === ti.sourceId)).length;
+      const resolvedCount = (t.productos || []).filter(ti => CATALOG.some(c => c.sourceId === ti.sourceId)).length;
       const countLabel = `${resolvedCount} productos`;
       return `
     <div class="tpl-card" onclick="openTemplatePreview('${t.id}')">
@@ -240,8 +240,8 @@ export async function renderTemplateList() {
       <div class="tpl-card-meta">
         <span class="tpl-badge tpl-badge-type">${typeLabels[t.clientType] || t.clientType}</span>
         <span class="tpl-badge tpl-badge-industry">${industryLabels[t.industry] || t.industry}</span>
-        <span class="tpl-badge tpl-badge-items">${countLabel}</span>
-        ${isSample ? '<span class="tpl-badge tpl-badge-items" style="background:#e0e7ff;color:#3730a3;">Ejemplo</span>' : '<span class="tpl-badge tpl-badge-custom">Personalizada</span>'}
+        <span class="tpl-badge tpl-badge-productos">${countLabel}</span>
+        ${isSample ? '<span class="tpl-badge tpl-badge-productos" style="background:#e0e7ff;color:#3730a3;">Ejemplo</span>' : '<span class="tpl-badge tpl-badge-custom">Personalizada</span>'}
         ${creatorInfo}
       </div>
     </div>`;
@@ -302,7 +302,7 @@ export async function openTemplatePreview(id) {
   let totalInstCost = 0;
   let totalInstProfit = 0;
 
-  tpl.items.forEach((item, i) => {
+  tpl.productos.forEach((item, i) => {
     const catItem = CATALOG.find(c => c.sourceId === item.sourceId);
     if (!catItem) return;
     const qty = item.qty || 1;
@@ -400,7 +400,7 @@ export async function loadTemplateDirect(id) {
 
   // Resolve template items to cart (skip missing silently)
   cart.length = 0;
-  for (const ti of tpl.items) {
+  for (const ti of tpl.productos) {
     const catIdx = CATALOG.findIndex(c => c.sourceId === ti.sourceId);
     if (catIdx >= 0) {
       cart.push({

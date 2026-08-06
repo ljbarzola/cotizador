@@ -21,7 +21,7 @@ import {
   setHistoryQuotesCache,
 } from '../state.js';
 import supabase from '../lib/supabase.js';
-import { $, fmt, esc, toast, showConfirm, isAdmin, generateCotNumber } from '../utils.js';
+import { $, fmt, esc, toast, showConfirm, isAdmin, generateNextCotNumberFromDB } from '../utils.js';
 import { calcItemPrice } from './helpers.js';
 
 /**
@@ -32,7 +32,7 @@ import { calcItemPrice } from './helpers.js';
  */
 export function quoteTotal(q) {
   let sum = 0;
-  (q.items || []).forEach(c => {
+  (q.productos || []).forEach(c => {
     if (c.isKit) {
       (c.kitComponents || []).forEach(cc => {
         if (cc.catalogIdx >= 0 && cc.catalogIdx < CATALOG.length) {
@@ -124,7 +124,7 @@ export function renderHistoryList(quotes) {
       <div class="history-item">
         <div class="history-item-info">
           <div class="history-item-client">${esc(client.name || '(sin nombre)')}</div>
-          <div class="history-item-meta">${esc(q.cot_num || '(sin número)')} · ${q.items?.length || 0} ítems · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}${vendor ? ' · <span style="color:var(--primary);font-weight:500;">' + esc(vendor) + '</span>' : ''}</div>
+          <div class="history-item-meta">${esc(q.cot_num || '(sin número)')} · ${q.productos?.length || 0} Productos · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}${vendor ? ' · <span style="color:var(--primary);font-weight:500;">' + esc(vendor) + '</span>' : ''}</div>
         </div>
         <select class="status-select" aria-label="Cambiar estado de cotización" onchange="changeStatus('${q.id}', this.value)">${statusOptions}</select>
         <div class="history-item-actions">
@@ -213,7 +213,7 @@ export async function loadSaved(id) {
       client: data.client,
       supplierMargins: data.supplier_margins,
       installMargin: data.install_margin,
-      items: data.items,
+      productos: data.productos,
     });
     closeSavedModal();
     toast('✓ Cotización cargada: ' + data.cot_num);
@@ -277,7 +277,7 @@ export async function newQuote() {
     'clientPhone',
     'clientEmail',
   ].forEach(id => ($(id).value = ''));
-  $('cotNum').value = generateCotNumber();
+  $('cotNum').value = await generateNextCotNumberFromDB();
   $('cotDate').value = new Date().toISOString().split('T')[0];
   window.renderCatalog?.();
   window.renderCart?.();

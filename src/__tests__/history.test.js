@@ -28,14 +28,14 @@ describe('getSupplierMargin() - supplier margin lookup', () => {
 // quoteTotal() tests
 describe('quoteTotal() - quote total calculation', () => {
   it('calculates total for single item', () => {
-    const q = { items: [{ catalogIdx: 0, qty: 1 }], supplierMargins: {} };
+    const q = { productos: [{ catalogIdx: 0, qty: 1 }], supplierMargins: {} };
     const total = quoteTotal(q);
     expect(total).toBeGreaterThan(0);
   });
 
   it('calculates total for multiple items', () => {
     const q = {
-      items: [
+      productos: [
         { catalogIdx: 0, qty: 2 },
         { catalogIdx: 1, qty: 1 },
       ],
@@ -46,7 +46,7 @@ describe('quoteTotal() - quote total calculation', () => {
   });
 
   it('handles empty items', () => {
-    const q = { items: [] };
+    const q = { productos: [] };
     expect(quoteTotal(q)).toBe(0);
   });
 
@@ -56,19 +56,19 @@ describe('quoteTotal() - quote total calculation', () => {
   });
 
   it('skips items with invalid catalogIdx', () => {
-    const q = { items: [{ catalogIdx: 99, qty: 1 }] };
+    const q = { productos: [{ catalogIdx: 99, qty: 1 }] };
     expect(quoteTotal(q)).toBe(0);
   });
 
   it('applies custom margin per item', () => {
-    const q = { items: [{ catalogIdx: 0, qty: 1, customMargin: 25 }], supplierMargins: {} };
+    const q = { productos: [{ catalogIdx: 0, qty: 1, customMargin: 25 }], supplierMargins: {} };
     const total = quoteTotal(q);
     expect(total).toBeGreaterThan(0);
   });
 
   it('includes installation cost when active', () => {
     const q = {
-      items: [{ catalogIdx: 2, qty: 1, installActive: true, techCost: 100 }],
+      productos: [{ catalogIdx: 2, qty: 1, installActive: true, techCost: 100 }],
       supplierMargins: {},
     };
     const total = quoteTotal(q);
@@ -77,7 +77,7 @@ describe('quoteTotal() - quote total calculation', () => {
 
   it('no installation cost when inactive', () => {
     const q = {
-      items: [{ catalogIdx: 2, qty: 1, installActive: false, techCost: 100 }],
+      productos: [{ catalogIdx: 2, qty: 1, installActive: false, techCost: 100 }],
       supplierMargins: {},
     };
     const total = quoteTotal(q);

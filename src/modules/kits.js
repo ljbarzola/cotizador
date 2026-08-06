@@ -175,19 +175,19 @@ export function generateDefaultKits() {
 }
 
 /**
- * Switch between Items and Kits tabs in the catalog.
- * @param {'items'|'kits'} tab - Tab to activate
+ * Switch between Productos and Kits tabs in the catalog.
+ * @param {'productos'|'kits'} tab - Tab to activate
  * @returns {void}
  */
 export function switchCatalogTab(tab) {
   document.querySelectorAll('.catalog-tab').forEach(t => t.classList.remove('active'));
-  if (tab === 'items') {
+  if (tab === 'productos') {
     document.querySelector('.catalog-tab:first-child').classList.add('active');
-    $('catalogItemsTab').style.display = '';
+    $('catalogProductosTab').style.display = '';
     $('catalogKitsTab').style.display = 'none';
   } else {
     document.querySelector('.catalog-tab:last-child').classList.add('active');
-    $('catalogItemsTab').style.display = 'none';
+    $('catalogProductosTab').style.display = 'none';
     $('catalogKitsTab').style.display = '';
     renderKitsCatalog();
   }
@@ -236,12 +236,12 @@ export function renderKitsCatalog() {
         .filter(Boolean);
       const extra = validComps.length > 3 ? ` +${validComps.length - 3} más` : '';
       const preview = compNames.join(', ') + extra || 'Sin componentes';
-      return `<div class="catalog-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
+      return `<div class="catalog-producto" style="flex-direction:column;align-items:flex-start;gap:6px;">
       <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
         <div style="cursor:pointer;flex:1;min-width:0;" onclick="openKitDetail(${i})">
           <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">KIT-${String(i + 1).padStart(3, '0')}</div>
           <div style="font-weight:600;font-size:13px;">${esc(k.name)}</div>
-          <div class="catalog-item-meta"><small>${preview}</small></div>
+          <div class="catalog-producto-meta"><small>${preview}</small></div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="add-btn" onclick="addKitToCart(${i})" title="Agregar al carrito">🛒 ${fmt(total)}</button>
@@ -299,7 +299,7 @@ export function openKitsModal() {
  * @returns {void}
  */
 export function closeKitsModal() {
-  switchCatalogTab('items');
+  switchCatalogTab('productos');
 }
 
 /**
@@ -459,7 +459,7 @@ function renderKitSearchResults() {
         ? `<strong style="color:var(--primary);font-weight:700;">${esc(item.sourceId)}</strong> `
         : '';
       const model = item.model ? `<span style="font-size:11px;color:var(--muted);"> (${esc(item.model)})</span>` : '';
-      return `<div class="kit-search-result-item" onclick="addKitComponentFromSearch(${idx})" style="padding:10px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;line-height:1.4;" onmouseover="this.style.background='rgba(var(--primary-rgb),0.08)'" onmouseout="this.style.background=''">
+      return `<div class="kit-search-result-producto" onclick="addKitComponentFromSearch(${idx})" style="padding:10px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;line-height:1.4;" onmouseover="this.style.background='rgba(var(--primary-rgb),0.08)'" onmouseout="this.style.background=''">
         <div style="flex:1;min-width:0;word-break:break-word;">
           <div>${code}${model}</div>
           <div style="color:var(--text);margin-top:2px;font-size:12px;font-weight:500;">${esc(item.description)}</div>

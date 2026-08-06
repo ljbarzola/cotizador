@@ -198,10 +198,10 @@
         <!-- PANEL CATÁLOGO -->
         <section class="catalog-panel" data-no-print>
           <div class="catalog-tabs">
-            <button class="catalog-tab active" onclick="switchCatalogTab('items')">📋 Items</button>
+            <button class="catalog-tab active" onclick="switchCatalogTab('productos')">📋 Productos</button>
             <button class="catalog-tab" onclick="switchCatalogTab('kits')">📦 Kits</button>
           </div>
-          <div id="catalogItemsTab">
+          <div id="catalogProductosTab">
             <div class="catalog-header">
               <div class="catalog-search">
                 <span class="search-icon">🔍</span>
@@ -234,7 +234,7 @@
                   </select>
                   resultados
                 </label>
-                <span id="catalogCount">— ítems</span>
+                <span id="catalogCount">— Productos</span>
                 <span>🟢 ≤30d 🟡 30-180d 🔴 +180d/sin fecha</span>
               </div>
             </div>
@@ -352,14 +352,14 @@
               </div>
             </div>
 
-            <!-- ITEMS -->
+            <!-- PRODUCTOS -->
             <div class="quote-section">
               <div class="quote-section-header">
                 <h2>🛒 Detalle de la cotización</h2>
-                <span id="itemsCount" style="font-size: 12px; color: var(--muted)">0 ítems</span>
+                <span id="productosCount" style="font-size: 12px; color: var(--muted)">0 Productos</span>
               </div>
               <div class="quote-section-body">
-                <div id="itemsContainer">
+                <div id="productosContainer">
                   <div class="empty-state">
                     <div class="icon">🛒</div>
                     <div>Aún no hay productos en la cotización.</div>
@@ -874,7 +874,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             <div class="help-section-content">
               <p>Los Kits agrupan conjuntos de productos frecuentes (ej. Kit CCTV 4 Cámaras, Kit Alarma Residencial):</p>
               <ul>
-                <li><strong>Agregar al carrito:</strong> Haz clic en el botón <code>🛒 $total</code>. Todos los componentes se agregarán automáticamente como ítems independientes en la oferta.</li>
+                <li><strong>Agregar al carrito:</strong> Haz clic en el botón <code>🛒 $total</code>. Todos los componentes se agregarán automáticamente como productos independientes en la oferta.</li>
                 <li><strong>Modificación en oferta:</strong> Cada componente del kit se puede ajustar por separado en la cotización (cambiar cantidades, activar mano de obra o aplicar descuentos individuales).</li>
               </ul>
             </div>
@@ -903,7 +903,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
               <p>Sigue esta secuencia recomendada para elaborar una oferta comercial:</p>
               <ol>
                 <li><strong>Paso 1: Registra al Cliente:</strong> Completa los datos en la sección del cliente.</li>
-                <li><strong>Paso 2: Selecciona los Ítems:</strong> Busca productos o kits en el panel y haz clic en <code>+ Agregar</code>.</li>
+                <li><strong>Paso 2: Selecciona los Productos:</strong> Busca productos o kits en el panel y haz clic en <code>+ Agregar</code>.</li>
                 <li><strong>Paso 3: Revisa Cantidades y Precios:</strong>
                   <ul>
                     <li>Ajusta las cantidades requeridas en la columna <code>Cant</code>.</li>
@@ -1141,7 +1141,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
           <!-- TABLA USUARIOS -->
           <div style="border: 1px solid var(--border); border-radius: 6px; overflow-x: auto">
-            <table class="items-table" id="usersTable" style="min-width: 480px">
+            <table class="productos-table" id="usersTable" style="min-width: 480px">
               <thead>
                 <tr>
                   <th>Nombre</th>
@@ -1397,7 +1397,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
           <button class="modal-close" aria-label="Cerrar modal" onclick="closeCreateProductModal()">✕</button>
         </div>
         <div class="modal-body" style="max-height:65vh;overflow-y:auto;padding:16px;">
-          <div class="edit-item-field">
+          <div class="edit-producto-field">
             <label for="newProdCategorySelect" style="font-weight:700;font-size:13px;margin-bottom:6px;display:block;">1. Selecciona la categoría principal *</label>
             <select id="newProdCategorySelect" aria-label="Categoría principal" onchange="onNewProdCategoryChange()" style="padding:10px;font-size:13px;font-weight:600;border:1px solid var(--border);border-radius:6px;width:100%;">
               <option value="">-- Selecciona Equipos, Materiales o Servicios --</option>
@@ -1423,15 +1423,15 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
           <button class="modal-close" aria-label="Cerrar modal" onclick="closeCreateInstallModal()">✕</button>
         </div>
         <div class="modal-body" style="max-height:65vh;overflow-y:auto;padding:16px;">
-          <div class="edit-item-field">
+          <div class="edit-producto-field">
             <label for="newInstallServicio" style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Nombre del servicio de instalación *</label>
             <input type="text" id="newInstallServicio" placeholder="Ej: Instalación de cámara IP..." aria-label="Nombre del servicio de instalación" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
           </div>
-          <div class="edit-item-field">
+          <div class="edit-producto-field">
             <label for="newInstallCosto" style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo ($) *</label>
             <input type="number" step="0.01" id="newInstallCosto" placeholder="0.00" aria-label="Costo del servicio" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
           </div>
-          <div class="edit-item-field">
+          <div class="edit-producto-field">
             <label for="newInstallCatSelect" style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Categoría (opcional)</label>
             <select id="newInstallCatSelect" aria-label="Categoría del servicio" onchange="toggleInstallCatInput()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
               <option value="">(Sin categoría / Ninguna)</option>
@@ -1439,7 +1439,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             </select>
             <input type="text" id="newInstallCatCustom" placeholder="Escribe nueva categoría..." aria-label="Categoría personalizada" style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
           </div>
-          <div class="edit-item-field">
+          <div class="edit-producto-field">
             <label for="newInstallSubSelect" style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Subcategoría (opcional)</label>
             <select id="newInstallSubSelect" aria-label="Subcategoría del servicio" onchange="toggleInstallSubInput()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
               <option value="">(Sin subcategoría / Ninguna)</option>
@@ -1447,7 +1447,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             </select>
             <input type="text" id="newInstallSubCustom" placeholder="Escribe nueva subcategoría..." aria-label="Subcategoría personalizada" style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
           </div>
-          <div class="edit-item-field">
+          <div class="edit-producto-field">
             <label for="newInstallObservaciones" style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Observaciones (opcional)</label>
             <textarea id="newInstallObservaciones" placeholder="Detalles u observaciones adicionales..." aria-label="Observaciones" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;min-height:60px;font-size:13px;"></textarea>
           </div>

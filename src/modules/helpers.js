@@ -115,7 +115,7 @@ export function calcInstallServicePrice(item, marginPct) {
  * @returns {number} Sum of all item totals
  */
 export function quoteTotal(q) {
-  const items = q.items || [];
+  const items = q.productos || [];
   return items.reduce((s, c) => {
     const item = CATALOG[c.catalogIdx];
     if (!item) return s;

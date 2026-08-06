@@ -25,7 +25,9 @@
 - `materiales` - Catalogo de materiales (source_id, categoria, subcategoria, producto, unidades, costo_unitario, ganancia_flag, instalacion_flag, observaciones).
 - `servicios` - Catalogo de servicios (source_id, categoria, subcategoria, servicio, descripcion, costo_mensual, costo_anual, costo_unitario, observaciones).
 - `instalaciones` - Servicios de instalación (source_id, categoria, subcategoria, servicio, costo_unitario, observaciones). Tabla independiente, NO es una categoría.
-- `saved_quotes` - Cotizaciones guardadas (id, user_id, cot_num, cot_date, client JSONB, margin, items JSONB, status, updated_at).
+- `saved_quotes` - Cotizaciones guardadas (id, user_id, cot_num, cot_date, client JSONB, margin, productos JSONB, status, updated_at).
+- `templates` - Plantillas compartidas (id, name, description, client_type, industry, client JSONB, productos JSONB, ...).
+- `quote_sequences` - Secuencia global de cotizaciones (id, last_seq). Genera IDs únicos via RPC `next_quote_seq()`.
 
 **Google Sheet fuente:** `https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo`
 
@@ -75,7 +77,9 @@ Cotizador/
 │   ├── migrate_v3_2_add_flags.sql   # Agregar ganancia_flag, instalacion_flag
 │   ├── reset_all_tables.sql    # Reset completo con schema correcto
 │   ├── add_cant_costo_columns.sql  # Agregar cantidad_default y costo_total a equipos/materiales
-│   └── verify_supabase.sql     # Verificacion de tablas
+│   ├── verify_supabase.sql     # Verificacion de tablas
+│   ├── next_cot_seq.sql        # Tabla辅助 quote_sequences + RPC next_quote_seq()
+│   └── rename_items_to_productos.sql  # Migra columna items→productos en saved_quotes y templates
 ├── public/
 │   ├── content/
 │   │   ├── logo-gemeseg-back-white.png   # Logo login
@@ -95,13 +99,13 @@ Cotizador/
 3. **Catalogo desde Google Sheets**: Sincronizacion automatica de 3 pestañas del Google Sheet a tablas Supabase via `sync.js`.
 4. **Visor de catalogo**: Modal de solo lectura (todos los usuarios). Busqueda + filtro por subcategoria.
 5. **Editor de catalogo**: Todos los usuarios pueden editar. Edicion inline, agregar/eliminar productos, batch save a Supabase. Select de categoría obligatorio para mostrar columnas específicas por tabla.
-6. **Carrito**: Agregar items, cantidades, eliminar, totales con IVA 15%.
+6. **Carrito**: Agregar productos, cantidades, eliminar, totales con IVA 15%.
 7. **Cotizador vs PDF (Cliente)**:
    - **Cotizador (pantalla)** ve: #, Descripción, Und, Costo Unit. (=costo REAL, sin ganancia), Cant, Costo Total (=Costo Unit.×Cant), Ganancia (=margen prov.×Cant, oculta en PDF), PVP (=Costo Total+Ganancia, oculta en PDF), Inst, ✕.
    - **Cliente (PDF)** ve: #, Descripción, Und, Costo Unit. (=priceBeforeIva, con ganancia incluida pero invisible), Cant, Costo Total (=priceBeforeIva×Cant), Inst. PVP y Ganancia ocultos.
    - Valores duales en HTML: `print-hide-col` muestra baseCost en pantalla; `print-only` muestra priceBeforeIva en PDF.
 8. **Sistema de precios**: Costo → supplier margin (% editable, default 15%) → IVA 15% → installation margin (global, default 35%). Servicios: costo directo + IVA.
-9. **Cotizacion**: Numeracion automatica (COT-YYYYMMDD-NNN), guardado en Supabase.
+9. **Cotizacion**: Numeracion automatica secuencial global (COT-YYYYMMDD-NNNN, sin reset diario), guardado en Supabase. Secuencia atómica via RPC `next_quote_seq()` en tabla `quote_sequences`.
 10. **Historial**: Filtros por cliente, fecha, estado. Dropdown para cambiar estado.
 11. **PDF**: Layout print-only con logo, tabla, condiciones, firmas.
 12. **Paneles redimensionables**: Divider draggable entre catalogo y cotizacion.
@@ -110,7 +114,7 @@ Cotizador/
 15. **Modales custom**: Confirmar accion, guardar plantilla, detalle de producto (reemplazan dialogs nativos del navegador).
 16. **Manual de usuario**: Modal con 11 secciones colapsables que explica todas las funcionalidades (servicios de instalación, cargo del asesor, catálogo, etc.).
 17. **Descuentos**: Select (Sin descuento / Porcentaje / Valor fijo) + input. Se muestra en totales como "-Descuento (15%)" o "-Descuento $50". Se guarda en la cotización.
-18. **Sistema de Kits**: Tabs Items/Kits en el catálogo. CRUD de kits con nombre + componentes. Kits guardados en Supabase (tabla `kits`). Agregar un kit agrega sus componentes como items individuales al carrito, editables por separado (qty, instalación, costo técnico, margen). Cada cotización es independiente. Búsqueda de productos en el editor de kits con lista de resultados visible. Separación visual entre kits e items individuales en la cotización.
+18. **Sistema de Kits**: Tabs Productos/Kits en el catálogo. CRUD de kits con nombre + componentes. Kits guardados en Supabase (tabla `kits`). Agregar un kit agrega sus componentes como productos individuales al carrito, editables por separado (qty, instalación, costo técnico, margen). Cada cotización es independiente. Búsqueda de productos en el editor de kits con lista de resultados visible. Separación visual entre kits e productos individuales en la cotización.
 19. **Notas opcionales**: Campo de notas adicionales debajo de las condiciones comerciales.
 20. **Responsive/Movil**: 3 breakpoints (900px, 768px, 640px). Touch targets 44px, toggles de colapso para catálogo/cotización, grids responsive, modales fullscreen, tarjetas de instalación adaptadas.
 21. **Code Splitting**: Bundle dividido en chunks: app + supabase separado. Build optimizado.
@@ -119,7 +123,7 @@ Cotizador/
 24. **Cargo del Asesor en Perfil**: Selección/edición de cargo (`profiles.cargo`) desde el menú de usuario que aparece impreso en la firma de la cotización PDF.
 25. **Recuperación de Contraseña**: Flujo de restablecimiento de contraseña enviando enlace por correo electrónico a través de Supabase Auth.
 26. **Filtro por Vendedor**: Búsqueda y filtrado de cotizaciones en el historial por el nombre del vendedor/asesor creador (`vendor_name`).
-27. **Visor de catálogo con edición e interactividad**: El catálogo (modal) tiene 3 pestañas: Productos, Instalaciones, Kits. Cada pestaña muestra una tabla con botones ✏️ (editar) y ✕ (eliminar) lado a lado en cada fila. Botones `[+ Nuevo]` en la barra superior abren modales dedicados (`createProductModal` con selección previa de categoría obligatoria y subcategoría libre, y `createInstallModal` con categoría/subcategoría opcionales). Redimensión de columnas arrastrando bordes. Carga inteligente de datos en modales vía `getItemDBValue`. Estructura visual de edición agrupada por secciones. Actualización en tiempo real con `setCatalog(updated)` sin recargar pantalla.
+27. **Visor de catálogo con edición e interactividad**: El catálogo (modal) tiene 3 pestañas: Productos, Instalaciones, Kits. Cada pestaña muestra una tabla con botones ✏️ (editar) y ✕ (eliminar) lado a lado en cada fila. Botones `[+ Nuevo]` en la barra superior abren modales dedicados (`createProductModal` con selección previa de categoría obligatoria y subcategoría libre, y `createInstallModal` con categoría/subcategoría opcionales). Redimensión de columnas arrastrando bordes. Carga inteligente de datos en modales vía `getProductoDBValue`. Estructura visual de edición agrupada por secciones. Actualización en tiempo real con `setCatalog(updated)` sin recargar pantalla.
 28. **Gestión de estado centralizado**: `setCatalog(c)` muta `CATALOG` en lugar en `state.js` para que todos los módulos y listas se refresquen al instante.
 
 ### Flujo de precios (confirmado)
@@ -137,7 +141,7 @@ Cotizador/
 - **Schema detection**: `getTableColumns()` detecta columnas existentes via dummy insert o SELECT *.
 - **Filtrado**: `filterRowToColumns()` quita columnas que no existen en la tabla (fallback V3_2_COLUMNS).
 - **Comparacion**: `compareRows()` detecta cambios campo por campo y loguea diferencias.
-- **Sorting**: Items ordenados por source_id (natural sort: EQ-0001, EQ-0002, MT-0001, SV-0001, etc.).
+- **Sorting**: Productos ordenados por source_id (natural sort: EQ-0001, EQ-0002, MT-0001, SV-0001, etc.).
 - **INSTALACIÓN BD**: Sync separado via `syncInstalacionesOnly()`. Parser posicional (5 columnas sin header): servicio, costo_unitario, categoria, subcategoria, observaciones.
 
 ### Comandos
@@ -164,7 +168,7 @@ VITE_SUPABASE_ANON_KEY=tu-anon-key-aqui
 
 ### Notas Importantes
 
-- 172 tests unitarios (sync: 18, helpers: 16, utils: 28, templates: 18, kits: 17, history: 10, auth: 22, editor: 27, cartCalculations: 16)
+- 175 tests unitarios (sync: 18, helpers: 16, utils: 31, templates: 18, kits: 17, history: 10, auth: 22, editor: 27, cartCalculations: 16)
 - Deploy automatico via GitHub Pages al hacer push a `master`
 - **NUNCA hacer push sin confirmacion del usuario**
 - El catalogo original de 400 productos esta en `db/migrate_catalog.sql` (legacy, reemplazado por sync desde Google Sheets)

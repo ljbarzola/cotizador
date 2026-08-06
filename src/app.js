@@ -116,7 +116,7 @@ import {
   resolveConfirm,
   resolveSaveTemplate,
   toggleTplIndustryCustom,
-  generateCotNumber,
+  generateNextCotNumberFromDB,
   showSaveTemplateModal,
 } from './utils.js';
 
@@ -184,7 +184,7 @@ function renderCatalog() {
   const pageItems = filtered.slice(startIdx, startIdx + catalogPageSize);
 
   $('catalogCount').textContent =
-    totalFiltered + ' ítems' + (totalFiltered !== CATALOG.length ? ' (de ' + CATALOG.length + ')' : '');
+    totalFiltered + ' Productos' + (totalFiltered !== CATALOG.length ? ' (de ' + CATALOG.length + ')' : '');
 
   if (totalFiltered === 0) {
     list.innerHTML = '<div class="empty-state"><div class="icon">🔍</div>No se encontraron productos</div>';
@@ -197,41 +197,43 @@ function renderCatalog() {
       const realIdx = CATALOG.indexOf(item);
       const supplier = item.supplier ? '· ' + item.supplier : '';
       const code = item.sourceId || '(sin código)';
-      const subcatLabel = item.subcategory ? '<span class="cat-item-subcat">' + item.subcategory + '</span>' : '';
-      const modelLabel = item.model ? '<span class="cat-item-model">' + item.model + '</span>' : '';
-      const unitsLabel = item.unidades ? '<span class="cat-item-units">' + item.unidades + '</span>' : '';
-      const qtyLabel = item.cantidadDefault ? '<span class="cat-item-units">x' + item.cantidadDefault + '</span>' : '';
+      const subcatLabel = item.subcategory ? '<span class="cat-producto-subcat">' + item.subcategory + '</span>' : '';
+      const modelLabel = item.model ? '<span class="cat-producto-model">' + item.model + '</span>' : '';
+      const unitsLabel = item.unidades ? '<span class="cat-producto-units">' + item.unidades + '</span>' : '';
+      const qtyLabel = item.cantidadDefault
+        ? '<span class="cat-producto-units">x' + item.cantidadDefault + '</span>'
+        : '';
 
       const pricing = calcItemPrice(item);
       const price = pricing.subtotalEquipo;
       const badges = marginBadge(item);
       const isAnnualService = item.isService && (!item.monthlyCost || item.monthlyCost === 0) && item.annualCost > 0;
       const annualLabel = isAnnualService
-        ? '<span class="cat-item-units" style="background:#fef3c7;color:#92400e;">anual</span>'
+        ? '<span class="cat-producto-units" style="background:#fef3c7;color:#92400e;">anual</span>'
         : '';
       const priceDetail = isAnnualService
         ? '<div class="cost">' + fmt(item.annualCost) + '/año → ' + fmt(item.cost) + '/mes</div>'
         : '<div class="cost">costo ' + fmt(item.cost) + '</div>';
 
       return `
-      <div class="cat-item">
-        <div class="cat-item-info" onclick="openProductDetail(${realIdx})" style="cursor:pointer;">
-          <div class="cat-item-code">${code} ${modelLabel}</div>
-          <div class="cat-item-desc">${esc(item.description)}</div>
-          <div class="cat-item-meta">
+      <div class="cat-producto">
+        <div class="cat-producto-info" onclick="openProductDetail(${realIdx})" style="cursor:pointer;">
+          <div class="cat-producto-code">${code} ${modelLabel}</div>
+          <div class="cat-producto-desc">${esc(item.description)}</div>
+          <div class="cat-producto-meta">
             ${subcatLabel}
             ${unitsLabel}
             ${qtyLabel}
             ${annualLabel}
             ${badges}
-            <span class="cat-item-supplier">${supplier}</span>
+            <span class="cat-producto-supplier">${supplier}</span>
           </div>
-          <div class="cat-item-details">
+          <div class="cat-producto-details">
             ${item.observations ? '<span title="' + esc(item.observations) + '">📝</span>' : ''}
           </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-          <div class="cat-item-price">
+          <div class="cat-producto-price">
             <div class="pvp">${fmt(price)}</div>
             ${priceDetail}
           </div>
@@ -571,8 +573,8 @@ function updateInstallServiceCost(idx, val) {
 
 // === RENDER CART ===
 function renderCart() {
-  const container = $('itemsContainer');
-  $('itemsCount').textContent = cart.length + ' ítem' + (cart.length === 1 ? '' : 's');
+  const container = $('productosContainer');
+  $('productosCount').textContent = cart.length + ' Producto' + (cart.length === 1 ? '' : 's');
   if (cart.length === 0) {
     container.innerHTML =
       '<div class="empty-state"><div class="icon">🛒</div><div>Aún no hay productos en la cotización.</div><div style="margin-top:4px;font-size:11px;">Busca y agrega productos del catálogo (panel izquierdo)</div></div>';
@@ -584,8 +586,8 @@ function renderCart() {
   let html = '';
 
   // === TABLA DE DETALLE ===
-  html += '<table class="items-table"><thead><tr>';
-  html += '<th class="item-num">#</th>';
+  html += '<table class="productos-table"><thead><tr>';
+  html += '<th class="producto-num">#</th>';
   html += '<th>Descripción</th>';
   html += '<th class="center" style="width:36px;">Und</th>';
   html += '<th class="right" style="width:60px;">Costo Unit.</th>';
@@ -616,8 +618,8 @@ function renderCart() {
       const kitComps = c.kitComponents.filter(cc => cc.catalogIdx >= 0 && cc.catalogIdx < CATALOG.length);
 
       html += `<tr class="kit-header-row">
-        <td class="item-num">📦</td>
-        <td class="item-desc" colspan="8">
+        <td class="producto-num">📦</td>
+        <td class="producto-desc" colspan="8">
           <strong>${esc(c.kitName)}</strong>
           <span style="color:var(--muted);font-size:11px;margin-left:8px;">${kitComps.length} componente(s)</span>
         </td>
@@ -653,10 +655,10 @@ function renderCart() {
             : '<span class="install-pending">⬛</span>'
           : '<span style="color:var(--muted);">—</span>';
         html += `<tr class="kit-row">
-          <td class="item-num">${rowNum}</td>
-          <td class="item-desc item-desc-click" onclick="openCartItemDetail(${idx})" title="Ver detalle">
-            <span class="item-desc-text">${esc(it.description)}</span>
-            <div class="item-badges">${badges}</div>
+          <td class="producto-num">${rowNum}</td>
+          <td class="producto-desc producto-desc-click" onclick="openCartItemDetail(${idx})" title="Ver detalle">
+            <span class="producto-desc-text">${esc(it.description)}</span>
+            <div class="producto-badges">${badges}</div>
             <small>${it.sourceId || ''}${it.supplier ? ' · ' + it.supplier : ''}</small>
           </td>
           <td class="center" style="font-size:11px;font-weight:600;color:var(--primary);">${it.unit || '—'}</td>
@@ -674,7 +676,7 @@ function renderCart() {
     if (inKitsSection) {
       inKitsSection = false;
       if (hasKits && hasIndividuals) {
-        html += `<tr class="kit-items-separator"><td colspan="10"><div class="kit-items-divider"></div></td></tr>`;
+        html += `<tr class="kit-productos-separator"><td colspan="10"><div class="kit-productos-divider"></div></td></tr>`;
       }
     }
     rowNum++;
@@ -705,10 +707,10 @@ function renderCart() {
       : '<span style="color:var(--muted);">—</span>';
 
     html += `<tr>
-      <td class="item-num">${rowNum}</td>
-      <td class="item-desc item-desc-click" onclick="openCartItemDetail(${idx})" title="Ver detalle">
-        <span class="item-desc-text">${esc(item.description)}</span>
-        <div class="item-badges">${badges}</div>
+      <td class="producto-num">${rowNum}</td>
+      <td class="producto-desc producto-desc-click" onclick="openCartItemDetail(${idx})" title="Ver detalle">
+        <span class="producto-desc-text">${esc(item.description)}</span>
+        <div class="producto-badges">${badges}</div>
         <small>${item.sourceId || ''}${item.supplier ? ' · ' + item.supplier : ''}</small>
       </td>
       <td class="center" style="font-size:11px;font-weight:600;color:var(--primary);">${item.unit || '—'}</td>
@@ -768,14 +770,14 @@ function renderMarginConfig() {
     Object.keys(supplierGroups).length +
     ' proveedor(es) · ' +
     totalItems +
-    ' ítems</span></div>';
+    ' Productos</span></div>';
 
   const supplierKeys = Object.keys(supplierGroups).sort((a, b) =>
     a === 'Sin proveedor' ? 1 : b === 'Sin proveedor' ? -1 : a.localeCompare(b)
   );
 
   if (supplierKeys.length === 0) {
-    supplierHtml += '<div class="margin-empty">No hay items de equipo/materiales en la cotización.</div>';
+    supplierHtml += '<div class="margin-empty">No hay productos de equipo/materiales en la cotización.</div>';
   } else {
     supplierKeys.forEach(supplier => {
       const items = supplierGroups[supplier];
@@ -784,7 +786,7 @@ function renderMarginConfig() {
 
       supplierHtml += `<div class="supplier-group">`;
       supplierHtml += `<div class="supplier-group-header">`;
-      supplierHtml += `<span class="supplier-name">${supplier} <span class="supplier-count">${items.length} ítem(s)</span></span>`;
+      supplierHtml += `<span class="supplier-name">${supplier} <span class="supplier-count">${items.length} Producto(s)</span></span>`;
       if (isSinProveedor) {
         supplierHtml += `<span class="supplier-hint">Margen individual por item ↓</span>`;
       } else {
@@ -800,7 +802,7 @@ function renderMarginConfig() {
         const marginHandler = isKit
           ? `updateKitCompMargin(${kitIdx}, ${compIdx}, this.value)`
           : `updateItemMargin(${kitIdx}, this.value)`;
-        supplierHtml += `<div class="supplier-group-item${hasGanancia ? ' sgi-active' : ''}${hasCustom ? ' sgi-custom' : ''}">`;
+        supplierHtml += `<div class="supplier-group-producto${hasGanancia ? ' sgi-active' : ''}${hasCustom ? ' sgi-custom' : ''}">`;
         supplierHtml += `<span class="sgi-code">${item.sourceId || ''}</span>`;
         supplierHtml += `<span class="sgi-desc">${esc(item.description.slice(0, 35))}${item.description.length > 35 ? '…' : ''}${isKit ? ' <small style="color:var(--muted);">(kit)</small>' : ''}</span>`;
         if (isSinProveedor && hasGanancia) {
@@ -890,7 +892,7 @@ function renderTotals() {
   breakdownHtml += `<div class="totals-row totals-sub"><span>Subtotal (PVP + IVA)</span><span>${fmt(subtotalEquipo + totalIva)}</span></div>`;
 
   if (totalInstalacion > 0) {
-    breakdownHtml += `<div class="totals-row totals-sub totals-install"><span>🔧 Instalación (items)</span><span>${fmt(totalInstalacion)}</span></div>`;
+    breakdownHtml += `<div class="totals-row totals-sub totals-install"><span>🔧 Instalación (Productos)</span><span>${fmt(totalInstalacion)}</span></div>`;
   }
   if (totalInstalacionesCat > 0) {
     breakdownHtml += `<div class="totals-row totals-sub totals-install"><span>🔧 Servicios de instalación</span><span>${fmt(totalInstalacionesCat)}</span></div>`;
@@ -957,7 +959,7 @@ function buildQuoteData() {
     discountValue: parseFloat($('discountValue').value) || 0,
     supplierMargins: { ...supplierMargins },
     installMargin: installationMarginPct,
-    items: cart,
+    productos: cart,
     savedAt: new Date().toISOString(),
   };
 }
@@ -980,7 +982,7 @@ function loadQuoteData(q) {
   }
   setSupplierMargins(q.supplierMargins || {});
   setInstallationMarginPct(q.installMargin ?? DEFAULT_INSTALL_MARGIN);
-  setCart(q.items || []);
+  setCart(q.productos || []);
   renderCatalog();
   renderCart();
 }
@@ -1001,40 +1003,6 @@ function loadDraft() {
     toast('Borrador cargado');
   } catch (_e) {
     toast('Error al cargar borrador', 'danger');
-  }
-}
-
-async function generateNextCotNumberFromDB() {
-  const d = new Date();
-  const dateStr = d.toISOString().slice(0, 10).replace(/-/g, '');
-  const prefix = 'COT-' + dateStr + '-';
-
-  try {
-    const { data, error } = await supabase
-      .from('saved_quotes')
-      .select('cot_num')
-      .like('cot_num', prefix + '%');
-
-    let maxSeq = 0;
-    if (!error && data && data.length > 0) {
-      data.forEach(r => {
-        const parts = (r.cot_num || '').split('-');
-        if (parts.length >= 3) {
-          const seq = parseInt(parts[2]) || 0;
-          if (seq > maxSeq) maxSeq = seq;
-        }
-      });
-    }
-
-    const key = 'cot_counter_' + dateStr;
-    const localCount = parseInt(localStorage.getItem(key) || '0');
-    const nextSeq = Math.max(maxSeq, localCount) + 1;
-
-    localStorage.setItem(key, nextSeq);
-    return prefix + String(nextSeq).padStart(4, '0');
-  } catch (e) {
-    console.warn('[COT_NUM] Error querying DB, fallback to local generator:', e.message);
-    return generateCotNumber();
   }
 }
 
@@ -1107,7 +1075,7 @@ async function saveQuote() {
       client: data.client,
       supplier_margins: data.supplierMargins,
       install_margin: data.installMargin,
-      items: data.items,
+      productos: data.productos,
       status: 'borrador',
       updated_at: new Date().toISOString(),
     };
@@ -1122,7 +1090,7 @@ async function saveQuote() {
           client: row.client,
           supplier_margins: row.supplier_margins,
           install_margin: row.install_margin,
-          items: row.items,
+          productos: row.productos,
           updated_at: row.updated_at,
         })
         .eq('id', currentQuoteId);
@@ -1152,7 +1120,7 @@ async function saveQuote() {
               client: row.client,
               supplier_margins: row.supplier_margins,
               install_margin: row.install_margin,
-              items: row.items,
+              productos: row.productos,
               updated_at: row.updated_at,
             })
             .eq('id', existing.id);
@@ -1161,7 +1129,7 @@ async function saveQuote() {
           toast('✓ Cotización actualizada', 'success');
           notifyCotizadorVsPdf();
         } else {
-          data.cotNum = generateCotNumber();
+          data.cotNum = await generateNextCotNumberFromDB();
           $('cotNum').value = data.cotNum;
           row.cot_num = data.cotNum;
           const { data: inserted, error } = await supabase.from('saved_quotes').insert(row).select().single();
@@ -1497,7 +1465,7 @@ function renderViewerTable() {
       <td class="right">${fmt(pricing.priceBeforeIva)}</td>
       <td class="right">${fmt(pricing.iva)}</td>
       <td class="right"><strong>${fmt(pricing.subtotalEquipo)}</strong></td>
-      <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="openEditItemModal('product',${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteViewerItem('product',${idx})" title="Eliminar">✕</button></div></td>
+      <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="openEditProductoModal('product',${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteViewerProducto('product',${idx})" title="Eliminar">✕</button></div></td>
     </tr>`;
     })
     .join('');
@@ -1591,7 +1559,7 @@ function renderViewerInstallations() {
     <td>${esc(s.subcategory || '')}</td>
     <td class="right">${fmt(s.cost)}</td>
     <td>${esc(s.observations || '')}</td>
-    <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="openEditItemModal('install',${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteViewerItem('install',${idx})" title="Eliminar">✕</button></div></td>
+    <td class="center" style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;"><button class="viewer-action-btn edit" onclick="openEditProductoModal('install',${idx})" title="Editar">✏️</button><button class="viewer-action-btn delete" onclick="deleteViewerProducto('install',${idx})" title="Eliminar">✕</button></div></td>
   </tr>`;
     })
     .join('');
@@ -1718,56 +1686,56 @@ function onNewProdCategoryChange() {
   let html = '';
 
   // SECCIÓN 1: DATOS BÁSICOS
-  html += `<div class="edit-item-section">
-    <div class="edit-item-section-title">📋 Datos Básicos</div>
-    <div class="edit-item-grid">
-      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Subcategoría</label>
+  html += `<div class="edit-producto-section">
+    <div class="edit-producto-section-title">📋 Datos Básicos</div>
+    <div class="edit-producto-grid">
+      <div class="edit-producto-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Subcategoría</label>
         <select id="newProdSubSelect" onchange="toggleNewProdSubInput()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
           <option value="">(Sin subcategoría / Seleccionar)</option>
           ${existingSubs.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
           <option value="__new__">+ Escribir nueva subcategoría...</option>
         </select>
         <input type="text" id="newProdSubCustom" placeholder="Escribe nueva subcategoría..." style="display:none;margin-top:6px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
-      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Código / ID</label>
+      <div class="edit-producto-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Código / ID</label>
         <input type="text" id="newProdSourceId" value="${suggestedId}" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>`;
 
   if (cat === 'equipos') {
-    html += `<div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Modelo</label>
+    html += `<div class="edit-producto-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Modelo</label>
       <input type="text" id="newProdModelo" placeholder="Ej: DS-2CD2043G2-I..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>`;
   }
 
   html += `</div>`;
 
   const nameLabel = cat === 'servicios' ? 'Nombre del servicio *' : 'Nombre del producto / descripción *';
-  html += `<div class="edit-item-full" style="margin-top:10px;">
+  html += `<div class="edit-producto-full" style="margin-top:10px;">
     <label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">${nameLabel}</label>
     <textarea id="newProdName" placeholder="Descripción clara y completa del ítem..." rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-height:55px;resize:vertical;"></textarea>
   </div></div>`;
 
   // SECCIÓN 2: PRECIOS Y MÁRGENES
-  html += `<div class="edit-item-section">
-    <div class="edit-item-section-title">💰 Precios y Márgenes</div>`;
+  html += `<div class="edit-producto-section">
+    <div class="edit-producto-section-title">💰 Precios y Márgenes</div>`;
 
   if (cat === 'servicios') {
-    html += `<div class="edit-item-grid">
-      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo mensual ($)</label>
+    html += `<div class="edit-producto-grid">
+      <div class="edit-producto-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo mensual ($)</label>
         <input type="number" step="0.01" id="newProdCostoMensual" value="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
-      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo anual ($)</label>
+      <div class="edit-producto-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo anual ($)</label>
         <input type="number" step="0.01" id="newProdCostoAnual" value="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
     </div>`;
   } else {
-    html += `<div class="edit-item-grid">
-      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo unitario ($) *</label>
+    html += `<div class="edit-producto-grid">
+      <div class="edit-producto-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Costo unitario ($) *</label>
         <input type="number" step="0.01" id="newProdCostoUnitario" value="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
-      <div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Unidades</label>
+      <div class="edit-producto-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Unidades</label>
         <input type="text" id="newProdUnidades" placeholder="Ej: u, m, global..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>`;
     if (cat === 'equipos') {
-      html += `<div class="edit-item-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Proveedor</label>
+      html += `<div class="edit-producto-field"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Proveedor</label>
         <input type="text" id="newProdProveedor" placeholder="Ej: HIKVISION, DAHUA..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>`;
     }
     html += `</div>`;
 
-    html += `<div class="edit-item-full" style="margin-top:10px;">
+    html += `<div class="edit-producto-full" style="margin-top:10px;">
       <label style="font-weight:600;font-size:12px;margin-bottom:6px;display:block;">Márgenes y Ganancias</label>
       <div style="display:flex;flex-direction:row;align-items:center;gap:20px;background:var(--bg,#f3f4f6);padding:10px 12px;border-radius:6px;border:1px solid var(--border);">
         <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;">
@@ -1782,13 +1750,13 @@ function onNewProdCategoryChange() {
   html += `</div>`;
 
   // SECCIÓN 3: DETALLES ADICIONALES
-  html += `<div class="edit-item-section">
-    <div class="edit-item-section-title">📝 Detalles Adicionales</div>`;
+  html += `<div class="edit-producto-section">
+    <div class="edit-producto-section-title">📝 Detalles Adicionales</div>`;
   if (cat === 'servicios') {
-    html += `<div class="edit-item-full" style="margin-bottom:10px;"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Descripción extendida (opcional)</label>
+    html += `<div class="edit-producto-full" style="margin-bottom:10px;"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Descripción extendida (opcional)</label>
       <input type="text" id="newProdDescripcion" placeholder="Detalles del servicio..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>`;
   }
-  html += `<div class="edit-item-full"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Observaciones</label>
+  html += `<div class="edit-producto-full"><label style="font-weight:600;font-size:12px;margin-bottom:4px;display:block;">Observaciones</label>
     <textarea id="newProdObservaciones" placeholder="Detalles u observaciones adicionales..." rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;min-height:70px;resize:vertical;font-size:13px;"></textarea></div>
   </div>`;
 
@@ -2064,7 +2032,7 @@ function makeTableColumnsResizable(table) {
 let editItemData = null;
 let editItemTable = null;
 
-function getItemDBValue(item, key) {
+function getProductoDBValue(item, key) {
   if (!item) return '';
   if (item[key] !== undefined && item[key] !== null) return item[key];
 
@@ -2105,7 +2073,7 @@ function getItemDBValue(item, key) {
   }
 }
 
-function openEditItemModal(type, idx) {
+function openEditProductoModal(type, idx) {
   if (!currentSession) {
     toast('Inicia sesión primero', 'danger');
     return;
@@ -2137,9 +2105,9 @@ function openEditItemModal(type, idx) {
   const cols = EDITOR_COLS_MAP[table] || [];
 
   const renderField = c => {
-    const val = getItemDBValue(item, c.key);
+    const val = getProductoDBValue(item, c.key);
     const readonly = c.type === 'readonly';
-    const fieldClass = 'edit-item-field';
+    const fieldClass = 'edit-producto-field';
 
     if (c.key === 'subcategoria') {
       const allSubs = [
@@ -2192,33 +2160,33 @@ function openEditItemModal(type, idx) {
   let html = '';
 
   // SECCIÓN 1: DATOS BÁSICOS
-  html += `<div class="edit-item-section">
-    <div class="edit-item-section-title">📋 Datos Básicos</div>
-    <div class="edit-item-grid">`;
+  html += `<div class="edit-producto-section">
+    <div class="edit-producto-section-title">📋 Datos Básicos</div>
+    <div class="edit-producto-grid">`;
   basicCols.forEach(c => {
     html += renderField(c);
   });
   html += `</div>`;
   if (mainNameCol) {
-    html += `<div class="edit-item-full">${renderField(mainNameCol)}</div>`;
+    html += `<div class="edit-producto-full">${renderField(mainNameCol)}</div>`;
   }
   html += `</div>`;
 
   // SECCIÓN 2: PRECIOS Y MÁRGENES
-  html += `<div class="edit-item-section">
-    <div class="edit-item-section-title">💰 Precios y Márgenes</div>
-    <div class="edit-item-grid">`;
+  html += `<div class="edit-producto-section">
+    <div class="edit-producto-section-title">💰 Precios y Márgenes</div>
+    <div class="edit-producto-grid">`;
   priceCols.forEach(c => {
     html += renderField(c);
   });
   html += `</div>`;
 
   if (checkCols.length > 0) {
-    html += `<div class="edit-item-full">
+    html += `<div class="edit-producto-full">
       <label style="font-weight:600;font-size:12px;margin-bottom:6px;display:block;">Márgenes y Ganancias</label>
       <div style="display:flex;flex-direction:row;align-items:center;gap:20px;background:var(--bg,#f3f4f6);padding:10px 14px;border-radius:6px;border:1px solid var(--border);">`;
     checkCols.forEach(c => {
-      const val = getItemDBValue(item, c.key);
+      const val = getProductoDBValue(item, c.key);
       html += `<label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;">
         <input type="checkbox" id="editField_${c.key}" ${val ? 'checked' : ''}>
         ${c.label}
@@ -2230,9 +2198,9 @@ function openEditItemModal(type, idx) {
 
   // SECCIÓN 3: DETALLES ADICIONALES
   if (obsCols.length > 0) {
-    html += `<div class="edit-item-section">
-      <div class="edit-item-section-title">📝 Detalles Adicionales</div>
-      <div class="edit-item-full">`;
+    html += `<div class="edit-producto-section">
+      <div class="edit-producto-section-title">📝 Detalles Adicionales</div>
+      <div class="edit-producto-full">`;
     obsCols.forEach(c => {
       html += renderField(c);
     });
@@ -2318,12 +2286,12 @@ async function saveEditItem() {
       renderViewerTable();
     }
   } catch (e) {
-    console.error('[EDIT ITEM] Save error:', e);
+    console.error('[EDIT PRODUCTO] Save error:', e);
     toast('Error al guardar: ' + e.message, 'danger');
   }
 }
 
-async function deleteViewerItem(type, idx) {
+async function deleteViewerProducto(type, idx) {
   if (type === 'product') {
     const item = viewerProducts[idx];
     if (!item) return;
@@ -2426,10 +2394,10 @@ window.closeCatalogViewer = closeCatalogViewer;
 window.renderViewerTable = renderViewerTable;
 window.renderViewerKits = renderViewerKits;
 window.switchViewerTab = switchViewerTab;
-window.openEditItemModal = openEditItemModal;
+window.openEditProductoModal = openEditProductoModal;
 window.closeEditItemModal = closeEditItemModal;
 window.saveEditItem = saveEditItem;
-window.deleteViewerItem = deleteViewerItem;
+window.deleteViewerProducto = deleteViewerProducto;
 window.editKitFromViewer = editKitFromViewer;
 window.deleteKitFromViewer = deleteKitFromViewer;
 window.addNewKitFromViewer = addNewKitFromViewer;
@@ -2503,12 +2471,12 @@ async function bootApp() {
   if (raw) {
     try {
       const draft = JSON.parse(raw);
-      if (draft.items && draft.items.length > 0) loadQuoteData(draft);
+      if (draft.productos && draft.productos.length > 0) loadQuoteData(draft);
     } catch (_e) {
       /* ignore corrupt draft */
     }
   }
-  if (!$('cotNum').value) $('cotNum').value = generateCotNumber();
+  if (!$('cotNum').value) $('cotNum').value = await generateNextCotNumberFromDB();
   if (!$('cotDate').value) $('cotDate').value = new Date().toISOString().split('T')[0];
   renderCatalog();
   renderCart();

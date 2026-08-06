@@ -128,6 +128,25 @@ describe('generateCotNumber() - quote number generation', () => {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     expect(result).toContain(today);
   });
+
+  it('uses provided seq parameter for global sequence', () => {
+    const result = generateCotNumber(42);
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    expect(result).toBe('COT-' + today + '-0042');
+  });
+
+  it('pads seq to 4 digits', () => {
+    const result = generateCotNumber(1);
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    expect(result).toBe('COT-' + today + '-0001');
+  });
+
+  it('ignores localStorage when seq is provided', () => {
+    localStorage.setItem('cot_counter_' + new Date().toISOString().slice(0, 10).replace(/-/g, ''), '999');
+    const result = generateCotNumber(5);
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    expect(result).toBe('COT-' + today + '-0005');
+  });
 });
 
 // isAdmin() tests

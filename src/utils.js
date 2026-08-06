@@ -1,4 +1,5 @@
 // === SHARED UTILITY FUNCTIONS ===
+import supabase from './lib/supabase.js';
 
 /**
  * Get a DOM element by ID.
@@ -186,14 +187,34 @@ export function isAdmin(session) {
 }
 
 /**
- * Generate a sequential quote number: COT-YYYYMMDD-NNN.
+ * Generate a sequential quote number: COT-YYYYMMDD-NNNN.
+ * @param {number} [seq] - Optional global sequence number from DB. If omitted, falls back to localStorage counter.
  * @returns {string} New quote number
  */
-export function generateCotNumber() {
+export function generateCotNumber(seq) {
   const d = new Date();
   const dateStr = d.toISOString().slice(0, 10).replace(/-/g, '');
+  if (seq) {
+    return 'COT-' + dateStr + '-' + String(seq).padStart(4, '0');
+  }
   const key = 'cot_counter_' + dateStr;
   let count = parseInt(localStorage.getItem(key) || '0') + 1;
   localStorage.setItem(key, count);
   return 'COT-' + dateStr + '-' + String(count).padStart(4, '0');
+}
+
+/**
+ * Generate next quote number using global DB sequence (atomic, no collisions).
+ * Falls back to localStorage if DB is unavailable.
+ * @returns {Promise<string>} New quote number
+ */
+export async function generateNextCotNumberFromDB() {
+  try {
+    const { data, error } = await supabase.rpc('next_quote_seq');
+    if (error) throw error;
+    return generateCotNumber(data);
+  } catch (e) {
+    console.warn('[COT_NUM] RPC failed, fallback local:', e.message);
+    return generateCotNumber();
+  }
 }

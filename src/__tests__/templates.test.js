@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { resolveTemplateItems } from '../modules/quote.js';
+import { resolveTemplateProductos } from '../modules/quote.js';
 
-// resolveTemplateItems() tests
-describe('resolveTemplateItems() - template to cart conversion', () => {
+// resolveTemplateProductos() tests
+describe('resolveTemplateProductos() - template to cart conversion', () => {
   const catalog = [
     { sourceId: 'EQ-001', cost: 100 },
     { sourceId: 'EQ-002', cost: 200 },
@@ -14,7 +14,7 @@ describe('resolveTemplateItems() - template to cart conversion', () => {
       { sourceId: 'EQ-001', qty: 2 },
       { sourceId: 'EQ-002', qty: 1 },
     ];
-    const result = resolveTemplateItems(templateItems, catalog);
+    const result = resolveTemplateProductos(templateItems, catalog);
     expect(result.cart).toHaveLength(2);
     expect(result.unmatched).toHaveLength(0);
     expect(result.cart[0].catalogIdx).toBe(0);
@@ -27,7 +27,7 @@ describe('resolveTemplateItems() - template to cart conversion', () => {
       { sourceId: 'EQ-001', qty: 1 },
       { sourceId: 'NONEXISTENT', qty: 1 },
     ];
-    const result = resolveTemplateItems(templateItems, catalog);
+    const result = resolveTemplateProductos(templateItems, catalog);
     expect(result.cart).toHaveLength(1);
     expect(result.unmatched).toHaveLength(1);
     expect(result.unmatched[0].sourceId).toBe('NONEXISTENT');
@@ -35,19 +35,19 @@ describe('resolveTemplateItems() - template to cart conversion', () => {
 
   it('uses default qty of 1', () => {
     const templateItems = [{ sourceId: 'EQ-001' }];
-    const result = resolveTemplateItems(templateItems, catalog);
+    const result = resolveTemplateProductos(templateItems, catalog);
     expect(result.cart[0].qty).toBe(1);
   });
 
   it('preserves installActive and techCost', () => {
     const templateItems = [{ sourceId: 'EQ-001', qty: 1, installActive: true, techCost: 50 }];
-    const result = resolveTemplateItems(templateItems, catalog);
+    const result = resolveTemplateProductos(templateItems, catalog);
     expect(result.cart[0].installActive).toBe(true);
     expect(result.cart[0].techCost).toBe(50);
   });
 
   it('handles empty template items', () => {
-    const result = resolveTemplateItems([], catalog);
+    const result = resolveTemplateProductos([], catalog);
     expect(result.cart).toHaveLength(0);
     expect(result.unmatched).toHaveLength(0);
   });
@@ -120,7 +120,7 @@ describe('filterTemplates() - template filtering', () => {
 // Template total calculation (local helper — not exported from source)
 function calcTemplateTotal(template, CATALOG = []) {
   let total = 0;
-  (template.items || []).forEach(item => {
+  (template.productos || []).forEach(item => {
     const catItem = CATALOG.find(c => c.sourceId === item.sourceId);
     if (!catItem) return;
     const qty = item.qty || 1;
@@ -139,7 +139,7 @@ describe('calcTemplateTotal() - template total calculation', () => {
 
   it('calculates total for template with items', () => {
     const template = {
-      items: [
+      productos: [
         { sourceId: 'EQ-001', qty: 2 },
         { sourceId: 'EQ-002', qty: 1 },
       ],
@@ -148,13 +148,13 @@ describe('calcTemplateTotal() - template total calculation', () => {
   });
 
   it('uses default qty of 1', () => {
-    const template = { items: [{ sourceId: 'EQ-001' }] };
+    const template = { productos: [{ sourceId: 'EQ-001' }] };
     expect(calcTemplateTotal(template, CATALOG)).toBe(100);
   });
 
   it('skips unmatched items', () => {
     const template = {
-      items: [
+      productos: [
         { sourceId: 'EQ-001', qty: 1 },
         { sourceId: 'NONEXISTENT', qty: 1 },
       ],
@@ -163,7 +163,7 @@ describe('calcTemplateTotal() - template total calculation', () => {
   });
 
   it('handles empty items', () => {
-    const template = { items: [] };
+    const template = { productos: [] };
     expect(calcTemplateTotal(template, CATALOG)).toBe(0);
   });
 

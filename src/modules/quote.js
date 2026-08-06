@@ -17,7 +17,7 @@ async function fetchTemplates() {
       clientType: row.client_type || 'mediana',
       industry: row.industry || 'comercio',
       client: row.client || {},
-      items: row.items || [],
+      productos: row.productos || [],
       supplierMargins: row.supplier_margins || {},
       installMargin: row.install_margin ?? 35,
       isSample: row.is_sample ?? false,
@@ -53,7 +53,7 @@ async function saveTemplate(tpl, session) {
     client_type: tpl.clientType || 'mediana',
     industry: tpl.industry || 'comercio',
     client: tpl.client || {},
-    items: tpl.items || [],
+    productos: tpl.productos || [],
     supplier_margins: tpl.supplierMargins || {},
     install_margin: tpl.installMargin ?? 35,
     is_sample: tpl.isSample ?? false,
@@ -91,8 +91,8 @@ async function deleteTemplate(id) {
   return true;
 }
 
-/* ─── Convert template items → cart items ─── */
-function resolveTemplateItems(templateItems, catalog) {
+/* ─── Convert template productos → cart productos ─── */
+function resolveTemplateProductos(templateItems, catalog) {
   const cart = [];
   const unmatched = [];
   for (const ti of templateItems) {
@@ -116,7 +116,7 @@ async function generateDefaultTemplates(catalog) {
   const all = await getAllTemplates();
   if (all.length > 0 || !catalog || catalog.length === 0) return;
 
-  function findItems(keywords, max) {
+  function findProductos(keywords, max) {
     const found = [];
     for (const item of catalog) {
       if (found.length >= max) break;
@@ -158,7 +158,7 @@ async function generateDefaultTemplates(catalog) {
         phone: '0991234567',
         email: 'ejemplo@email.com',
       },
-      items: findItems(['camara', 'cámara', 'cable', 'dvr', 'nvr', 'grabador', 'disco'], 4),
+      productos: findProductos(['camara', 'cámara', 'cable', 'dvr', 'nvr', 'grabador', 'disco'], 4),
       supplierMargins: {},
       installMargin: 35,
       isSample: true,
@@ -176,7 +176,7 @@ async function generateDefaultTemplates(catalog) {
         phone: '022345678',
         email: 'oficina@ejemplo.com',
       },
-      items: findItems(['camara', 'alarma', 'control de acceso', 'cable', 'nvr', 'dvr'], 6),
+      productos: findProductos(['camara', 'alarma', 'control de acceso', 'cable', 'nvr', 'dvr'], 6),
       supplierMargins: {},
       installMargin: 35,
       isSample: true,
@@ -194,7 +194,7 @@ async function generateDefaultTemplates(catalog) {
         phone: '042345678',
         email: 'banco@ejemplo.com',
       },
-      items: findItems(
+      productos: findProductos(
         ['camara', 'alarma', 'control de acceso', 'cable', 'dvr', 'nvr', 'lector', 'sensor', 'grabador'],
         8
       ),
@@ -220,7 +220,7 @@ function initQuote() {
   window.getTemplate = getTemplate;
   window.saveTemplate = saveTemplate;
   window.deleteTemplate = deleteTemplate;
-  window.resolveTemplateItems = resolveTemplateItems;
+  window.resolveTemplateProductos = resolveTemplateProductos;
   window.generateDefaultTemplates = generateDefaultTemplates;
   window.refreshTemplates = () => {
     _templatesCache = null;
@@ -234,6 +234,6 @@ export {
   getTemplate,
   saveTemplate,
   deleteTemplate,
-  resolveTemplateItems,
+  resolveTemplateProductos,
   generateDefaultTemplates,
 };
