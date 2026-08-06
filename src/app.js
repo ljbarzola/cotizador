@@ -927,25 +927,60 @@ function renderTotals() {
 
 // === QUOTE SAVE/LOAD ===
 function updateDiscount() {
-  setDiscountType($('discountType').value);
-  setDiscountValue(parseFloat($('discountValue').value) || 0);
+  const type = $('discountType')?.value || 'none';
+  setDiscountType(type);
   const input = $('discountValue');
   const preview = $('discountPreview');
-  input.disabled = discountType === 'none';
-  if (discountType === 'none') {
-    input.value = 0;
-    preview.textContent = '';
-  } else if (discountType === 'percent') {
-    input.max = 100;
-    input.placeholder = '0-100';
-    if (discountValue > 0) preview.textContent = `→ -$${((getSubtotal() * discountValue) / 100).toFixed(2)}`;
-    else preview.textContent = '';
-  } else {
-    input.max = '';
-    input.placeholder = '0';
-    if (discountValue > 0) preview.textContent = `→ -$${discountValue.toFixed(2)}`;
-    else preview.textContent = '';
+  let rawVal = parseFloat(input?.value) || 0;
+  if (rawVal < 0) rawVal = 0;
+
+  const subtotal = getSubtotal();
+
+  if (type === 'percent') {
+    if (rawVal > 100) {
+      rawVal = 100;
+      if (input) input.value = 100;
+      toast('El descuento en porcentaje no puede ser mayor a 100%', 'warning');
+    }
+  } else if (type === 'fixed') {
+    if (rawVal > subtotal && subtotal > 0) {
+      rawVal = subtotal;
+      if (input) input.value = Math.round(subtotal * 100) / 100;
+      toast('El descuento fijo no puede ser mayor al total de la cotización', 'warning');
+    }
   }
+
+  setDiscountValue(rawVal);
+
+  if (input) input.disabled = type === 'none';
+
+  if (type === 'none') {
+    if (input) input.value = 0;
+    if (preview) preview.textContent = '';
+  } else if (type === 'percent') {
+    if (input) {
+      input.max = 100;
+      input.placeholder = '0-100';
+    }
+    if (rawVal > 0) {
+      const discAmount = (subtotal * rawVal) / 100;
+      if (preview) preview.textContent = `→ -$${fmt(discAmount).replace('$', '')}`;
+    } else if (preview) {
+      preview.textContent = '';
+    }
+  } else {
+    if (input) {
+      input.max = Math.round(subtotal * 100) / 100;
+      input.placeholder = '0';
+    }
+    if (rawVal > 0) {
+      const discAmount = Math.min(rawVal, subtotal);
+      if (preview) preview.textContent = `→ -$${fmt(discAmount).replace('$', '')}`;
+    } else if (preview) {
+      preview.textContent = '';
+    }
+  }
+
   renderCart();
   saveDraft();
 }

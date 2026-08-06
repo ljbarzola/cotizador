@@ -31,32 +31,86 @@ import { calcItemPrice } from './helpers.js';
  * @returns {number} Sum of all item totals (before IVA + installation)
  */
 export function quoteTotal(q) {
-  let sum = 0;
-  (q.productos || []).forEach(c => {
+  if (!q) return 0;
+  let subtotalEquipo = 0;
+  let totalIva = 0;
+  let totalInstalacion = 0;
+  let totalInstalacionesCat = 0;
+
+  const installMarginPct = q.installMargin ?? q.margin?.installMargin ?? 35;
+  const supplierMarginsMap = q.supplierMargins || q.margin?.supplierMargins || {};
+
+  const items = q.productos || q.items || [];
+
+  items.forEach(c => {
+    if (c.isInstallService) {
+      const baseCost = c.customCost ?? c.cost ?? c.costo_unitario ?? 0;
+      const margin = c.customMargin ?? installMarginPct;
+      const totalSvc = (baseCost + baseCost * (margin / 100)) * (c.qty || 1);
+      totalInstalacionesCat += totalSvc;
+      return;
+    }
+
     if (c.isKit) {
       (c.kitComponents || []).forEach(cc => {
-        if (cc.catalogIdx >= 0 && cc.catalogIdx < CATALOG.length) {
-          const it = CATALOG[cc.catalogIdx];
-          const p = calcItemPrice(it);
-          sum += p.priceBeforeIva * (c.qty || 1);
+        let it = CATALOG[cc.catalogIdx];
+        if (!it && cc.sourceId) {
+          it = CATALOG.find(p => p.sourceId === cc.sourceId);
+        }
+        if (!it) return;
+        const compQty = (cc.qty ?? 1) * (c.qty || 1);
+        const compTechCost = cc.techCost ?? 0;
+        const compInstallActive = cc.installActive ?? false;
+        const compMargin = cc.customMargin ?? supplierMarginsMap[it.supplier || 'Sin proveedor'] ?? 15;
+        const pricing = calcItemPrice(it, {
+          supplierMargin: compMargin,
+          installMargin: installMarginPct,
+          techCost: compTechCost,
+          installActive: compInstallActive,
+        });
+        subtotalEquipo += pricing.priceBeforeIva * compQty;
+        totalIva += pricing.iva * compQty;
+        if (compInstallActive && pricing.instalacionPrice > 0) {
+          totalInstalacion += pricing.instalacionPrice;
         }
       });
-    } else if (c.catalogIdx >= 0 && c.catalogIdx < CATALOG.length) {
-      const item = CATALOG[c.catalogIdx];
-      const effectiveMargin = c.customMargin ?? (q.supplierMargins || {})[item.supplier || 'Sin proveedor'] ?? 15;
-      const pricing = calcItemPrice(item, {
-        supplierMargin: effectiveMargin,
-        installMargin: q.installMargin ?? 35,
-        techCost: c.techCost || 0,
-        installActive: c.installActive || false,
-      });
-      sum += pricing.priceBeforeIva * (c.qty || 1);
-      if (c.installActive && pricing.instalacionPrice > 0) {
-        sum += pricing.instalacionPrice * (c.qty || 1);
-      }
+      return;
+    }
+
+    let item = CATALOG[c.catalogIdx];
+    if (!item && c.sourceId) {
+      item = CATALOG.find(p => p.sourceId === c.sourceId);
+    }
+    if (!item) return;
+
+    const qty = c.qty || 1;
+    const effectiveMargin = c.customMargin ?? supplierMarginsMap[item.supplier || 'Sin proveedor'] ?? 15;
+    const pricing = calcItemPrice(item, {
+      supplierMargin: effectiveMargin,
+      installMargin: installMarginPct,
+      techCost: c.techCost || 0,
+      installActive: c.installActive || false,
+    });
+
+    subtotalEquipo += pricing.priceBeforeIva * qty;
+    totalIva += pricing.iva * qty;
+    if (c.installActive && pricing.instalacionPrice > 0) {
+      totalInstalacion += pricing.instalacionPrice;
     }
   });
-  return sum;
+
+  const totalBeforeDiscount = subtotalEquipo + totalIva + totalInstalacion + totalInstalacionesCat;
+
+  let discount = 0;
+  if (q.discountType === 'percent') {
+    const pct = Math.min(100, Math.max(0, q.discountValue || 0));
+    discount = Math.round(totalBeforeDiscount * (pct / 100) * 100) / 100;
+  } else if (q.discountType === 'fixed') {
+    const fixed = Math.max(0, q.discountValue || 0);
+    discount = Math.min(totalBeforeDiscount, fixed);
+  }
+
+  return Math.max(0, Math.round((totalBeforeDiscount - discount) * 100) / 100);
 }
 
 /**

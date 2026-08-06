@@ -80,10 +80,12 @@ export function calcItemTotals(
  */
 export function calcDiscount(totalGeneral, discountType, discountValue) {
   if (discountType === 'percent' && discountValue > 0) {
-    return Math.round(totalGeneral * (discountValue / 100) * 100) / 100;
+    const cappedPct = Math.min(100, Math.max(0, discountValue));
+    return Math.round(totalGeneral * (cappedPct / 100) * 100) / 100;
   }
   if (discountType === 'fixed' && discountValue > 0) {
-    return Math.min(discountValue, totalGeneral);
+    const cappedFixed = Math.max(0, discountValue);
+    return Math.min(cappedFixed, Math.max(0, totalGeneral));
   }
   return 0;
 }
