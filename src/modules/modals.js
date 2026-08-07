@@ -307,12 +307,61 @@ export async function openTemplatePreview(id) {
   let rowNum = 1;
 
   productItems.forEach(item => {
-    const catItem = CATALOG.find(c => c.sourceId === item.sourceId);
+    if (item.isKit) {
+      const kitComps = (item.kitComponents || [])
+        .map(cc => {
+          let catItem = CATALOG[cc.catalogIdx];
+          if (!catItem && cc.sourceId) {
+            catItem = CATALOG.find(c => c.sourceId === cc.sourceId);
+          }
+          return { cc, catItem };
+        })
+        .filter(c => c.catItem);
+
+      if (kitComps.length === 0) return;
+
+      const kitQty = item.qty || 1;
+      html += `<tr class="tpl-kit-header-row" style="background:#f1f5f9;font-weight:600;">
+        <td>📦</td>
+        <td style="font-family:ui-monospace,monospace;font-size:11px;">KIT</td>
+        <td colspan="5"><strong>${esc(item.kitName || 'Kit')}</strong> <span style="font-size:11px;color:var(--muted);font-weight:normal;">(${kitComps.length} componente${kitComps.length !== 1 ? 's' : ''} · x${kitQty})</span></td>
+      </tr>`;
+
+      kitComps.forEach(({ cc, catItem }) => {
+        const compQty = (cc.qty || 1) * kitQty;
+        const pricing = calcItemPrice(catItem, {
+          supplierMargin: cc.customMargin ?? getTplSupplierMargin(catItem.supplier),
+          installMargin: tplInstallMargin,
+          techCost: cc.techCost || 0,
+          installActive: cc.installActive || false,
+        });
+
+        totalEquipos += pricing.subtotalEquipo * compQty - pricing.iva * compQty;
+        totalIVA += pricing.iva * compQty;
+        if (cc.installActive && pricing.instalacionPrice > 0) {
+          totalInstCost += (cc.techCost || 0) * compQty;
+          totalInstProfit += pricing.gananciaInstalacion * compQty;
+        }
+
+        html += `<tr>
+          <td>${rowNum++}</td>
+          <td style="font-family:ui-monospace,monospace;font-size:11px;">${esc(catItem.sourceId)}</td>
+          <td>${esc(catItem.description)} <small style="color:var(--muted);">(componente)</small></td>
+          <td>${compQty}</td>
+          <td>${fmt(catItem.cost)}</td>
+          <td>${fmt(pricing.subtotalEquipo)}</td>
+          <td>${fmt(pricing.subtotalEquipo * compQty)}</td>
+        </tr>`;
+      });
+      return;
+    }
+
+    const catItem = CATALOG.find(c => c.sourceId === item.sourceId) || CATALOG[item.catalogIdx];
     if (!catItem) return;
     const qty = item.qty || 1;
 
     const pricing = calcItemPrice(catItem, {
-      supplierMargin: getTplSupplierMargin(catItem.supplier),
+      supplierMargin: item.customMargin ?? getTplSupplierMargin(catItem.supplier),
       installMargin: tplInstallMargin,
       techCost: item.techCost || 0,
       installActive: item.installActive || false,
@@ -425,7 +474,35 @@ export async function loadTemplateDirect(id) {
 
   // Resolve template items to cart (skip missing silently)
   cart.length = 0;
-  for (const ti of tpl.productos) {
+  for (const ti of tpl.productos || []) {
+    if (ti.isKit) {
+      const resolvedComps = (ti.kitComponents || [])
+        .map(cc => {
+          let catIdx = cc.catalogIdx;
+          if (catIdx == null || catIdx < 0 || catIdx >= CATALOG.length) {
+            catIdx = CATALOG.findIndex(c => c.sourceId === cc.sourceId);
+          }
+          if (catIdx < 0) return null;
+          return {
+            catalogIdx: catIdx,
+            qty: cc.qty || 1,
+            installActive: cc.installActive || false,
+            techCost: cc.techCost || 0,
+            customMargin: cc.customMargin ?? null,
+          };
+        })
+        .filter(Boolean);
+
+      if (resolvedComps.length > 0) {
+        cart.push({
+          isKit: true,
+          kitName: ti.kitName || 'Kit',
+          qty: ti.qty || 1,
+          kitComponents: resolvedComps,
+        });
+      }
+      continue;
+    }
     if (ti.isInstallService) {
       cart.push({
         isInstallService: true,
@@ -440,13 +517,17 @@ export async function loadTemplateDirect(id) {
       });
       continue;
     }
-    const catIdx = CATALOG.findIndex(c => c.sourceId === ti.sourceId);
+    let catIdx = CATALOG.findIndex(c => c.sourceId === ti.sourceId);
+    if (catIdx < 0 && ti.catalogIdx >= 0 && ti.catalogIdx < CATALOG.length) {
+      catIdx = ti.catalogIdx;
+    }
     if (catIdx >= 0) {
       cart.push({
         catalogIdx: catIdx,
         qty: ti.qty || 1,
         installActive: ti.installActive || false,
         techCost: ti.techCost || 0,
+        customMargin: ti.customMargin ?? null,
       });
     }
   }

@@ -96,6 +96,36 @@ function resolveTemplateProductos(templateItems, catalog) {
   const cart = [];
   const unmatched = [];
   for (const ti of templateItems || []) {
+    if (ti.isKit) {
+      const resolvedComps = (ti.kitComponents || [])
+        .map(cc => {
+          let catIdx = cc.catalogIdx;
+          if (catIdx == null || catIdx < 0 || catIdx >= catalog.length) {
+            catIdx = catalog.findIndex(c => c.sourceId === cc.sourceId);
+          }
+          if (catIdx < 0) return null;
+          return {
+            catalogIdx: catIdx,
+            qty: cc.qty || 1,
+            installActive: cc.installActive || false,
+            techCost: cc.techCost || 0,
+            customMargin: cc.customMargin ?? null,
+          };
+        })
+        .filter(Boolean);
+
+      if (resolvedComps.length > 0) {
+        cart.push({
+          isKit: true,
+          kitName: ti.kitName || 'Kit',
+          qty: ti.qty || 1,
+          kitComponents: resolvedComps,
+        });
+      } else {
+        unmatched.push(ti);
+      }
+      continue;
+    }
     if (ti.isInstallService) {
       cart.push({
         isInstallService: true,
@@ -110,13 +140,17 @@ function resolveTemplateProductos(templateItems, catalog) {
       });
       continue;
     }
-    const catIdx = catalog.findIndex(c => c.sourceId === ti.sourceId);
+    let catIdx = catalog.findIndex(c => c.sourceId === ti.sourceId);
+    if (catIdx < 0 && ti.catalogIdx >= 0 && ti.catalogIdx < catalog.length) {
+      catIdx = ti.catalogIdx;
+    }
     if (catIdx >= 0) {
       cart.push({
         catalogIdx: catIdx,
         qty: ti.qty || 1,
         installActive: ti.installActive || false,
         techCost: ti.techCost || 0,
+        customMargin: ti.customMargin ?? null,
       });
     } else {
       unmatched.push(ti);

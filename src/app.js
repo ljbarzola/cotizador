@@ -3038,6 +3038,24 @@ async function saveCurrentAsTemplate() {
 
   const productos = cart
     .map(c => {
+      if (c.isKit) {
+        return {
+          isKit: true,
+          kitName: c.kitName || 'Kit',
+          qty: c.qty || 1,
+          kitComponents: (c.kitComponents || []).map(cc => {
+            const compCatItem = CATALOG[cc.catalogIdx];
+            return {
+              catalogIdx: cc.catalogIdx,
+              sourceId: compCatItem?.sourceId || cc.sourceId || '',
+              qty: cc.qty || 1,
+              installActive: cc.installActive || false,
+              techCost: cc.techCost || 0,
+              customMargin: cc.customMargin ?? null,
+            };
+          }),
+        };
+      }
       if (c.isInstallService) {
         return {
           isInstallService: true,
@@ -3055,6 +3073,7 @@ async function saveCurrentAsTemplate() {
       const catItem = CATALOG[c.catalogIdx];
       if (!catItem) return null;
       return {
+        catalogIdx: c.catalogIdx,
         sourceId: catItem.sourceId || '',
         qty: c.qty,
         installActive: c.installActive || false,

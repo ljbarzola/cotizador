@@ -139,7 +139,7 @@ Cotizador/
     - **Edición de Kits**: Dropdowns de componentes estilizados con delimitación de texto y etiquetas limpias `($0.00)`.
     - **Diseño de Barra Superior y Separadores**: Botones de la barra superior uniformes con efecto hover sutil; separadores de kits y productos diferenciados en pantalla e impresión PDF.
     - **Cálculo de Totales en Vista Previa de Plantillas**: Corrección en el cálculo de `grandTotal` en `openTemplatePreview` para incluir el costo total de los servicios de instalación (`totalInstallServicesPvp`), haciendo que el total del modal coincida al 100% con el total del carrito al cargar la plantilla.
-    - **Guardar como Plantilla**: Corrección en `saveCurrentAsTemplate()` enviando la propiedad `productos` en lugar de la clave obsoleta `items`, permitiendo guardar correctamente tanto productos regulares como servicios de instalación en Supabase.
+    - **Guardar como Plantilla**: Corrección en `saveCurrentAsTemplate()` mapeando correctamente Kits (`isKit`), componentes, servicios de instalación y productos regulares con la clave `productos`, garantizando su almacenamiento en Supabase y restauración completa al importar o previsualizar la plantilla.
     - **Cálculo de Totales en Historial**: `quoteTotal(q)` calcula de forma precisa el total general incluyendo IVA (15%), costo y margen de instalaciones de productos, servicios de instalación del catálogo y aplicando el descuento registrado.
     - **Validación y Límites de Descuentos**: `updateDiscount()` y `calcDiscount()` aseguran que el descuento en porcentaje jamás supere el 100% y que el descuento de valor fijo no exceda el subtotal general de la cotización, mostrando una advertencia interactiva al usuario.
 
