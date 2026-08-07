@@ -1475,7 +1475,7 @@ function renderViewerTable() {
         const mCost = p.monthlyCost != null ? fmt(p.monthlyCost) : '$0.00';
         const aCost = p.annualCost != null ? fmt(p.annualCost) : '$0.00';
         return `<tr>
-          <td>${esc(p.category || 'SERVICIOS')}</td>
+          <td>${esc(p.sourceId || '')}</td>
           <td>${esc(p.subcategory || '')}</td>
           <td style="white-space:pre-line;line-height:1.4;">${esc(nombre)}</td>
           <td style="white-space:pre-line;line-height:1.4;">${esc(desc)}</td>
@@ -1525,7 +1525,7 @@ const VIEWER_HEADERS = {
   products_materiales:
     '<th style="width:100px">Código</th><th style="width:120px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th>Nombre</th><th style="width:70px"><span class="col-full">Costo</span><span class="col-short">C. Unit.</span></th><th style="width:50px">Gan.</th><th style="width:50px">Inst.</th><th style="width:70px">PVP</th><th style="width:60px">IVA</th><th style="width:75px">Total</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
   products_servicios:
-    '<th style="width:100px">Categoría</th><th style="width:120px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th>Nombre</th><th>Descripción</th><th style="width:95px" class="right">Costo Mensual</th><th style="width:95px" class="right">Costo Anual</th><th>Observaciones</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
+    '<th style="width:100px">Código</th><th style="width:120px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th>Nombre</th><th>Descripción</th><th style="width:95px" class="right">Costo Mensual</th><th style="width:95px" class="right">Costo Anual</th><th>Observaciones</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
   install:
     '<th style="width:80px">Código</th><th>Nombre instalación</th><th style="width:100px"><span class="col-full">Categoría</span><span class="col-short">Cat.</span></th><th style="width:100px"><span class="col-full">Subcategoría</span><span class="col-short">Subcat.</span></th><th style="width:80px" class="right"><span class="col-full">Costo</span><span class="col-short">C. Unit.</span></th><th>Observaciones</th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
   kits: '<th style="width:100px">Código</th><th>Nombre</th><th>Componentes</th><th style="width:80px"><span class="col-full">Costo</span><span class="col-short">Total</span></th><th style="width:65px;text-align:center;"><span class="col-full">Acciones</span><span class="col-short">Acc.</span></th>',
