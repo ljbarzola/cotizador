@@ -1,6 +1,17 @@
 // === SHARED APPLICATION STATE ===
 // All modules import from here to access shared state.
 
+/** @type {boolean} Whether the catalog has finished loading from Supabase */
+export let catalogReady = false;
+
+/**
+ * Set catalog ready state.
+ * @param {boolean} v
+ */
+export function setCatalogReady(v) {
+  catalogReady = v;
+}
+
 /** @type {Array<Object>} Full product catalog loaded from Supabase */
 export const CATALOG = [];
 
