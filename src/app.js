@@ -11,6 +11,8 @@ import { calcItemTotals, calcDiscount, calcSubtotal } from './modules/cartCalcul
 import {
   CATALOG,
   setCatalog,
+  catalogReady,
+  setCatalogReady,
   cart,
   setCart,
   currentSession,
@@ -162,6 +164,7 @@ function _getStatusLabel(s) {
 
 // === RENDER CATÁLOGO ===
 function renderCatalog() {
+  if (!catalogReady) return;
   const q = $('search').value.toLowerCase().trim();
   const cat = $('categoryFilter').value;
   const sub = $('subcategoryFilter').value;
@@ -334,6 +337,7 @@ function renderSubcategories(selectedCat) {
 
 // === CART ===
 function addToCart(idx) {
+  if (!catalogReady || idx < 0 || idx >= CATALOG.length) return;
   const item = CATALOG[idx];
   const existing = cart.find(c => c.catalogIdx === idx);
   if (existing) {
@@ -596,6 +600,15 @@ function renderCart() {
   if (cart.length === 0) {
     container.innerHTML =
       '<div class="empty-state"><div class="icon">🛒</div><div>Aún no hay productos en la cotización.</div><div style="margin-top:4px;font-size:11px;">Busca y agrega productos del catálogo (panel izquierdo)</div></div>';
+    renderMarginConfig();
+    renderTotals();
+    return;
+  }
+
+  // If catalog not ready yet, show loading state for draft items
+  if (!catalogReady) {
+    container.innerHTML =
+      '<div class="empty-state"><div class="icon">⏳</div><div>Cargando catálogo de productos...</div><div style="margin-top:4px;font-size:11px;">Los productos del borrador se mostrarán cuando el catálogo esté listo</div></div>';
     renderMarginConfig();
     renderTotals();
     return;
@@ -1420,7 +1433,10 @@ function renderViewerSubcategories(selectedCat) {
 }
 
 async function loadViewerProducts() {
-  $('viewerBody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;">Cargando...</td></tr>';
+  $('viewerBody').innerHTML =
+    '<tr><td colspan="9" style="text-align:center;padding:20px;">' +
+    (catalogReady ? 'Cargando...' : 'Cargando catálogo desde el servidor...') +
+    '</td></tr>';
   viewerProducts = CATALOG;
   renderViewerTable();
 }
@@ -2506,22 +2522,47 @@ window.saveInstallEditor = saveInstallEditor;
 
 // === BOOT ===
 async function bootApp() {
-  const dbLoaded = await loadCatalogFromDB();
-  if (!dbLoaded) loadCustomCatalogIfExists();
-  renderCategories();
+  // === PHASE 1: Render UI immediately (no await) ===
+  setupEventListeners();
 
+  // Load draft from localStorage
+  const raw = localStorage.getItem('quote_draft');
+  if (raw) {
+    try {
+      const draft = JSON.parse(raw);
+      if (draft.productos && draft.productos.length > 0) loadQuoteData(draft);
+    } catch (_e) {
+      /* ignore corrupt draft */
+    }
+  }
+  if (!$('cotNum').value) $('cotNum').value = await generateNextCotNumberFromDB();
+  if (!$('cotDate').value) $('cotDate').value = new Date().toISOString().split('T')[0];
+
+  // Show skeleton in catalog panel
+  showCatalogSkeleton();
+  renderCart();
+  syncPrintView();
+  applyEmpresaHeader();
+
+  // === PHASE 2: Load catalog in background (non-blocking) ===
+  loadCatalogBackground();
+}
+
+function setupEventListeners() {
   $('search').addEventListener('input', () => {
     catalogPage = 1;
-    renderCatalog();
+    if (catalogReady) renderCatalog();
   });
   $('categoryFilter').addEventListener('change', () => {
     catalogPage = 1;
-    renderSubcategories($('categoryFilter').value);
-    renderCatalog();
+    if (catalogReady) {
+      renderSubcategories($('categoryFilter').value);
+      renderCatalog();
+    }
   });
   $('subcategoryFilter').addEventListener('change', () => {
     catalogPage = 1;
-    renderCatalog();
+    if (catalogReady) renderCatalog();
   });
   $('viewerSearch').addEventListener('input', () => {
     if (viewerTab === 'install') renderViewerInstallations();
@@ -2545,22 +2586,61 @@ async function bootApp() {
   document
     .querySelectorAll('#clientName,#clientRuc,#clientAddress,#clientContact,#clientPhone,#clientEmail,#cotNum,#cotDate')
     .forEach(el => el.addEventListener('input', syncPrintView));
+}
 
-  const raw = localStorage.getItem('quote_draft');
-  if (raw) {
-    try {
-      const draft = JSON.parse(raw);
-      if (draft.productos && draft.productos.length > 0) loadQuoteData(draft);
-    } catch (_e) {
-      /* ignore corrupt draft */
-    }
+function showCatalogSkeleton() {
+  const list = $('catalogList');
+  if (!list) return;
+  // Update sync status to show loading
+  const syncIcon = $('syncIcon');
+  const syncLabel = $('syncLabel');
+  if (syncIcon) syncIcon.textContent = '⏳';
+  if (syncLabel) syncLabel.textContent = 'Cargando...';
+  let html = '';
+  for (let i = 0; i < 6; i++) {
+    html += `<div class="cat-producto" style="pointer-events:none;">
+      <div class="cat-producto-info">
+        <div class="cat-producto-code"><span style="display:inline-block;width:60px;height:12px;background:#e5e7eb;border-radius:3px;"></span></div>
+        <div class="cat-producto-desc"><span style="display:inline-block;width:80%;height:14px;background:#e5e7eb;border-radius:3px;"></span></div>
+        <div class="cat-producto-meta"><span style="display:inline-block;width:40px;height:10px;background:#e5e7eb;border-radius:3px;"></span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <div class="cat-producto-price"><span style="display:inline-block;width:50px;height:16px;background:#e5e7eb;border-radius:3px;"></span></div>
+        <span style="display:inline-block;width:64px;height:28px;background:#e5e7eb;border-radius:6px;"></span>
+      </div>
+    </div>`;
   }
-  if (!$('cotNum').value) $('cotNum').value = await generateNextCotNumberFromDB();
-  if (!$('cotDate').value) $('cotDate').value = new Date().toISOString().split('T')[0];
-  renderCatalog();
-  renderCart();
-  syncPrintView();
-  applyEmpresaHeader();
+  list.innerHTML = html;
+}
+
+async function loadCatalogBackground() {
+  try {
+    const dbLoaded = await loadCatalogFromDB();
+    if (!dbLoaded) loadCustomCatalogIfExists();
+    setCatalogReady(true);
+    renderCategories();
+    renderCatalog();
+    renderCart();
+    $('catalogCount').textContent = CATALOG.length + ' Productos';
+    // Restore sync status
+    const syncIcon = $('syncIcon');
+    const syncLabel = $('syncLabel');
+    if (syncIcon) syncIcon.textContent = '📦';
+    if (syncLabel) syncLabel.textContent = 'Catálogo';
+  } catch (e) {
+    console.warn('Error loading catalog:', e.message);
+    const list = $('catalogList');
+    if (list) {
+      list.innerHTML =
+        '<div class="empty-state"><div class="icon">⚠️</div>Error al cargar catálogo.<br><small>' +
+        (e.message || '') +
+        '</small></div>';
+    }
+    const syncIcon = $('syncIcon');
+    const syncLabel = $('syncLabel');
+    if (syncIcon) syncIcon.textContent = '⚠️';
+    if (syncLabel) syncLabel.textContent = 'Error';
+  }
 }
 
 function syncPrintView() {
