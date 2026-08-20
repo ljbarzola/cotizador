@@ -769,10 +769,6 @@ function renderMarginConfig() {
   const section = $('marginConfigSection');
   if (!section) return;
 
-  if (cart.length === 0) {
-    section.style.display = 'none';
-    return;
-  }
   section.style.display = '';
 
   // === PROVEEDORES ===
@@ -2663,6 +2659,8 @@ function syncPrintView() {
     const cargo = currentSession?.cargo || '';
     cotRole.textContent = cargo || '[Cargo]';
   }
+  const phoneEl = $('printAsesorPhone');
+  if (phoneEl) phoneEl.textContent = '📞 ' + (currentSession?.telefono || '+593 99 897 4909');
   const condEl = $('quoteConditions');
   const printCondEl = $('printConditions');
   if (condEl && printCondEl) {
@@ -2774,6 +2772,8 @@ function openProfile() {
   const cargoCustom = $('ProfileCargoCustom');
   if (nameEl) nameEl.value = currentSession?.nombre || '';
   if (emailEl) emailEl.value = currentSession?.email || '';
+  const phoneEl = $('ProfilePhone');
+  if (phoneEl) phoneEl.value = currentSession?.telefono || '+593 99 897 4909';
   const currentCargo = currentSession?.cargo || 'Asesor';
   const options = Array.from(cargoSelect.options).map(o => o.value);
   if (options.includes(currentCargo)) {
@@ -2805,6 +2805,7 @@ function toggleProfileCargoCustom() {
 async function saveProfileCargo() {
   const sel = $('ProfileCargo');
   const custom = $('ProfileCargoCustom');
+  const phoneEl = $('ProfilePhone');
   let cargo = sel.value;
   if (cargo === '__other__') {
     cargo = custom ? custom.value.trim() : '';
@@ -2817,12 +2818,14 @@ async function saveProfileCargo() {
       return;
     }
   }
+  const telefono = phoneEl ? phoneEl.value.trim() : currentSession?.telefono || '+593 99 897 4909';
   try {
-    const { error } = await supabase.from('profiles').update({ cargo }).eq('id', currentSession.userId);
+    const { error } = await supabase.from('profiles').update({ cargo, telefono }).eq('id', currentSession.userId);
     if (error) throw error;
     currentSession.cargo = cargo;
+    currentSession.telefono = telefono;
     localStorage.setItem('session', JSON.stringify(currentSession));
-    toast('✅ Cargo actualizado: ' + cargo, 'success');
+    toast('✅ Perfil actualizado', 'success');
     closeProfile();
   } catch (e) {
     toast('❌ Error al guardar: ' + e.message, 'danger');

@@ -76,6 +76,7 @@ export async function doLogin() {
       nombre: profile.nombre || data.user.email,
       rol: profile.rol || 'ventas',
       cargo: profile.cargo || '',
+      telefono: profile.telefono || '+593 99 897 4909',
       activo: profile.activo !== false,
       ts: Date.now(),
     };
