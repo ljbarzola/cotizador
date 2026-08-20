@@ -360,7 +360,7 @@
               </div>
               <div class="print-header-right">
                 <div class="print-empresa-title">Cotizador GEMESEG</div>
-                <div class="empresa-info">📞 +593 99 897 4909</div>
+                <div class="empresa-info" id="printAsesorPhone">📞 +593 99 897 4909</div>
               </div>
             </div>
 
@@ -1019,7 +1019,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             <div class="help-section-content">
               <p>El sistema cuenta con un catálogo independiente de Servicios de Instalación (sincronizado desde la hoja <code>INSTALACIÓN BD</code>):</p>
               <ul>
-                <li><strong>Agregar al cotizador:</strong> Usa el botón <code>+ Servicio de instalación</code> en la sección 🔧 <strong>Ganancia por instalación</strong>.</li>
+                <li><strong>Agregar al cotizador:</strong> Usa el botón <code>+ Servicio de instalación</code> en la sección 🔧 <strong>Ganancia por instalación</strong>. Puedes agregar servicios de instalación aunque no tengas productos en la cotización.</li>
                 <li><strong>Configuración flexible:</strong> En cada tarjeta de servicio agregada puedes ajustar la <strong>Cantidad</strong>, el <strong>Costo base</strong> y el <strong>Margen de ganancia</strong> (35% por defecto).</li>
                 <li><strong>Impuestos:</strong> Los servicios de instalación <strong>no aplican IVA 15%</strong>. Se suman de forma directa al total de la oferta.</li>
               </ul>
@@ -1028,15 +1028,16 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">👤</span><span class="help-title">6. Perfil y Cargo en Firma de Cotización</span>
+              <span class="help-icon">👤</span><span class="help-title">6. Perfil, Teléfono y Cargo en Firma de Cotización</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
-              <p>Puedes personalizar tu cargo comercial desde el menú de usuario en la esquina superior derecha:</p>
+              <p>Puedes personalizar tu cargo y teléfono desde el menú de usuario:</p>
               <ul>
                 <li>Haz clic en tu nombre y selecciona <code>✏️ Perfil</code>.</li>
-                <li>Selecciona un cargo predefinido (<em>Asesor, Administrador, Gerente de Ventas, Director Comercial, Gerente General</em>) o escribe tu propio cargo personalizado.</li>
-                <li>El cargo guardado se mostrará automáticamente en la firma del documento PDF oficial bajo tu nombre ("Emite la cotización").</li>
+                <li><strong>Teléfono:</strong> Ingresa tu número de contacto. Aparece en el encabezado del PDF oficial. Valor por defecto: <code>+593 99 897 4909</code>.</li>
+                <li><strong>Cargo:</strong> Selecciona un cargo predefinido (<em>Asesor, Administrador, Gerente de Ventas, Director Comercial, Gerente General</em>) o escribe tu propio cargo personalizado.</li>
+                <li>El cargo y teléfono guardados se mostrarán automáticamente en el documento PDF oficial.</li>
               </ul>
             </div>
           </div>
@@ -1146,6 +1147,10 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             <div class="field" style="grid-column: 1/-1">
               <label for="ProfileEmail">Email</label>
               <input type="text" id="ProfileEmail" aria-label="Email del perfil" disabled style="background:#f3f4f6;cursor:not-allowed;" />
+            </div>
+            <div class="field" style="grid-column: 1/-1">
+              <label for="ProfilePhone">Teléfono (aparece en la cotización)</label>
+              <input type="text" id="ProfilePhone" placeholder="+593 99 897 4909" aria-label="Teléfono del asesor" />
             </div>
             <div class="field" style="grid-column: 1/-1">
               <label for="ProfileCargo">Cargo (aparece en la cotización)</label>

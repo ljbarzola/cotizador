@@ -20,7 +20,7 @@
 
 **Tablas (sincronizadas desde Google Sheets):**
 
-- `profiles` - Perfiles de usuario (id, email, nombre, rol). Trigger auto-create.
+- `profiles` - Perfiles de usuario (id, correo, nombre, rol, cargo, telefono). Trigger auto-create.
 - `equipos` - Catalogo de equipos (source_id, categoria, subcategoria, modelo, producto, unidades, costo_unitario, ganancia_flag, instalacion_flag, ultima_act, proveedor, observaciones).
 - `materiales` - Catalogo de materiales (source_id, categoria, subcategoria, producto, unidades, costo_unitario, ganancia_flag, instalacion_flag, observaciones).
 - `servicios` - Catalogo de servicios (source_id, categoria, subcategoria, servicio, descripcion, costo_mensual, costo_anual, costo_unitario, observaciones).
@@ -79,7 +79,9 @@ Cotizador/
 │   ├── add_cant_costo_columns.sql  # Agregar cantidad_default y costo_total a equipos/materiales
 │   ├── verify_supabase.sql     # Verificacion de tablas
 │   ├── next_cot_seq.sql        # Tabla辅助 quote_sequences + RPC next_quote_seq()
-│   └── rename_items_to_productos.sql  # Migra columna items→productos en saved_quotes y templates
+│   ├── rename_items_to_productos.sql  # Migra columna items→productos en saved_quotes y templates
+│   ├── add_cargo_column.sql           # Agregar columna cargo a profiles
+│   └── add_phone_column.sql           # Agregar columna telefono a profiles
 ├── public/
 │   ├── content/
 │   │   ├── logo-gemeseg-back-white.png   # Logo login
@@ -119,8 +121,8 @@ Cotizador/
 20. **Responsive/Movil**: 3 breakpoints (900px, 768px, 640px). Touch targets 44px, toggles de colapso para catálogo/cotización, grids responsive, modales fullscreen, tarjetas de instalación adaptadas.
 21. **Code Splitting**: Bundle dividido en chunks: app + supabase separado. Build optimizado.
 22. **Service Worker**: Cache de assets estaticos para modo offline. Network-first con fallback a cache.
-23. **Servicios de instalación (tabla independiente y UI en 2 filas)**: Pestaña Instalaciones en el visor de catálogo con sync separado. Editor de instalaciones con dropdowns de categoría/subcategoría poblados desde la DB. El picker de instalaciones (modal) se abre desde 🔧 Ganancia por instalación y muestra servicios del catálogo. Los servicios de instalación agregados se editan con costo custom e individual margin (35% default, editable) y NO llevan IVA. Solo aparecen en la sección de configuración de márgenes, NO en la tabla de detalle de cotización. Maquetación con estructura en 2 filas adaptada para móvil y escritorio.
-24. **Cargo del Asesor en Perfil**: Selección/edición de cargo (`profiles.cargo`) desde el menú de usuario que aparece impreso en la firma de la cotización PDF.
+23. **Servicios de instalación (tabla independiente y UI en 2 filas)**: Pestaña Instalaciones en el visor de catálogo con sync separado. Editor de instalaciones con dropdowns de categoría/subcategoría poblados desde la DB. El picker de instalaciones (modal) se abre desde 🔧 Ganancia por instalación y muestra servicios del catálogo. Los servicios de instalación agregados se editan con costo custom e individual margin (35% default, editable) y NO llevan IVA. Solo aparecen en la sección de configuración de márgenes, NO en la tabla de detalle de cotización. Se pueden agregar servicios de instalación aunque el carrito esté vacío (sin restricción de mínimo de artículos). Maquetación con estructura en 2 filas adaptada para móvil y escritorio.
+24. **Cargo y Teléfono del Asesor en Perfil**: Selección/edición de cargo (`profiles.cargo`) y teléfono (`profiles.telefono`) desde el menú de usuario. El cargo aparece impreso en la firma de la cotización PDF. El teléfono aparece en el encabezado del PDF con valor por defecto `+593 99 897 4909`.
 25. **Recuperación de Contraseña**: Flujo de restablecimiento de contraseña enviando enlace por correo electrónico a través de Supabase Auth.
 26. **Filtro por Vendedor**: Búsqueda y filtrado de cotizaciones en el historial por el nombre del vendedor/asesor creador (`vendor_name`).
 27. **Visor de catálogo con edición e interactividad**: El catálogo (modal) tiene 3 pestañas: Productos, Instalaciones, Kits. Cada pestaña muestra una tabla con botones ✏️ (editar) y ✕ (eliminar) lado a lado en cada fila. Botones `[+ Nuevo]` en la barra superior abren modales dedicados (`createProductModal` con selección previa de categoría obligatoria y subcategoría libre, y `createInstallModal` con categoría/subcategoría opcionales). Redimensión de columnas arrastrando bordes. Carga inteligente de datos en modales vía `getProductoDBValue`. Estructura visual de edición agrupada por secciones. Actualización en tiempo real con `setCatalog(updated)` sin recargar pantalla.
