@@ -3100,7 +3100,7 @@ th:hover .col-resizer {
     font-size: 12px;
   }
   .supplier-margin-input input {
-    width: 45px;
+    width: 52px;
     font-size: 13px;
   }
   .supplier-group-producto {
@@ -3269,7 +3269,7 @@ th:hover .col-resizer {
     gap: 4px;
   }
   .install-config-fields .install-field.field-margin .margin-input-inline input {
-    width: 44px;
+    width: 72px;
     height: 28px;
     padding: 0 4px;
     font-size: 13px;
@@ -3817,7 +3817,7 @@ th:hover .col-resizer {
   gap: 4px;
 }
 .supplier-margin-input input {
-  width: 48px;
+  width: 56px;
   padding: 3px 4px;
   border: 1px solid #93c5fd;
   border-radius: 4px;
@@ -4075,7 +4075,7 @@ th:hover .col-resizer {
     background: white;
   }
   .install-config-fields .install-field.field-cost input {
-    width: 76px !important;
+    width: 70px !important;
     height: 28px;
     padding: 0 6px !important;
     font-size: 13px;
@@ -4092,7 +4092,7 @@ th:hover .col-resizer {
     gap: 4px;
   }
   .install-config-fields .install-field.field-margin .margin-input-inline input {
-    width: 44px;
+    width: 72px;
     height: 28px;
     padding: 0 4px;
     font-size: 13px;
