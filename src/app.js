@@ -17,7 +17,6 @@ import {
   setCart,
   currentSession,
   setCurrentSession,
-  currentQuoteId,
   setCurrentQuoteId,
   supplierMargins,
   setSupplierMargins,
@@ -120,6 +119,7 @@ import {
   toggleTplIndustryCustom,
   generateNextCotNumberFromDB,
   showSaveTemplateModal,
+  showQuoteDuplicateModal,
 } from './utils.js';
 
 // === CATÁLOGO ===
@@ -819,7 +819,7 @@ function renderMarginConfig() {
       if (isSinProveedor) {
         supplierHtml += `<span class="supplier-hint">Margen individual por item ↓</span>`;
       } else {
-        supplierHtml += `<div class="supplier-margin-input"><input type="number" min="0" max="100" step="1" value="${margin}" aria-label="Margen de proveedor global para ${supplier.replace(/"/g, '&quot;')}" oninput="updateSupplierMarginGlobal('${supplier.replace(/'/g, "\\'")}', this.value)"><span>%</span></div>`;
+        supplierHtml += `<div class="supplier-margin-input"><input type="number" min="0" max="100" step="1" value="${margin}" aria-label="Margen de proveedor global para ${supplier.replace(/"/g, '&quot;')}" onchange="updateSupplierMarginGlobal('${supplier.replace(/'/g, "\\'")}', this.value)"><span>%</span></div>`;
       }
       supplierHtml += `</div>`;
 
@@ -835,7 +835,7 @@ function renderMarginConfig() {
         supplierHtml += `<span class="sgi-code">${item.sourceId || ''}</span>`;
         supplierHtml += `<span class="sgi-desc">${esc(item.description)}${isKit ? ' <small style="color:var(--muted);">(kit)</small>' : ''}</span>`;
         if (isSinProveedor && hasGanancia) {
-          supplierHtml += `<div class="supplier-margin-input sgi-margin-inline"><input type="number" min="0" max="100" step="1" value="${effectiveMargin}" aria-label="Margen de proveedor individual" oninput="${marginHandler}"><span>%</span></div>`;
+          supplierHtml += `<div class="supplier-margin-input sgi-margin-inline"><input type="number" min="0" max="100" step="1" value="${effectiveMargin}" aria-label="Margen de proveedor individual" onchange="${marginHandler}"><span>%</span></div>`;
         }
         supplierHtml += `<span class="sgi-cost">${fmt(item.cost)} → <strong>${fmt(pricing.priceBeforeIva)}</strong>${hasGanancia ? ' <span class="sgi-margin">+' + effectiveMargin + '%</span>' : ' <span class="sgi-no-margin">sin ganancia</span>'}</span>`;
         supplierHtml += `</div>`;
@@ -888,7 +888,7 @@ function renderMarginConfig() {
       installHtml += `<div class="install-config-fields">`;
       installHtml += `<div class="install-field field-cant"><label>Cant</label><input type="number" min="1" step="1" value="${c.qty}" aria-label="Cantidad de servicio" onchange="updateInstallServiceQty(${cartIdx}, this.value)"></div>`;
       const costVal = Number(c.customCost ?? c.cost).toFixed(2);
-      const marginVal = Math.round(c.customMargin ?? DEFAULT_INSTALL_MARGIN);
+      const marginVal = Number(c.customMargin ?? DEFAULT_INSTALL_MARGIN);
       installHtml += `<div class="install-field field-cost"><label>Costo</label><div class="cost-input-wrapper"><span class="input-currency">$</span><input type="number" min="0" step="0.01" value="${costVal}" aria-label="Costo del servicio" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div></div>`;
       installHtml += `<div class="install-field field-margin"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${marginVal}" aria-label="Margen de ganancia en porcentaje" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
       installHtml += `<div class="install-field field-ganancia"><label>Ganancia</label><span class="install-price">${fmt(pricing.ganancia * c.qty)}</span></div>`;
@@ -1143,67 +1143,45 @@ async function saveQuote() {
       updated_at: new Date().toISOString(),
     };
 
-    if (currentQuoteId) {
-      const { error } = await supabase
-        .from('saved_quotes')
-        .update({
-          vendor_name: row.vendor_name,
-          cot_num: row.cot_num,
-          cot_date: row.cot_date,
-          client: row.client,
-          supplier_margins: row.supplier_margins,
-          install_margin: row.install_margin,
-          productos: row.productos,
-          updated_at: row.updated_at,
-        })
-        .eq('id', currentQuoteId);
-      if (error) throw error;
-      toast('✓ Cotización actualizada: ' + data.cotNum, 'success');
-    } else {
-      const { data: existing } = await supabase
-        .from('saved_quotes')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('cot_num', data.cotNum)
-        .maybeSingle();
-      if (existing) {
-        if (
-          await showConfirm(
-            'Ya existe "' + data.cotNum + '". ¿Actualizar la existente?',
-            'Cotización duplicada',
-            'Actualizar'
-          )
-        ) {
-          const { error } = await supabase
-            .from('saved_quotes')
-            .update({
-              cot_num: row.cot_num,
-              cot_date: row.cot_date,
-              client: row.client,
-              supplier_margins: row.supplier_margins,
-              install_margin: row.install_margin,
-              productos: row.productos,
-              updated_at: row.updated_at,
-            })
-            .eq('id', existing.id);
-          if (error) throw error;
-          setCurrentQuoteId(existing.id);
-          toast('✓ Cotización actualizada', 'success');
-        } else {
-          data.cotNum = await generateNextCotNumberFromDB();
-          $('cotNum').value = data.cotNum;
-          row.cot_num = data.cotNum;
-          const { data: inserted, error } = await supabase.from('saved_quotes').insert(row).select().single();
-          if (error) throw error;
-          if (inserted && inserted.id) setCurrentQuoteId(inserted.id);
-          toast('✓ Cotización nueva guardada', 'success');
-        }
-      } else {
+    const { data: existing } = await supabase
+      .from('saved_quotes')
+      .select('id')
+      .eq('cot_num', data.cotNum)
+      .maybeSingle();
+
+    if (existing) {
+      const action = await showQuoteDuplicateModal(data.cotNum);
+      if (action === 'update') {
+        const { error } = await supabase
+          .from('saved_quotes')
+          .update({
+            vendor_name: row.vendor_name,
+            cot_num: row.cot_num,
+            cot_date: row.cot_date,
+            client: row.client,
+            supplier_margins: row.supplier_margins,
+            install_margin: row.install_margin,
+            productos: row.productos,
+            updated_at: row.updated_at,
+          })
+          .eq('id', existing.id);
+        if (error) throw error;
+        setCurrentQuoteId(existing.id);
+        toast('✓ Cotización actualizada: ' + data.cotNum, 'success');
+      } else if (action === 'create_new') {
+        data.cotNum = await generateNextCotNumberFromDB();
+        $('cotNum').value = data.cotNum;
+        row.cot_num = data.cotNum;
         const { data: inserted, error } = await supabase.from('saved_quotes').insert(row).select().single();
         if (error) throw error;
         if (inserted && inserted.id) setCurrentQuoteId(inserted.id);
-        toast('✓ Cotización guardada: ' + data.cotNum, 'success');
+        toast('✓ Cotización nueva guardada: ' + data.cotNum, 'success');
       }
+    } else {
+      const { data: inserted, error } = await supabase.from('saved_quotes').insert(row).select().single();
+      if (error) throw error;
+      if (inserted && inserted.id) setCurrentQuoteId(inserted.id);
+      toast('✓ Cotización guardada: ' + data.cotNum, 'success');
     }
   } catch (e) {
     toast('Error al guardar: ' + e.message, 'danger');

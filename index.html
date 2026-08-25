@@ -1323,6 +1323,24 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
       </div>
     </div>
 
+    <!-- MODAL: COTIZACIÓN DUPLICADA -->
+    <div class="modal-backdrop" id="duplicateQuoteModal" role="dialog" aria-modal="true" aria-labelledby="dupQuoteTitle">
+      <div class="modal" style="max-width: 420px">
+        <div class="modal-header">
+          <h2 id="dupQuoteTitle">⚠️ Cotización duplicada</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="resolveQuoteDuplicate(null)">✕</button>
+        </div>
+        <div class="modal-body" style="text-align: center; padding: 24px">
+          <p id="dupQuoteMsg" style="font-size: 14px; margin: 0 0 16px; line-height: 1.5"></p>
+        </div>
+        <div class="modal-footer" style="justify-content: center; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-primary" onclick="resolveQuoteDuplicate('update')">Actualizar existente</button>
+          <button class="btn btn-ghost" onclick="resolveQuoteDuplicate('create_new')">Crear como nueva</button>
+          <button class="btn btn-ghost" onclick="resolveQuoteDuplicate(null)">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
     <!-- MODAL: DETALLE DE PRODUCTO -->
     <div class="modal-backdrop" id="productDetailModal" role="dialog" aria-modal="true" aria-labelledby="productDetailTitle">
       <div class="modal" style="max-width: 600px">

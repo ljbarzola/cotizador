@@ -89,6 +89,34 @@ export function resolveConfirm(val) {
   }
 }
 
+let _quoteDuplicateResolve = null;
+
+/**
+ * Show the duplicate-quote modal and return a Promise resolving to 'update' | 'create_new' | null.
+ * @param {string} cotNum - The duplicate quote number
+ * @returns {Promise<'update'|'create_new'|null>}
+ */
+export function showQuoteDuplicateModal(cotNum) {
+  return new Promise(resolve => {
+    _quoteDuplicateResolve = resolve;
+    $('dupQuoteMsg').textContent = 'Ya existe "' + cotNum + '". ¿Qué deseas hacer?';
+    $('duplicateQuoteModal').classList.add('open');
+  });
+}
+
+/**
+ * Resolve the duplicate-quote modal.
+ * @param {'update'|'create_new'|null} val
+ */
+export function resolveQuoteDuplicate(val) {
+  $('duplicateQuoteModal').classList.remove('open');
+  if (_quoteDuplicateResolve) {
+    _quoteDuplicateResolve(val);
+    _quoteDuplicateResolve = null;
+  }
+}
+window.resolveQuoteDuplicate = resolveQuoteDuplicate;
+
 let _saveTemplateResolve = null;
 
 /**
