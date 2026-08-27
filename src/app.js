@@ -930,7 +930,8 @@ function renderTotals() {
     breakdownHtml += `<div class="totals-row totals-sub totals-discount"><span>${label}</span><span>-${fmt(discountAmount)}</span></div>`;
   }
 
-  breakdownHtml += `<div class="totals-row totals-sub"><span>Subtotal</span><span>${fmt(subtotalPostDesc)}</span></div>`;
+  const subtotalClass = discountAmount > 0 ? '' : ' totals-base-total';
+  breakdownHtml += `<div class="totals-row totals-sub${subtotalClass}"><span>Subtotal</span><span>${fmt(subtotalPostDesc)}</span></div>`;
   breakdownHtml += `<div class="totals-row totals-sub"><span>IVA 15%</span><span>${fmt(totalIvaCalc)}</span></div>`;
 
   $('totalsBreakdown').innerHTML = breakdownHtml;
