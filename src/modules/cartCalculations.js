@@ -11,7 +11,7 @@
  * @param {Function} getSupplierMarginFn - Margin lookup function
  * @param {number} installationMarginPct - Global installation margin %
  * @param {Function} calcInstallServicePriceFn - Install service pricing function
- * @returns {{subtotalEquipo: number, totalIva: number, totalInstalacion: number, totalInstalacionesCat: number}}
+ * @returns {{subtotalEquipo: number, totalIva: number, totalInstalacion: number, totalInstalacionesCat: number, totalInstSinIva: number}}
  */
 export function calcItemTotals(
   cart,
@@ -25,13 +25,16 @@ export function calcItemTotals(
   let totalIva = 0;
   let totalInstalacion = 0;
   let totalInstalacionesCat = 0;
+  let totalInstSinIva = 0;
 
   cart.forEach(c => {
     if (c.isInstallService) {
       if (calcInstallServicePriceFn) {
         const margin = c.customMargin ?? installationMarginPct;
         const pricing = calcInstallServicePriceFn(c, margin);
-        totalInstalacionesCat += pricing.total * (c.qty || 1);
+        const qty = c.qty || 1;
+        totalInstSinIva += (pricing.baseCost + pricing.ganancia) * qty;
+        totalInstalacionesCat += pricing.total * qty;
       }
       return;
     }
@@ -68,7 +71,7 @@ export function calcItemTotals(
     totalInstalacion += pricing.instalacionPrice;
   });
 
-  return { subtotalEquipo, totalIva, totalInstalacion, totalInstalacionesCat };
+  return { subtotalEquipo, totalIva, totalInstalacion, totalInstalacionesCat, totalInstSinIva };
 }
 
 /**
@@ -99,7 +102,7 @@ export function calcDiscount(totalGeneral, discountType, discountValue) {
  * @param {Function} getSupplierMarginFn - Margin lookup function
  * @param {number} installationMarginPct - Global installation margin %
  * @param {Function} calcInstallServicePriceFn - Install service pricing function
- * @returns {number} Subtotal amount
+ * @returns {{baseParaDescuento: number, totalGeneral: number}}
  */
 export function calcSubtotal(
   cart,
@@ -109,13 +112,16 @@ export function calcSubtotal(
   installationMarginPct,
   calcInstallServicePriceFn
 ) {
-  let subtotal = 0;
+  let baseParaDescuento = 0;
+  let totalGeneral = 0;
   cart.forEach(c => {
     if (c.isInstallService) {
       if (calcInstallServicePriceFn) {
         const margin = c.customMargin ?? installationMarginPct;
         const pricing = calcInstallServicePriceFn(c, margin);
-        subtotal += pricing.total * (c.qty || 1);
+        const qty = c.qty || 1;
+        baseParaDescuento += (pricing.baseCost + pricing.ganancia) * qty;
+        totalGeneral += pricing.total * qty;
       }
       return;
     }
@@ -132,7 +138,8 @@ export function calcSubtotal(
           techCost: compTechCost,
           installActive: compInstallActive,
         });
-        subtotal += compPricing.priceBeforeIva * compQty + compPricing.iva * compQty + compPricing.instalacionPrice;
+        baseParaDescuento += compPricing.priceBeforeIva * compQty;
+        totalGeneral += compPricing.priceBeforeIva * compQty + compPricing.iva * compQty + compPricing.instalacionPrice;
       });
       return;
     }
@@ -140,7 +147,8 @@ export function calcSubtotal(
     if (!item) return;
     const effectiveMargin = c.customMargin ?? getSupplierMarginFn(item.supplier);
     const pricing = calcItemPriceFn(item, { supplierMargin: effectiveMargin });
-    subtotal += pricing.priceBeforeIva * c.qty + pricing.iva * c.qty + pricing.instalacionPrice * c.qty;
+    baseParaDescuento += pricing.priceBeforeIva * c.qty;
+    totalGeneral += pricing.priceBeforeIva * c.qty + pricing.iva * c.qty + pricing.instalacionPrice * c.qty;
   });
-  return subtotal;
+  return { baseParaDescuento, totalGeneral };
 }

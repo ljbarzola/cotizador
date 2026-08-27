@@ -119,21 +119,27 @@ describe('calcDiscount() - discount calculation', () => {
 describe('calcSubtotal() - subtotal calculation', () => {
   it('calculates subtotal for single item', () => {
     const cart = [{ catalogIdx: 0, qty: 1, installActive: false, techCost: 0 }];
-    const result = calcSubtotal(cart, CATALOG, calcItemPrice, getSupplierMargin, 35);
+    const { baseParaDescuento, totalGeneral } = calcSubtotal(cart, CATALOG, calcItemPrice, getSupplierMargin, 35);
+    // 100 cost + 15 supplier margin = 115 baseParaDescuento
+    expect(baseParaDescuento).toBe(115);
     // 115 PVP + 17.25 IVA = 132.25
-    expect(result).toBe(132.25);
+    expect(totalGeneral).toBe(132.25);
   });
 
   it('includes installation in subtotal for items with install', () => {
     const cart = [{ catalogIdx: 2, qty: 1, installActive: true, techCost: 100 }];
-    const result = calcSubtotal(cart, CATALOG, calcItemPrice, getSupplierMargin, 35);
+    const { baseParaDescuento, totalGeneral } = calcSubtotal(cart, CATALOG, calcItemPrice, getSupplierMargin, 35);
     // calcSubtotal doesn't pass install params to calcItemPrice for regular items
     // so installation is not included (matches original getSubtotal behavior)
+    // 200 cost + 30 supplier margin = 230 baseParaDescuento
+    expect(baseParaDescuento).toBe(230);
     // 230 PVP + 34.5 IVA = 264.5
-    expect(result).toBe(264.5);
+    expect(totalGeneral).toBe(264.5);
   });
 
   it('handles empty cart', () => {
-    expect(calcSubtotal([], CATALOG, calcItemPrice, getSupplierMargin, 35)).toBe(0);
+    const result = calcSubtotal([], CATALOG, calcItemPrice, getSupplierMargin, 35);
+    expect(result.baseParaDescuento).toBe(0);
+    expect(result.totalGeneral).toBe(0);
   });
 });

@@ -115,13 +115,13 @@ Cotizador/
 14. **Plantillas**: CRUD en Supabase (compartidas entre usuarios). Crear, cargar, vista previa, descargar PDF, eliminar.
 15. **Modales custom**: Confirmar accion, guardar plantilla, detalle de producto (reemplazan dialogs nativos del navegador).
 16. **Manual de usuario**: Modal con 11 secciones colapsables que explica todas las funcionalidades (servicios de instalación, cargo del asesor, catálogo, etc.).
-17. **Descuentos**: Select (Sin descuento / Porcentaje / Valor fijo) + input. Se muestra en totales como "-Descuento (15%)" o "-Descuento $50". Se guarda en la cotización.
+17. **Descuentos**: Select (Sin descuento / Porcentaje / Valor fijo) + input. Se muestra en totales como "Descuento (15%)" con valor "-$XX". El descuento se aplica sobre "Costo base total" (productos + instalaciones sin IVA), y el IVA se calcula sobre el subtotal resultante (costo base - descuento). Se guarda en la cotización. Preview en tiempo real al cambiar márgenes/costos.
 18. **Sistema de Kits**: Tabs Productos/Kits en el catálogo. CRUD de kits con nombre + componentes. Kits guardados en Supabase (tabla `kits`). Agregar un kit agrega sus componentes como productos individuales al carrito, editables por separado (qty, instalación, costo técnico, margen). Cada cotización es independiente. Búsqueda de productos en el editor de kits con lista de resultados visible. Separación visual entre kits e productos individuales en la cotización.
 19. **Notas opcionales**: Campo de notas adicionales debajo de las condiciones comerciales.
 20. **Responsive/Movil**: 3 breakpoints (900px, 768px, 640px). Touch targets 44px, toggles de colapso para catálogo/cotización, grids responsive, modales fullscreen, tarjetas de instalación adaptadas.
 21. **Code Splitting**: Bundle dividido en chunks: app + supabase separado. Build optimizado.
 22. **Service Worker**: Cache de assets estaticos para modo offline. Network-first con fallback a cache.
-23. **Servicios de instalación (tabla independiente y UI en 2 filas)**: Pestaña Instalaciones en el visor de catálogo con sync separado. Editor de instalaciones con dropdowns de categoría/subcategoría poblados desde la DB. El picker de instalaciones (modal) se abre desde 🔧 Ganancia por instalación y muestra servicios del catálogo. Los servicios de instalación agregados se editan con costo custom e individual margin (35% default, editable) y NO llevan IVA. Solo aparecen en la sección de configuración de márgenes, NO en la tabla de detalle de cotización. Se pueden agregar servicios de instalación aunque el carrito esté vacío (sin restricción de mínimo de artículos). Maquetación con estructura en 2 filas adaptada para móvil y escritorio.
+23. **Servicios de instalación (tabla independiente y UI en 2 filas)**: Pestaña Instalaciones en el visor de catálogo con sync separado. Editor de instalaciones con dropdowns de categoría/subcategoría poblados desde la DB. El picker de instalaciones (modal) se abre desde 🔧 Ganancia por instalación y muestra servicios del catálogo. Los servicios de instalación agregados se editan con costo custom e individual margin (35% default, editable) y SÍ llevan IVA 15% sobre costo + ganancia. Solo aparecen en la sección de configuración de márgenes, NO en la tabla de detalle de cotización. Se pueden agregar servicios de instalación aunque el carrito esté vacío (sin restricción de mínimo de artículos). Maquetación con estructura en 2 filas adaptada para móvil y escritorio.
 24. **Cargo y Teléfono del Asesor en Perfil**: Selección/edición de cargo (`profiles.cargo`) y teléfono (`profiles.telefono`) desde el menú de usuario. El cargo aparece impreso en la firma de la cotización PDF. El teléfono aparece en el encabezado del PDF con valor por defecto `+593 99 897 4909`.
 25. **Recuperación de Contraseña**: Flujo de restablecimiento de contraseña enviando enlace por correo electrónico a través de Supabase Auth.
 26. **Filtro por Vendedor**: Búsqueda y filtrado de cotizaciones en el historial por el nombre del vendedor/asesor creador (`vendor_name`).
@@ -129,8 +129,9 @@ Cotizador/
 28. **Gestión de estado centralizado**: `setCatalog(c)` muta `CATALOG` en lugar en `state.js` para que todos los módulos y listas se refresquen al instante.
 29. **Mejoras de Impresión PDF e Interacción de Instalaciones**:
     - **Botón indicador de instalación**: La columna `Inst.` en la tabla de cotización es un botón cuadrado interactivo (`🟩` Verde para requerida / `⬜` Gris para inactiva) que funciona como un flag/indicador visual sin alterar los costos de la fila del producto. Mantiene su color cuadrado en el PDF impreso.
-    - **Sección SERVICIOS DE INSTALACIÓN en PDF**: En el PDF impreso del cliente se genera la tabla titulada **SERVICIOS DE INSTALACIÓN** que mapea la sección interna **🔧 Ganancia por instalación** del cotizador, mostrando la lista limpia (`# | Servicio / Descripción | Cant | Precio Total`) con precios públicos al cliente, sin revelar costos internos ni ganancias.
-    - **Visualización de Servicios**: Los servicios muestran tanto su Nombre corto (`servicio`) como su Descripción extendida (`descripcion`) formateada en listas tanto en el panel de catálogo como en la tabla de cotización.
+    - **Sección SERVICIOS DE INSTALACIÓN en PDF**: En el PDF impreso del cliente se genera la tabla titulada **SERVICIOS DE INSTALACIÓN** que mapea la sección interna **🔧 Ganancia por instalación** del cotizador, mostrando la lista limpia (`# | Servicio / Descripción | Cant | Precio Total`) con precios públicos al cliente (sin IVA), sin revelar costos internos ni ganancias.
+    - **Cuadro de Totales con fondo azul en PDF**: El cuadro de totales del PDF usa el mismo fondo azul oscuro (`linear-gradient(135deg, #0f172a, #1e1b4b)`) que la versión web, con texto blanco y acentos de colores para legibilidad.
+    - **Visualización de Servicios**: Los servicios muestran tanto su Nombre corto (`servicio`) como su Descripción extendida (`descripcion`) formateadas en listas tanto en el panel de catálogo como en la tabla de cotización.
     - **Formato de Costo**: Todos los inputs de costo y celdas muestran el prefijo `$` y formato decimal con centavos (`.00`).
 30. **Mejoras de Visor de Catálogo, Selección de Categoría y Edición de Servicios**:
     - **Paginación Inicial**: El catálogo inicia por defecto mostrando 10 resultados por página alineado al selector.
@@ -148,9 +149,9 @@ Cotizador/
 ### Flujo de precios (confirmado)
 
 - **Servicios**: price = costo_mensual (o costo_anual/12 si mensual=0) + IVA 15%. Sin ganancia, sin instalacion.
-- **Equipos/Materiales**: costo → si Ganancia flag=1: +supplier margin (% editable, default 15%) → +IVA 15% (siempre) → si Instalacion flag=1 Y activa: +costo_tecnico + empresa margin (% global, default 35%). NO IVA on installation.
+- **Equipos/Materiales**: costo → si Ganancia flag=1: +supplier margin (% editable, default 15%) → +IVA 15% (siempre) → si Instalacion flag=1 Y activa: +costo_tecnico + empresa margin (% global, default 35%). NO IVA on equipment installation.
 - **Margen por proveedor**: Cada proveedor tiene su propio %. Los productos sin proveedor ("Sin proveedor") tambien tienen un margen individual configurable.
-- **Servicios de instalación del catálogo**: Fixed cost from sheet → +individual margin (default 35%, editable per service) → NO IVA. Added as separate line items in cart, ONLY visible in 🔧 Ganancia por instalación section.
+- **Servicios de instalación del catálogo**: Fixed cost from sheet → +individual margin (default 35%, editable per service) → +IVA 15%. Added as separate line items in cart, ONLY visible in 🔧 Ganancia por instalación section.
 
 ### Sync (Google Sheets → Supabase)
 
