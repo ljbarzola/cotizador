@@ -924,9 +924,8 @@ function renderTotals() {
   if (totalInstSinIva > 0) {
     breakdownHtml += `<div class="totals-row totals-sub totals-sub-detail"><span style="padding-left:16px">Instalaciones</span><span>${fmt(totalInstSinIva)}</span></div>`;
   }
-  breakdownHtml += `<div class="totals-row totals-sub totals-base-total"><span>Costo base total</span><span>${fmt(baseParaDescuento)}</span></div>`;
-
   if (discountAmount > 0) {
+    breakdownHtml += `<div class="totals-row totals-sub totals-base-total"><span>Costo base total</span><span>${fmt(baseParaDescuento)}</span></div>`;
     const label = discountType === 'percent' ? `Descuento (${discountValue}%)` : 'Descuento';
     breakdownHtml += `<div class="totals-row totals-sub totals-discount"><span>${label}</span><span>-${fmt(discountAmount)}</span></div>`;
   }
