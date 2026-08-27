@@ -98,15 +98,17 @@ export function marginBadge(item) {
 
 /**
  * Calculate price for an installation service from the catalog.
- * No IVA, applies margin only.
+ * IVA 15% is applied on cost + margin.
  * @param {Object} item - Install service item (cost, description)
  * @param {number} marginPct - Margin percentage
- * @returns {{baseCost: number, ganancia: number, total: number, iva: number}}
+ * @returns {{baseCost: number, ganancia: number, iva: number, total: number}}
  */
 export function calcInstallServicePrice(item, marginPct) {
   const baseCost = (item.customCost ?? item.cost) || 0;
   const ganancia = Math.round(baseCost * (marginPct / 100) * 100) / 100;
-  return { baseCost, ganancia, total: baseCost + ganancia, iva: 0 };
+  const subtotal = baseCost + ganancia;
+  const iva = Math.round(subtotal * 0.15 * 100) / 100;
+  return { baseCost, ganancia, iva, total: subtotal + iva };
 }
 
 /**
@@ -130,7 +132,9 @@ export function quoteTotal(q) {
     if (c.isInstallService) {
       const baseCost = c.customCost ?? c.cost ?? c.costo_unitario ?? 0;
       const margin = c.customMargin ?? installMarginPct;
-      const totalSvc = (baseCost + baseCost * (margin / 100)) * (c.qty || 1);
+      const subtotal = baseCost + baseCost * (margin / 100);
+      const iva = Math.round(subtotal * 0.15 * 100) / 100;
+      const totalSvc = (subtotal + iva) * (c.qty || 1);
       totalInstalacionesCat += totalSvc;
       return;
     }

@@ -46,7 +46,9 @@ export function quoteTotal(q) {
     if (c.isInstallService) {
       const baseCost = c.customCost ?? c.cost ?? c.costo_unitario ?? 0;
       const margin = c.customMargin ?? installMarginPct;
-      const totalSvc = (baseCost + baseCost * (margin / 100)) * (c.qty || 1);
+      const subtotal = baseCost + baseCost * (margin / 100);
+      const iva = Math.round(subtotal * 0.15 * 100) / 100;
+      const totalSvc = (subtotal + iva) * (c.qty || 1);
       totalInstalacionesCat += totalSvc;
       return;
     }

@@ -3302,6 +3302,9 @@ th:hover .col-resizer {
     font-weight: 800;
     color: #92400e;
   }
+  .install-config-fields .field-iva .install-price {
+    color: #b45309;
+  }
 
   /* History */
   .history-item,
@@ -3389,30 +3392,48 @@ th:hover .col-resizer {
     padding: 2px 3px;
   }
   .totals {
-    background: white;
-    color: black;
-    border: 2px solid #333;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
     page-break-inside: avoid;
-    padding: 6px 10px;
+    padding: 8px 12px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .totals-row {
     font-size: 11px;
     padding: 2px 0;
   }
   .totals-row.total {
-    color: black;
+    color: white;
     font-size: 13px;
   }
   .totals-row.total .accent {
-    color: black;
+    color: white;
+    font-weight: 800;
   }
   .totals-row.totals-sub {
     font-size: 10px;
+    color: rgba(255, 255, 255, 0.85);
     padding: 1px 0;
   }
   .totals-row.totals-sub-detail {
     font-size: 9px;
+    color: rgba(255, 255, 255, 0.6);
     padding: 1px 0;
+  }
+  .totals-row.totals-discount {
+    color: #ee3b1b;
+  }
+  .totals-row.totals-base-total {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 4px;
+    margin-top: 2px;
+    font-weight: 700;
+  }
+  #totalsBreakdown {
+    border-bottom-color: rgba(255, 255, 255, 0.2);
   }
   .quote-section:last-of-type {
     page-break-inside: avoid;
@@ -4121,6 +4142,9 @@ th:hover .col-resizer {
     color: #b45309;
     font-size: 14px;
   }
+  .install-config-fields .field-iva .install-price {
+    color: #b45309;
+  }
 }
 .install-required {
   font-size: 11px;
@@ -4293,18 +4317,17 @@ th:hover .col-resizer {
 /* === TOTALS BREAKDOWN === */
 #totalsBreakdown {
   margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 0;
 }
 .totals-row.totals-sub {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
-  padding: 3px 0;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 4px 0;
 }
 .totals-row.totals-sub-detail {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  padding: 1px 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 2px 0;
 }
 .totals-row.totals-install {
   color: #fbbf24;
@@ -4313,20 +4336,43 @@ th:hover .col-resizer {
 .totals-row.totals-discount {
   color: #ef4444;
   font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+}
+.totals-row.totals-base-total {
+  font-weight: 700;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 6px;
+  margin-top: 4px;
+}
+.totals-row.totals-separator {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 6px;
+  margin-top: 4px;
 }
 
 @media print {
   .totals-row.totals-sub {
-    color: black;
+    color: rgba(255, 255, 255, 0.85);
   }
   .totals-row.totals-sub-detail {
-    color: #666;
+    color: rgba(255, 255, 255, 0.6);
   }
   .totals-row.totals-install {
-    color: #b45309;
+    color: #fbbf24;
   }
   .totals-row.totals-discount {
-    color: #dc2626;
+    color: #ee3b1b;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+  }
+  .totals-row.totals-base-total {
+    border-top-color: rgba(255, 255, 255, 0.2);
+  }
+  .totals-row.totals-separator {
+    border-top-color: rgba(255, 255, 255, 0.2);
   }
   #totalsBreakdown {
     border-bottom-color: #ccc;

@@ -468,12 +468,6 @@
               </div>
             </div>
 
-            <!-- TOTALES -->
-            <div class="totals" id="totals">
-              <div id="totalsBreakdown"></div>
-              <div class="totals-row total"><span>TOTAL</span><span class="accent" id="totalView">$0.00</span></div>
-            </div>
-
             <!-- DESCUENTO -->
             <div class="quote-section" data-no-print>
               <div class="quote-section-header"><h2>🏷️ Descuento</h2></div>
@@ -496,6 +490,12 @@
                 />
                 <span id="discountPreview" class="discount-preview"></span>
               </div>
+            </div>
+
+            <!-- TOTALES -->
+            <div class="totals" id="totals">
+              <div id="totalsBreakdown"></div>
+              <div class="totals-row total"><span>TOTAL</span><span class="accent" id="totalView">$0.00</span></div>
             </div>
 
             <!-- ACCIONES -->
@@ -941,188 +941,182 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">📦</span><span class="help-title">1. Panel de Catálogo y Búsqueda de Productos</span>
+              <span class="help-icon">🛒</span><span class="help-title">1. Crear una cotización (guía de 4 pasos)</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
-              <p>Ubicado en el panel principal del catálogo:</p>
-              <ul>
-                <li><strong>Búsqueda directa:</strong> Ingresa el código (ej. <code>EQ-0001</code>), modelo o palabras del nombre del producto.</li>
-                <li><strong>Filtros por categoría:</strong> Filtra por <strong>EQUIPOS</strong>, <strong>MATERIALES</strong> o <strong>SERVICIOS</strong> y selecciona la subcategoría deseada.</li>
-                <li><strong>Detalle del producto:</strong> Haz clic sobre cualquier producto para consultar su ficha técnica, costo base y precios.</li>
-                <li><strong>Indicador de vigencia de precio:</strong> 🟢 Actualizado (≤ 30 días) · 🟡 Reciente (30 a 180 días) · 🔴 Requerir revisión (+180 días).</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="help-section">
-            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">📦</span><span class="help-title">2. Kits de Productos</span>
-              <span class="help-arrow">▼</span>
-            </button>
-            <div class="help-section-content">
-              <p>Los Kits agrupan conjuntos de productos frecuentes (ej. Kit CCTV 4 Cámaras, Kit Alarma Residencial):</p>
-              <ul>
-                <li><strong>Agregar al carrito:</strong> Haz clic en el botón <code>🛒 $total</code>. Todos los componentes se agregarán automáticamente como productos independientes en la oferta.</li>
-                <li><strong>Modificación en oferta:</strong> Cada componente del kit se puede ajustar por separado en la cotización (cambiar cantidades, activar mano de obra o aplicar descuentos individuales).</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="help-section">
-            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">👤</span><span class="help-title">3. Datos del Cliente</span>
-              <span class="help-arrow">▼</span>
-            </button>
-            <div class="help-section-content">
-              <p>Para emitir y guardar una cotización válida, registra los datos principales del cliente:</p>
-              <ul>
-                <li><strong>Obligatorios para guardar:</strong> Cliente / Razón Social, RUC / Cédula, Teléfono y Correo Electrónico.</li>
-                <li><strong>Campos adicionales:</strong> Dirección y Persona de contacto.</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="help-section">
-            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">🛒</span><span class="help-title">4. Guía en 4 Pasos para Crear una Cotización</span>
-              <span class="help-arrow">▼</span>
-            </button>
-            <div class="help-section-content">
-              <p>Sigue esta secuencia recomendada para elaborar una oferta comercial:</p>
+              <p>Sigue esta secuencia para elaborar una cotización completa:</p>
               <ol>
-                <li><strong>Paso 1: Registra al Cliente:</strong> Completa los datos en la sección del cliente.</li>
-                <li><strong>Paso 2: Selecciona los Productos:</strong> Busca productos o kits en el panel y haz clic en <code>+ Agregar</code>.</li>
-                <li><strong>Paso 3: Revisa Cantidades y Precios:</strong>
+                <li><strong>Paso 1: Registrar al Cliente</strong> — Completa los datos del cliente en la parte superior. Nombre y RUC son obligatorios para guardar.</li>
+                <li><strong>Paso 2: Seleccionar Productos</strong> — Busca productos o kits en el panel izquierdo y haz clic en <code>+ Agregar</code>.</li>
+                <li><strong>Paso 3: Ajustar Cantidades y Precios</strong>
                   <ul>
-                    <li>Ajusta las cantidades requeridas en la columna <code>Cant</code>.</li>
-                    <li>Activa o desactiva la mano de obra de instalación si la partida lo requiere.</li>
-                    <li>Aplica un descuento global (porcentaje o valor fijo) si aplica.</li>
+                    <li>Cambia las cantidades en la columna <code>Cant</code>.</li>
+                    <li>Marca la casilla <strong>Inst</strong> si el producto necesita instalación. Esto no agrega ningún costo automáticamente — el servicio de instalación se agrega por separado desde la sección 🔧 <strong>Ganancia por instalación</strong>.</li>                    <li>Configura los márgenes de proveedor en la sección de configuración.</li>
+                    <li>Aplica un descuento global (porcentaje o valor fijo) si corresponde.</li>
                   </ul>
                 </li>
-                <li><strong>Paso 4: Guarda o Exporta:</strong> Guarda la cotización en la nube o genera el documento PDF oficial.</li>
+                <li><strong>Paso 4: Guardar o Exportar</strong> — Haz clic en <code>Guardar</code> para subir a la nube, o en <code>Imprimir</code> para generar el PDF.</li>
               </ol>
+            </div>
+          </div>
 
-              <div class="help-subtitle" style="margin-top: 12px; font-weight:700;">Estructura del Cálculo de Precios</div>
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">📦</span><span class="help-title">2. Panel de catálogo y búsqueda</span>
+              <span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>El catálogo muestra todos los productos disponibles sincronizados desde la base de datos.</p>
               <ul>
-                <li><strong>Equipos y Materiales:</strong> Costo Base → +Margen Proveedor (editable) → +IVA 15% → +Costo Técnico / Instalación (fijo por partida, no se multiplica por cantidad).</li>
-                <li><strong>Servicios:</strong> Costo Mensual (o Anual / 12) + IVA 15%.</li>
+                <li><strong>Búsqueda:</strong> Escribe el código (ej. <code>EQ-0001</code>), modelo o nombre del producto en el campo de búsqueda.</li>
+                <li><strong>Filtros:</strong> Selecciona una categoría (<strong>EQUIPOS</strong>, <strong>MATERIALES</strong> o <strong>SERVICIOS</strong>) y subcategoría para reducir los resultados.</li>
+                <li><strong>Detalle:</strong> Haz clic en cualquier producto para ver su ficha técnica y costo base.</li>
+                <li><strong>Indicador de vigencia:</strong> 🟢 Actualizado (≤ 30 días) · 🟡 Reciente (30 a 180 días) · 🔴 Revisar (+180 días).</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">🔧</span><span class="help-title">5. Servicios de Instalación y Márgenes</span>
+              <span class="help-icon">📦</span><span class="help-title">3. Kits de productos</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
-              <p>El sistema cuenta con un catálogo independiente de Servicios de Instalación (sincronizado desde la hoja <code>INSTALACIÓN BD</code>):</p>
+              <p>Los kits agrupan conjuntos de productos que se venden juntos frecuentemente.</p>
               <ul>
-                <li><strong>Agregar al cotizador:</strong> Usa el botón <code>+ Servicio de instalación</code> en la sección 🔧 <strong>Ganancia por instalación</strong>. Puedes agregar servicios de instalación aunque no tengas productos en la cotización.</li>
-                <li><strong>Configuración flexible:</strong> En cada tarjeta de servicio agregada puedes ajustar la <strong>Cantidad</strong>, el <strong>Costo base</strong> y el <strong>Margen de ganancia</strong> (35% por defecto).</li>
-                <li><strong>Impuestos:</strong> Los servicios de instalación <strong>no aplican IVA 15%</strong>. Se suman de forma directa al total de la oferta.</li>
+                <li><strong>Agregar al carrito:</strong> Haz clic en el botón <code>🛒 $total</code>. Todos los componentes se agregan como productos individuales en la cotización.</li>
+                <li><strong>Modificar componentes:</strong> Una vez agregado, cada componente se puede editar por separado (cantidad, instalación, margen).</li>
+                <li><strong>Crear kit:</strong> Desde el visor de catálogo, pestaña <strong>Kits</strong>, haz clic en <code>[+ Nuevo]</code> y selecciona los componentes.</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">👤</span><span class="help-title">6. Perfil, Teléfono y Cargo en Firma de Cotización</span>
+              <span class="help-icon">🔧</span><span class="help-title">4. Servicios de instalación</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
-              <p>Puedes personalizar tu cargo y teléfono desde el menú de usuario:</p>
+              <p>Catálogo independiente de servicios de instalación (sincronizado desde la hoja <code>INSTALACIÓN BD</code>).</p>
               <ul>
-                <li>Haz clic en tu nombre y selecciona <code>✏️ Perfil</code>.</li>
-                <li><strong>Teléfono:</strong> Ingresa tu número de contacto. Aparece en el encabezado del PDF oficial. Valor por defecto: <code>+593 99 897 4909</code>.</li>
-                <li><strong>Cargo:</strong> Selecciona un cargo predefinido (<em>Asesor, Administrador, Gerente de Ventas, Director Comercial, Gerente General</em>) o escribe tu propio cargo personalizado.</li>
-                <li>El cargo y teléfono guardados se mostrarán automáticamente en el documento PDF oficial.</li>
+                <li><strong>Agregar:</strong> Usa el botón <code>+ Servicio de instalación</code> en la sección 🔧 <strong>Ganancia por instalación</strong>. Puede agregarse aunque no haya productos en la cotización.</li>
+                <li><strong>Configurar:</strong> En cada tarjeta se puede ajustar la cantidad, el costo base y el margen de ganancia (35% por defecto).</li>
+                <li><strong>Impuestos:</strong> Cada servicio incluye IVA 15% sobre costo + ganancia. Este IVA se suma al total de la cotización.</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">👁️</span><span class="help-title">7. Cotizador en Pantalla vs Documento PDF del Cliente</span>
+              <span class="help-icon">⚙️</span><span class="help-title">5. Configurar márgenes y descuentos</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
-              <p>El sistema maneja una separación confidencial estricta entre la pantalla del Asesor y el PDF final entregado al cliente:</p>
+              <p>Los márgenes y descuentos se configuran antes de guardar la cotización.</p>
 
-              <div class="help-subtitle">1. Pantalla del Asesor (Vista de Gestión Interna)</div>
-              <p>Muestra el desglose interno completo: Costo base real de adquisición, Margen de ganancia del proveedor, Ganancia en dólares, PVP interno y costo de instalación.</p>
+              <div class="help-subtitle" style="margin-top:8px; font-weight:700;">Estructura de precios — Equipos y Materiales</div>
+              <ul>
+                <li>Costo base → +Margen proveedor (editable) → +IVA 15% → +Costo de instalación (si aplica)</li>
+                <li>El margen de proveedor es global por proveedor, pero puede ajustarse por producto.</li>
+              </ul>
 
-              <div class="help-subtitle">2. Documento PDF para el Cliente (Vista Comercial)</div>
+              <div class="help-subtitle" style="margin-top:8px; font-weight:700;">Estructura de precios — Servicios</div>
+              <ul>
+                <li>Costo mensual (o anual ÷ 12) + IVA 15%. Sin margen de ganancia.</li>
+              </ul>
+
+              <div class="help-subtitle" style="margin-top:8px; font-weight:700;">Descuento</div>
+              <ul>
+                <li>Tipo: Porcentaje (%) o valor fijo ($).</li>
+                <li>Se aplica sobre el costo base total (productos + instalaciones, sin IVA).</li>
+                <li>El IVA se calcula sobre el subtotal resultante (costo base − descuento).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">👁️</span><span class="help-title">6. Qué ve el cliente (PDF)</span>
+              <span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>El sistema mantiene una separación estricta entre la pantalla del asesor y el PDF entregado al cliente.</p>
+
               <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:12px;">
-                <strong>Confidencialidad garantizada:</strong> El documento PDF oculta de forma absoluta los márgenes de ganancia, los costos internos y los desgloses privados de la empresa.
+                <strong>Confidencialidad:</strong> El PDF oculta costos internos, márgenes de ganancia y desgloses privados de la empresa.
               </div>
+
               <ul>
-                <li><strong>Costo Unitario en PDF:</strong> Equivale al precio público (PVP) unitario del producto con el margen ya incorporado.</li>
-                <li><strong>Costo Total en PDF:</strong> Multiplicación de la cantidad por el precio unitario del producto.</li>
-                <li><strong>Subtotales:</strong> Muestra el Subtotal de Equipos/Materiales, IVA 15%, Servicios de Instalación y Total General a pagar.</li>
+                <li><strong>Costo Unitario en PDF:</strong> Precio público (PVP) con margen incorporado, sin IVA visible.</li>
+                <li><strong>Costo Total en PDF:</strong> Cantidad × precio unitario.</li>
+                <li><strong>Servicios de instalación:</strong> Lista de servicios con precio total (sin IVA).</li>
+                <li><strong>Cuadro de totales:</strong> Muestra productos, instalaciones, subtotal, IVA y total.</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">💾</span><span class="help-title">8. Guardar, Plantillas y Exportación a PDF</span>
+              <span class="help-icon">💾</span><span class="help-title">7. Guardar, plantillas y exportación</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
               <ul>
-                <li><strong>Guardar cotización:</strong> Registra la oferta en la base de datos asociada al número de cotización oficial secuencial (ej. <code>COT-20260805-0001</code>).</li>
-                <li><strong>Guardar como plantilla:</strong> Guarda el conjunto de productos y cliente en Supabase para ser compartido y reutilizado por todos los usuarios.</li>
-                <li><strong>Imprimir / PDF:</strong> Abre la ventana del navegador pre-configurada para descargar o guardar el documento en formato PDF.</li>
-                <li><strong>Borrador automático:</strong> Los cambios se respaldan continuamente en el navegador por seguridad.</li>
+                <li><strong>Guardar:</strong> Registra la cotización con su número secuencial oficial (ej. <code>COT-20260805-0001</code>).</li>
+                <li><strong>Guardar como plantilla:</strong> Guarda el conjunto de productos y cliente para reutilizar por otros usuarios.</li>
+                <li><strong>Imprimir / PDF:</strong> Abre la vista de impresión del navegador para descargar el documento.</li>
+                <li><strong>Borrador automático:</strong> Los cambios se guardan continuamente en el navegador como respaldo.</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">📂</span><span class="help-title">9. Historial de Cotizaciones</span>
+              <span class="help-icon">📂</span><span class="help-title">8. Historial y estados</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
+              <p>Accede al historial desde el botón <strong>Historial</strong> en la barra superior.</p>
               <ul>
-                <li>Accede con el botón <strong>Historial</strong> en la barra superior.</li>
-                <li><strong>Filtrado avanzado:</strong> Filtra por cliente, vendedor/asesor creador, estado (Borrador, Enviada, Vista, Aceptada, Rechazada, Vencida) o rango de fechas.</li>
+                <li><strong>Filtrar:</strong> Por cliente, vendedor/asesor, estado (Borrador, Enviada, Vista, Aceptada, Rechazada, Vencida) o rango de fechas.</li>
                 <li><strong>Cargar:</strong> Recupera una cotización previa para revisar o editar.</li>
-                <li><strong>Cambiar estado:</strong> Modifica el ciclo de vida de la propuesta directamente.</li>
-                <li><strong>Eliminar:</strong> Borra la cotización seleccionada de forma permanente.</li>
+                <li><strong>Cambiar estado:</strong> Modifica el ciclo de vida de la propuesta.</li>
+                <li><strong>Eliminar:</strong> Borra la cotización de forma permanente.</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">📋</span><span class="help-title">10. Uso y Descarga de Plantillas</span>
+              <span class="help-icon">👤</span><span class="help-title">9. Mi perfil</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
+              <p>Personaliza el cargo y teléfono que aparecen en el PDF oficial.</p>
               <ul>
-                <li>Accede mediante el botón <strong>Plantillas</strong> en la barra superior.</li>
-                <li><strong>Vista previa:</strong> Examina las partidas con los precios recalculados en tiempo real según el catálogo actual.</li>
-                <li><strong>Cargar plantilla:</strong> Importa los productos y la configuración directamente al área de trabajo.</li>
-                <li><strong>Descargar copia:</strong> Genera y abre de inmediato la versión PDF oficial de la plantilla.</li>
+                <li>Haz clic en el nombre de usuario y selecciona <code>✏️ Perfil</code>.</li>
+                <li><strong>Teléfono:</strong> Aparece en el encabezado del PDF. Valor por defecto: <code>+593 99 897 4909</code>.</li>
+                <li><strong>Cargo:</strong> Selecciona uno predefinido (Asesor, Administrador, Gerente de Ventas, Director Comercial, Gerente General) o escribe uno personalizado.</li>
+                <li>El cargo se muestra en la firma del PDF junto al nombre del asesor.</li>
               </ul>
             </div>
           </div>
 
           <div class="help-section">
             <button class="help-section-toggle" onclick="toggleHelpSection(this)">
-              <span class="help-icon">🔄</span><span class="help-title">11. Visor de Catálogo e Interacción</span>
+              <span class="help-icon">🔄</span><span class="help-title">10. Visor de catálogo e interacción</span>
               <span class="help-arrow">▼</span>
             </button>
             <div class="help-section-content">
+              <p>Accede al visor desde el botón <strong>Catálogo</strong> en la barra superior.</p>
               <ul>
-                <li>Abre el modal haciendo clic en <strong>Catálogo</strong> en la barra superior.</li>
-                <li><strong>Pestañas:</strong> Navega entre <strong>Productos</strong>, <strong>Instalaciones</strong> y <strong>Kits</strong>.</li>
-                <li><strong>Edición e interactividad:</strong> Utiliza los botones ✏️ (Editar) y ✕ (Eliminar) en cada fila de las tablas.</li>
-                <li><strong>Redimensión de columnas:</strong> Arrastra los bordes de la cabecera de cualquier columna para adaptar su ancho a tu preferencia.</li>
-                <li><strong>Sincronización:</strong> Botones dedicados <code>[🔄 Sincronizar Productos]</code> y <code>[🔧 Sincronizar Instalaciones]</code> para actualizar desde las hojas de Google Sheets.</li>
+                <li><strong>Pestañas:</strong> Productos, Instalaciones y Kits.</li>
+                <li><strong>Editar:</strong> Haz clic en ✏️ en cualquier fila para modificar los datos.</li>
+                <li><strong>Eliminar:</strong> Haz clic en ✕ para borrar un registro.</li>
+                <li><strong>Crear nuevo:</strong> Usa <code>[+ Nuevo]</code> en la barra superior del visor.</li>
+                <li><strong>Redimensionar columnas:</strong> Arrastra los bordes de la cabecera de cualquier columna.</li>
+                <li><strong>Sincronizar:</strong> Usa <code>[🔄 Sincronizar Productos]</code> o <code>[🔧 Sincronizar Instalaciones]</code> para actualizar desde Google Sheets.</li>
               </ul>
             </div>
           </div>

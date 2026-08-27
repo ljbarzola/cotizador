@@ -871,7 +871,7 @@ function renderMarginConfig() {
     installServiceItems.forEach((c, i) => {
       const cartIdx = cart.indexOf(c);
       const pricing = calcInstallServicePrice(c, c.customMargin ?? DEFAULT_INSTALL_MARGIN);
-      const total = pricing.total * c.qty;
+      const totalSinIva = pricing.baseCost + pricing.ganancia;
       installHtml += `<div class="install-config-row install-active-row">`;
       installHtml += `<div class="install-config-info">`;
       installHtml += `<div class="install-info-top">`;
@@ -882,7 +882,7 @@ function renderMarginConfig() {
       if (c.category || c.subcategory) {
         installHtml += `<span class="install-config-meta">${esc(c.category || '')}${c.subcategory ? ' › ' + esc(c.subcategory) : ''}</span>`;
       }
-      installHtml += `<span class="install-cost-badge">${fmt(pricing.baseCost)} × ${c.qty} + ${c.customMargin ?? DEFAULT_INSTALL_MARGIN}% = ${fmt(total)}</span>`;
+      installHtml += `<span class="install-cost-badge">${fmt(pricing.baseCost)} × ${c.qty} + ${c.customMargin ?? DEFAULT_INSTALL_MARGIN}% = ${fmt(totalSinIva)}</span>`;
       installHtml += `</div>`;
       installHtml += `</div>`;
       installHtml += `<div class="install-config-fields">`;
@@ -892,7 +892,7 @@ function renderMarginConfig() {
       installHtml += `<div class="install-field field-cost"><label>Costo</label><div class="cost-input-wrapper"><span class="input-currency">$</span><input type="number" min="0" step="0.01" value="${costVal}" aria-label="Costo del servicio" onchange="updateInstallServiceCost(${cartIdx}, this.value)"></div></div>`;
       installHtml += `<div class="install-field field-margin"><label>Margen</label><div class="margin-input-inline"><input type="number" min="0" max="100" step="1" value="${marginVal}" aria-label="Margen de ganancia en porcentaje" onchange="updateInstallServiceMargin(${cartIdx}, this.value)"><span>%</span></div></div>`;
       installHtml += `<div class="install-field field-ganancia"><label>Ganancia</label><span class="install-price">${fmt(pricing.ganancia * c.qty)}</span></div>`;
-      installHtml += `<div class="install-field field-total"><label>Total</label><span class="install-price install-total">${fmt(total)}</span></div>`;
+      installHtml += `<div class="install-field field-total"><label>Total</label><span class="install-price install-total">${fmt(totalSinIva * c.qty)}</span></div>`;
       installHtml += `</div>`;
       installHtml += `</div>`;
     });
@@ -904,7 +904,7 @@ function renderMarginConfig() {
 
 // === TOTALS ===
 function renderTotals() {
-  const { subtotalEquipo, totalIva, totalInstalacion, totalInstalacionesCat } = calcItemTotals(
+  const { subtotalEquipo, totalIva, totalInstalacion, totalInstalacionesCat, totalInstSinIva } = calcItemTotals(
     cart,
     CATALOG,
     calcItemPrice,
@@ -913,25 +913,37 @@ function renderTotals() {
     calcInstallServicePrice
   );
 
-  const totalGeneral = subtotalEquipo + totalIva + totalInstalacionesCat;
-  const discountAmount = calcDiscount(totalGeneral, discountType, discountValue);
-  const totalFinal = totalGeneral - discountAmount;
+  const baseParaDescuento = subtotalEquipo + totalInstSinIva;
+  const discountAmount = calcDiscount(baseParaDescuento, discountType, discountValue);
+  const subtotalPostDesc = baseParaDescuento - discountAmount;
+  const totalIvaCalc = Math.round(subtotalPostDesc * 0.15 * 100) / 100;
+  const totalFinal = subtotalPostDesc + totalIvaCalc;
 
   let breakdownHtml = '';
-  breakdownHtml += `<div class="totals-row totals-sub totals-sub-detail"><span>&nbsp;&nbsp;Subtotal Equipos / Materiales</span><span>${fmt(subtotalEquipo)}</span></div>`;
-  breakdownHtml += `<div class="totals-row totals-sub totals-sub-detail"><span>&nbsp;&nbsp;IVA 15%</span><span>${fmt(totalIva)}</span></div>`;
-  breakdownHtml += `<div class="totals-row totals-sub"><span>Subtotal (PVP + IVA)</span><span>${fmt(subtotalEquipo + totalIva)}</span></div>`;
-
-  if (totalInstalacionesCat > 0) {
-    breakdownHtml += `<div class="totals-row totals-sub totals-install"><span>🔧 Servicios de instalación</span><span>${fmt(totalInstalacionesCat)}</span></div>`;
+  breakdownHtml += `<div class="totals-row totals-sub totals-sub-detail"><span style="padding-left:16px">Productos</span><span>${fmt(subtotalEquipo)}</span></div>`;
+  if (totalInstSinIva > 0) {
+    breakdownHtml += `<div class="totals-row totals-sub totals-sub-detail"><span style="padding-left:16px">Instalaciones</span><span>${fmt(totalInstSinIva)}</span></div>`;
   }
+  breakdownHtml += `<div class="totals-row totals-sub totals-base-total"><span>Costo base total</span><span>${fmt(baseParaDescuento)}</span></div>`;
+
   if (discountAmount > 0) {
     const label = discountType === 'percent' ? `Descuento (${discountValue}%)` : 'Descuento';
-    breakdownHtml += `<div class="totals-row totals-sub totals-discount"><span>&nbsp;&nbsp;${label}</span><span>-${fmt(discountAmount)}</span></div>`;
+    breakdownHtml += `<div class="totals-row totals-sub totals-discount"><span>${label}</span><span>-${fmt(discountAmount)}</span></div>`;
   }
+
+  breakdownHtml += `<div class="totals-row totals-sub"><span>Subtotal</span><span>${fmt(subtotalPostDesc)}</span></div>`;
+  breakdownHtml += `<div class="totals-row totals-sub"><span>IVA 15%</span><span>${fmt(totalIvaCalc)}</span></div>`;
+
   $('totalsBreakdown').innerHTML = breakdownHtml;
 
   $('totalView').textContent = fmt(totalFinal);
+
+  const preview = $('discountPreview');
+  if (discountType !== 'none' && discountAmount > 0) {
+    if (preview) preview.textContent = `→ -$${fmt(discountAmount).replace('$', '')}`;
+  } else if (preview) {
+    preview.textContent = '';
+  }
 }
 
 // === QUOTE SAVE/LOAD ===
@@ -995,7 +1007,15 @@ function updateDiscount() {
 }
 
 function getSubtotal() {
-  return calcSubtotal(cart, CATALOG, calcItemPrice, getSupplierMargin, installationMarginPct, calcInstallServicePrice);
+  const { baseParaDescuento } = calcSubtotal(
+    cart,
+    CATALOG,
+    calcItemPrice,
+    getSupplierMargin,
+    installationMarginPct,
+    calcInstallServicePrice
+  );
+  return baseParaDescuento;
 }
 
 function setModality(_m) {
@@ -2679,8 +2699,8 @@ function syncPrintView() {
       let rowNum = 1;
       installServices.forEach(s => {
         const pricing = calcInstallServicePrice(s, s.customMargin ?? DEFAULT_INSTALL_MARGIN);
-        const total = pricing.total * s.qty;
-        instHtml += `<tr><td class="producto-num">${rowNum++}</td><td><strong>${esc(s.description)}</strong>${s.category || s.subcategory ? ' <small style="color:#64748b;">(' + esc(s.category || '') + (s.subcategory ? ' › ' + esc(s.subcategory) : '') + ')</small>' : ''}</td><td class="center">${s.qty}</td><td class="right"><strong>${fmt(total)}</strong></td></tr>`;
+        const totalSinIva = (pricing.baseCost + pricing.ganancia) * s.qty;
+        instHtml += `<tr><td class="producto-num">${rowNum++}</td><td><strong>${esc(s.description)}</strong>${s.category || s.subcategory ? ' <small style="color:#64748b;">(' + esc(s.category || '') + (s.subcategory ? ' › ' + esc(s.subcategory) : '') + ')</small>' : ''}</td><td class="center">${s.qty}</td><td class="right"><strong>${fmt(totalSinIva)}</strong></td></tr>`;
       });
       instHtml += '</tbody></table>';
       printInstSection.innerHTML = instHtml;
