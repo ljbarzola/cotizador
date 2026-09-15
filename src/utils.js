@@ -58,6 +58,34 @@ export function toast(msg, type = 'success') {
   el._timer = setTimeout(() => el.classList.remove('show'), 2400);
 }
 
+/**
+ * Detect whether a Supabase/PostgREST error means the session/JWT expired
+ * or is otherwise invalid, so callers can show one consistent message
+ * instead of the raw error text.
+ * @param {any} error
+ * @returns {boolean}
+ */
+export function isSessionExpiredError(error) {
+  const msg = String(error?.message || error?.error_description || '').toLowerCase();
+  return (
+    msg.includes('jwt expired') ||
+    msg.includes('jwt is expired') ||
+    msg.includes('invalid jwt') ||
+    msg.includes('invalid refresh token') ||
+    msg.includes('refresh_token_not_found') ||
+    msg.includes('session_not_found') ||
+    error?.code === 'PGRST301'
+  );
+}
+
+/**
+ * Show the standard "session expired" message. Use in catch blocks of
+ * Supabase save operations when isSessionExpiredError(e) is true.
+ */
+export function showSessionExpiredToast() {
+  toast('Tu sesión expiró. Vuelve a iniciar sesión para guardar los cambios.', 'danger');
+}
+
 let _confirmResolve = null;
 
 /**
@@ -234,6 +262,9 @@ export function generateCotNumber(seq) {
 /**
  * Generate next quote number using global DB sequence (atomic, no collisions).
  * Falls back to localStorage if DB is unavailable.
+ * This CONSUMES a number permanently — only call it when the quote is
+ * actually about to be saved (see saveQuote()). For a number to just show
+ * on screen while the user is still working, use previewNextCotNumber().
  * @returns {Promise<string>} New quote number
  */
 export async function generateNextCotNumberFromDB() {
@@ -243,6 +274,25 @@ export async function generateNextCotNumberFromDB() {
     return generateCotNumber(data);
   } catch (e) {
     console.warn('[COT_NUM] RPC failed, fallback local:', e.message);
+    return generateCotNumber();
+  }
+}
+
+/**
+ * Preview the next quote number WITHOUT consuming it from the DB sequence.
+ * Used to show a tentative number while the quote is being built (page load,
+ * "Nueva cotización"). The real, final number is only assigned at save time
+ * via generateNextCotNumberFromDB(), so this preview may repeat across
+ * concurrent sessions without causing duplicates on save.
+ * @returns {Promise<string>} Tentative quote number
+ */
+export async function previewNextCotNumber() {
+  try {
+    const { data, error } = await supabase.rpc('peek_quote_seq');
+    if (error) throw error;
+    return generateCotNumber(data);
+  } catch (e) {
+    console.warn('[COT_NUM] Preview RPC failed, fallback local:', e.message);
     return generateCotNumber();
   }
 }

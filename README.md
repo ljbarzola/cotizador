@@ -19,7 +19,7 @@ Aplicación web para el equipo de ventas de GEMESEG. Permite buscar productos en
 - **Numeración Secuencial de Cotización**: Generación de números secuenciales formateados (`COT-YYYYMMDD-0001`).
 - **Guardado en la Nube e Historial**: Cotizaciones guardadas en Supabase con RLS, filtrado por cliente, vendedor y estado.
 - **Plantillas Compartidas**: Almacenamiento e importación de plantillas en Supabase con vista previa y descarga directa de PDF.
-- **Separación Confidencial (Pantalla vs PDF)**: Ocultamiento total de costos bases y márgenes de ganancia en el PDF del cliente.
+- **Separación Confidencial (Pantalla vs PDF)**: Ocultamiento total de costos bases, márgenes de ganancia y proveedor de cada ítem en el PDF del cliente.
 - **Diseño Responsive y Adaptado**: Maquetación optimizada para móviles y escritorio en tarjetas de instalación, tablas y modales.
 - **Borrador Automático**: Respaldo continuo en localStorage.
 

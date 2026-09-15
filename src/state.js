@@ -71,6 +71,15 @@ export let currentSession = null;
 /** @type {string|null} ID of the currently loaded saved quote */
 export let currentQuoteId = null;
 
+/**
+ * True when the number in #cotNum is just a preview (from peek_quote_seq,
+ * not yet consumed from the DB sequence) rather than a real, already
+ * assigned/confirmed quote number. saveQuote() uses this to know it must
+ * fetch a real number before saving, even though the field isn't empty.
+ * @type {boolean}
+ */
+export let cotNumIsTentative = false;
+
 /** @type {Array<Object>} Cached list of saved quotes */
 export let historyQuotesCache = [];
 
@@ -136,6 +145,15 @@ export function setCurrentSession(v) {
  */
 export function setCurrentQuoteId(v) {
   currentQuoteId = v && typeof v === 'string' && v.trim() ? v.trim() : null;
+}
+
+/**
+ * Mark whether the current #cotNum value is a tentative preview or a real,
+ * confirmed quote number.
+ * @param {boolean} v
+ */
+export function setCotNumIsTentative(v) {
+  cotNumIsTentative = !!v;
 }
 
 /**

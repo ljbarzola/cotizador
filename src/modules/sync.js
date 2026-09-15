@@ -416,6 +416,15 @@ export async function syncFromGoogleSheets(onProgress, signal) {
           sheet.table === 'equipos' ? buildEquipo : sheet.table === 'materiales' ? buildMaterial : buildServicio;
       }
 
+      let installNextNum = null;
+      if (sheet.table === 'instalaciones') {
+        const { data: seqData, error: seqErr } = await supabase.rpc('next_source_seq', {
+          p_table: 'instalaciones',
+          p_prefix: 'INST-',
+        });
+        if (!seqErr && seqData) installNextNum = seqData;
+      }
+
       const csvItems = [];
       const startRow = 1; // All tables (including instalaciones) have header row
       for (let i = startRow; i < csvRows.length; i++) {
@@ -432,7 +441,12 @@ export async function syncFromGoogleSheets(onProgress, signal) {
         }
         // Generate source_id for instalaciones (CSV has no Id column)
         if (sheet.table === 'instalaciones' && !mapped.source_id) {
-          mapped.source_id = 'INST-' + String(csvItems.length + 1).padStart(3, '0');
+          if (installNextNum != null) {
+            mapped.source_id = 'INST-' + String(installNextNum).padStart(3, '0');
+            installNextNum++;
+          } else {
+            mapped.source_id = 'INST-' + String(csvItems.length + 1).padStart(3, '0');
+          }
         }
         if (!mapped.source_id) continue;
 
@@ -582,6 +596,15 @@ export async function syncInstalacionesOnly(onProgress, signal) {
       posToDbField.push(INST_HEADER_MAP[normalized] || null);
     }
 
+    let installNextNum = null;
+    {
+      const { data: seqData, error: seqErr } = await supabase.rpc('next_source_seq', {
+        p_table: 'instalaciones',
+        p_prefix: 'INST-',
+      });
+      if (!seqErr && seqData) installNextNum = seqData;
+    }
+
     const csvItems = [];
     let validRowIndex = 0;
     for (let i = 1; i < csvRows.length; i++) {
@@ -594,7 +617,12 @@ export async function syncInstalacionesOnly(onProgress, signal) {
       for (let j = 0; j < fields.length; j++) {
         if (posToDbField[j]) mapped[posToDbField[j]] = fields[j];
       }
-      mapped.source_id = 'INST-' + String(validRowIndex).padStart(3, '0');
+      if (installNextNum != null) {
+        mapped.source_id = 'INST-' + String(installNextNum).padStart(3, '0');
+        installNextNum++;
+      } else {
+        mapped.source_id = 'INST-' + String(validRowIndex).padStart(3, '0');
+      }
       try {
         csvItems.push(buildInstalacion(mapped));
       } catch (e) {

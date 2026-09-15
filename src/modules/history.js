@@ -19,9 +19,10 @@ import {
   setDiscountType,
   setDiscountValue,
   setHistoryQuotesCache,
+  setCotNumIsTentative,
 } from '../state.js';
 import supabase from '../lib/supabase.js';
-import { $, fmt, esc, toast, showConfirm, isAdmin, generateNextCotNumberFromDB } from '../utils.js';
+import { $, fmt, esc, toast, showConfirm, isAdmin, previewNextCotNumber } from '../utils.js';
 import { calcItemPrice } from './helpers.js';
 
 /**
@@ -263,6 +264,7 @@ export async function loadSaved(id) {
     const { data, error } = await supabase.from('saved_quotes').select('*').eq('id', id).single();
     if (error) throw error;
     setCurrentQuoteId(data.id);
+    setCotNumIsTentative(false);
     window.loadQuoteData?.({
       cotNum: data.cot_num,
       cotDate: data.cot_date,
@@ -333,7 +335,8 @@ export async function newQuote() {
     'clientPhone',
     'clientEmail',
   ].forEach(id => ($(id).value = ''));
-  $('cotNum').value = await generateNextCotNumberFromDB();
+  $('cotNum').value = await previewNextCotNumber();
+  setCotNumIsTentative(true);
   $('cotDate').value = new Date().toISOString().split('T')[0];
   window.renderCatalog?.();
   window.renderCart?.();
