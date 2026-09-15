@@ -1029,6 +1029,33 @@ function setModality(_m) {
   saveDraft();
 }
 
+/**
+ * Snapshot the cart for persistence, adding a stable `sourceId` alongside the
+ * positional `catalogIdx` for each item/component. `catalogIdx` is just a
+ * position in the current CATALOG array (re-sorted by source_id on every
+ * load), so it silently points to the WRONG product once any earlier catalog
+ * item is deleted. Saving `sourceId` too lets loadSaved()/quoteTotal()
+ * re-resolve the correct product later instead of trusting a stale index.
+ * Does not mutate the live cart — only affects what gets persisted.
+ * @param {Array<Object>} cartItems
+ * @returns {Array<Object>}
+ */
+function snapshotCartForSave(cartItems) {
+  return cartItems.map(c => {
+    if (c.isInstallService) return { ...c };
+    if (c.isKit) {
+      return {
+        ...c,
+        kitComponents: (c.kitComponents || []).map(cc => ({
+          ...cc,
+          sourceId: CATALOG[cc.catalogIdx]?.sourceId || cc.sourceId || '',
+        })),
+      };
+    }
+    return { ...c, sourceId: CATALOG[c.catalogIdx]?.sourceId || c.sourceId || '' };
+  });
+}
+
 function buildQuoteData() {
   return {
     cotNum: $('cotNum').value,
@@ -1047,7 +1074,7 @@ function buildQuoteData() {
     discountValue: parseFloat($('discountValue').value) || 0,
     supplierMargins: { ...supplierMargins },
     installMargin: installationMarginPct,
-    productos: cart,
+    productos: snapshotCartForSave(cart),
     savedAt: new Date().toISOString(),
   };
 }

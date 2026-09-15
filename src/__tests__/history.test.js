@@ -2,9 +2,16 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../state.js', () => ({
   CATALOG: [
-    { cost: 100, isService: false, hasGanancia: true, hasInstalacion: false, supplier: 'Sisegusa' },
-    { cost: 50, isService: true, hasGanancia: false, hasInstalacion: false },
-    { cost: 200, isService: false, hasGanancia: true, hasInstalacion: true, supplier: 'Other' },
+    {
+      sourceId: 'EQ-0001',
+      cost: 100,
+      isService: false,
+      hasGanancia: true,
+      hasInstalacion: false,
+      supplier: 'Sisegusa',
+    },
+    { sourceId: 'SV-0001', cost: 50, isService: true, hasGanancia: false, hasInstalacion: false },
+    { sourceId: 'EQ-0002', cost: 200, isService: false, hasGanancia: true, hasInstalacion: true, supplier: 'Other' },
   ],
   supplierMargins: { Sisegusa: 25 },
   DEFAULT_SUPPLIER_MARGIN: 15,
@@ -82,5 +89,37 @@ describe('quoteTotal() - quote total calculation', () => {
     };
     const total = quoteTotal(q);
     expect(total).toBeGreaterThan(0);
+  });
+
+  it('resolves by sourceId even when catalogIdx is stale (points to a different item, e.g. after a catalog deletion shifted positions)', () => {
+    const viaCorrectIdx = quoteTotal({
+      productos: [{ catalogIdx: 2, qty: 1, installActive: true, techCost: 100 }],
+      supplierMargins: {},
+    });
+    const viaStaleIdxWithSourceId = quoteTotal({
+      productos: [{ catalogIdx: 1, sourceId: 'EQ-0002', qty: 1, installActive: true, techCost: 100 }],
+      supplierMargins: {},
+    });
+    expect(viaStaleIdxWithSourceId).toBe(viaCorrectIdx);
+  });
+
+  it('falls back to catalogIdx when sourceId is not found (legacy saved quotes without sourceId)', () => {
+    const total = quoteTotal({
+      productos: [{ catalogIdx: 0, sourceId: 'DOES-NOT-EXIST', qty: 1 }],
+      supplierMargins: {},
+    });
+    expect(total).toBeGreaterThan(0);
+  });
+
+  it('resolves kit components by sourceId even when catalogIdx is stale', () => {
+    const viaCorrectIdx = quoteTotal({
+      productos: [{ isKit: true, qty: 1, kitComponents: [{ catalogIdx: 2, qty: 1 }] }],
+      supplierMargins: {},
+    });
+    const viaStaleIdxWithSourceId = quoteTotal({
+      productos: [{ isKit: true, qty: 1, kitComponents: [{ catalogIdx: 1, sourceId: 'EQ-0002', qty: 1 }] }],
+      supplierMargins: {},
+    });
+    expect(viaStaleIdxWithSourceId).toBe(viaCorrectIdx);
   });
 });
