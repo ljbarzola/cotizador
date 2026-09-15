@@ -39,7 +39,7 @@ Aplicación web para el equipo de ventas de GEMESEG. Permite buscar productos en
 - **Bundler**: Vite
 - **Base de Datos**: Supabase (PostgreSQL + Auth + RLS)
 - **Fuente de Datos**: Google Sheets vía exportación CSV
-- **Hosting**: GitHub Pages (despliegue automático)
+- **Hosting**: Google Cloud Run (imagen Docker/Nginx, build vía Google Cloud Build)
 
 ## Desarrollo Local
 
@@ -52,4 +52,4 @@ npm run build      # Compilación para producción
 
 ## Despliegue
 
-Automático vía GitHub Pages al hacer push a la rama `master`.
+Automático vía Google Cloud Build (`cloudbuild.yaml`) al hacer push a la rama `master`: construye la imagen Docker (`Dockerfile`) y actualiza el servicio de Cloud Run `cotizador`.
