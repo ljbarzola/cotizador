@@ -1,11 +1,20 @@
 import './styles.css';
 import './app.js';
 
-import { doLogin, validateSession, logout, checkRecoveryToken } from './modules/auth.js';
+import {
+  doLogin,
+  validateSession,
+  logout,
+  checkRecoveryToken,
+  showLoginError,
+  initSessionWatcher,
+} from './modules/auth.js';
 import { initQuote } from './modules/quote.js';
 
 window.doLogin = doLogin;
 window.logout = logout;
+
+initSessionWatcher();
 
 window.addEventListener('DOMContentLoaded', async () => {
   // Initialize quote/template module
@@ -106,6 +115,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     const isRecovery = await checkRecoveryToken();
     if (!isRecovery) {
       document.getElementById('loginUser').focus();
+      if (sessionStorage.getItem('session_expired_msg')) {
+        sessionStorage.removeItem('session_expired_msg');
+        showLoginError('Tu sesión expiró. Vuelve a iniciar sesión.');
+      }
     }
   }
 });

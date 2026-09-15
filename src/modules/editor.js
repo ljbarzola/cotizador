@@ -3,7 +3,7 @@
 
 import { currentSession, setInstalacionesCatalog, CATALOG } from '../state.js';
 import supabase from '../lib/supabase.js';
-import { $, fmt, escAttr, toast, showConfirm } from '../utils.js';
+import { $, fmt, escAttr, toast, showConfirm, isSessionExpiredError, showSessionExpiredToast } from '../utils.js';
 import { loadAllInstalaciones } from './sync.js';
 
 let editorProducts = [];
@@ -422,7 +422,11 @@ export async function saveCatalogEdits() {
     await loadEditorProducts();
   } catch (e) {
     console.error('[EDITOR] Save error:', e);
-    toast('Error al guardar: ' + e.message, 'danger');
+    if (isSessionExpiredError(e)) {
+      showSessionExpiredToast();
+    } else {
+      toast('Error al guardar: ' + e.message, 'danger');
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = '💾 Guardar cambios';
@@ -581,14 +585,24 @@ export async function installEditorToggleDelete(idx) {
 
 /**
  * Add a new blank installation row to the editor.
- * @returns {void}
+ * @returns {Promise<void>}
  */
-export function addNewInstall() {
+export async function addNewInstall() {
+  let sourceId;
+  try {
+    const { data, error } = await supabase.rpc('next_source_seq', { p_table: 'instalaciones', p_prefix: 'INST-' });
+    if (error || !data) throw error || new Error('sin datos');
+    sourceId = 'INST-' + String(data).padStart(3, '0');
+  } catch (e) {
+    console.warn('[SOURCE_ID] RPC failed, fallback local:', e?.message);
+    sourceId = 'INST-' + String(installProducts.length + 1).padStart(3, '0');
+  }
+
   const idx = installProducts.length;
   installProducts.push({
     _table: 'instalaciones',
     id: null,
-    source_id: 'INST-' + String(idx + 1).padStart(3, '0'),
+    source_id: sourceId,
     categoria: '',
     subcategoria: '',
     servicio: '',
@@ -653,7 +667,11 @@ export async function saveInstallEditor() {
     }
   } catch (e) {
     console.error('[INSTALL EDITOR] Save error:', e);
-    toast('Error al guardar: ' + e.message, 'danger');
+    if (isSessionExpiredError(e)) {
+      showSessionExpiredToast();
+    } else {
+      toast('Error al guardar: ' + e.message, 'danger');
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = '💾 Guardar';

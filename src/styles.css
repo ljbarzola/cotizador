@@ -3344,7 +3344,8 @@ th:hover .col-resizer {
   .panel-divider,
   .actions-bar,
   .quote-section[data-no-print],
-  .modal-backdrop {
+  .modal-backdrop,
+  .toast {
     display: none !important;
   }
   .app,
@@ -3536,6 +3537,9 @@ th:hover .col-resizer {
   .productos-table .producto-desc small {
     font-size: 9px;
     color: #64748b;
+  }
+  .productos-table .producto-desc small .supplier-line {
+    display: none !important;
   }
   .print-condiciones {
     font-size: 7px;

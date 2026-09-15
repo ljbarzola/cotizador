@@ -19,10 +19,12 @@ import {
   setDiscountType,
   setDiscountValue,
   setHistoryQuotesCache,
+  setCotNumIsTentative,
 } from '../state.js';
 import supabase from '../lib/supabase.js';
-import { $, fmt, esc, toast, showConfirm, isAdmin, generateNextCotNumberFromDB } from '../utils.js';
+import { $, fmt, esc, toast, showConfirm, isAdmin, previewNextCotNumber } from '../utils.js';
 import { calcItemPrice } from './helpers.js';
+import { resolveTemplateProductos } from './quote.js';
 
 /**
  * Calculate the total price of a saved quote (items + installation).
@@ -55,10 +57,13 @@ export function quoteTotal(q) {
 
     if (c.isKit) {
       (c.kitComponents || []).forEach(cc => {
-        let it = CATALOG[cc.catalogIdx];
-        if (!it && cc.sourceId) {
-          it = CATALOG.find(p => p.sourceId === cc.sourceId);
-        }
+        // catalogIdx es una posición del catálogo al momento de guardar; si
+        // se borró algún producto anterior desde entonces, esa posición ya
+        // no es el mismo producto. Se prioriza sourceId (identificador
+        // estable) y solo se usa catalogIdx como respaldo para cotizaciones
+        // guardadas antes de que se empezara a guardar sourceId.
+        let it = cc.sourceId ? CATALOG.find(p => p.sourceId === cc.sourceId) : null;
+        if (!it) it = CATALOG[cc.catalogIdx];
         if (!it) return;
         const compQty = (cc.qty ?? 1) * (c.qty || 1);
         const compTechCost = cc.techCost ?? 0;
@@ -79,10 +84,8 @@ export function quoteTotal(q) {
       return;
     }
 
-    let item = CATALOG[c.catalogIdx];
-    if (!item && c.sourceId) {
-      item = CATALOG.find(p => p.sourceId === c.sourceId);
-    }
+    let item = c.sourceId ? CATALOG.find(p => p.sourceId === c.sourceId) : null;
+    if (!item) item = CATALOG[c.catalogIdx];
     if (!item) return;
 
     const qty = c.qty || 1;
@@ -263,15 +266,25 @@ export async function loadSaved(id) {
     const { data, error } = await supabase.from('saved_quotes').select('*').eq('id', id).single();
     if (error) throw error;
     setCurrentQuoteId(data.id);
+    setCotNumIsTentative(false);
+    // catalogIdx guardado es solo una posición en el catálogo de cuando se
+    // guardó la cotización; si algún producto anterior fue borrado desde
+    // entonces, esa posición ahora apunta a OTRO producto. Se re-resuelve por
+    // sourceId (guardado desde este fix en adelante) contra el catálogo
+    // actual, igual que ya se hace al cargar una plantilla.
+    const { cart: resolvedProductos, unmatched } = resolveTemplateProductos(data.productos || [], CATALOG);
     window.loadQuoteData?.({
       cotNum: data.cot_num,
       cotDate: data.cot_date,
       client: data.client,
       supplierMargins: data.supplier_margins,
       installMargin: data.install_margin,
-      productos: data.productos,
+      productos: resolvedProductos,
     });
     closeSavedModal();
+    if (unmatched.length > 0) {
+      toast(`⚠️ ${unmatched.length} producto(s) de esta cotización ya no existen en el catálogo`, 'warning');
+    }
     toast('✓ Cotización cargada: ' + data.cot_num);
   } catch (e) {
     toast('Error: ' + e.message, 'danger');
@@ -333,7 +346,8 @@ export async function newQuote() {
     'clientPhone',
     'clientEmail',
   ].forEach(id => ($(id).value = ''));
-  $('cotNum').value = await generateNextCotNumberFromDB();
+  $('cotNum').value = await previewNextCotNumber();
+  setCotNumIsTentative(true);
   $('cotDate').value = new Date().toISOString().split('T')[0];
   window.renderCatalog?.();
   window.renderCart?.();

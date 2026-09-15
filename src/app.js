@@ -18,6 +18,8 @@ import {
   currentSession,
   setCurrentSession,
   setCurrentQuoteId,
+  cotNumIsTentative,
+  setCotNumIsTentative,
   supplierMargins,
   setSupplierMargins,
   DEFAULT_SUPPLIER_MARGIN,
@@ -118,6 +120,9 @@ import {
   resolveSaveTemplate,
   toggleTplIndustryCustom,
   generateNextCotNumberFromDB,
+  previewNextCotNumber,
+  isSessionExpiredError,
+  showSessionExpiredToast,
   showSaveTemplateModal,
   showQuoteDuplicateModal,
 } from './utils.js';
@@ -691,7 +696,7 @@ function renderCart() {
             <span class="producto-desc-text">${esc(it.description)}</span>
             ${it.descriptionExtended ? `<div class="producto-desc-extended">${esc(it.descriptionExtended).replace(/\n/g, '<br>')}</div>` : ''}
             <div class="producto-badges">${badges}</div>
-            <small>${it.sourceId || ''}${it.supplier ? ' · ' + it.supplier : ''}</small>
+            <small>${it.sourceId || ''}${it.supplier ? `<span class="supplier-line"> · ${it.supplier}</span>` : ''}</small>
           </td>
           <td class="center" style="font-size:11px;font-weight:600;color:var(--primary);">${it.unit || '—'}</td>
           <td class="right"><span class="print-hide-col">${fmt(compPricing.baseCost)}</span><span class="print-only">${fmt(compPricing.priceBeforeIva)}</span></td>
@@ -744,7 +749,7 @@ function renderCart() {
         <span class="producto-desc-text">${esc(item.description)}</span>
         ${item.descriptionExtended ? `<div class="producto-desc-extended">${esc(item.descriptionExtended).replace(/\n/g, '<br>')}</div>` : ''}
         <div class="producto-badges">${badges}</div>
-        <small>${item.sourceId || ''}${item.supplier ? ' · ' + item.supplier : ''}</small>
+        <small>${item.sourceId || ''}${item.supplier ? `<span class="supplier-line"> · ${item.supplier}</span>` : ''}</small>
       </td>
       <td class="center" style="font-size:11px;font-weight:600;color:var(--primary);">${item.unit || '—'}</td>
       <td class="right"><span class="print-hide-col">${fmt(pricing.baseCost)}</span><span class="print-only">${fmt(pricing.priceBeforeIva)}</span></td>
@@ -1024,6 +1029,33 @@ function setModality(_m) {
   saveDraft();
 }
 
+/**
+ * Snapshot the cart for persistence, adding a stable `sourceId` alongside the
+ * positional `catalogIdx` for each item/component. `catalogIdx` is just a
+ * position in the current CATALOG array (re-sorted by source_id on every
+ * load), so it silently points to the WRONG product once any earlier catalog
+ * item is deleted. Saving `sourceId` too lets loadSaved()/quoteTotal()
+ * re-resolve the correct product later instead of trusting a stale index.
+ * Does not mutate the live cart — only affects what gets persisted.
+ * @param {Array<Object>} cartItems
+ * @returns {Array<Object>}
+ */
+function snapshotCartForSave(cartItems) {
+  return cartItems.map(c => {
+    if (c.isInstallService) return { ...c };
+    if (c.isKit) {
+      return {
+        ...c,
+        kitComponents: (c.kitComponents || []).map(cc => ({
+          ...cc,
+          sourceId: CATALOG[cc.catalogIdx]?.sourceId || cc.sourceId || '',
+        })),
+      };
+    }
+    return { ...c, sourceId: CATALOG[c.catalogIdx]?.sourceId || c.sourceId || '' };
+  });
+}
+
 function buildQuoteData() {
   return {
     cotNum: $('cotNum').value,
@@ -1042,7 +1074,7 @@ function buildQuoteData() {
     discountValue: parseFloat($('discountValue').value) || 0,
     supplierMargins: { ...supplierMargins },
     installMargin: installationMarginPct,
-    productos: cart,
+    productos: snapshotCartForSave(cart),
     savedAt: new Date().toISOString(),
   };
 }
@@ -1138,9 +1170,10 @@ async function saveQuote() {
     toast('Agrega al menos un ítem a la cotización', 'danger');
     return;
   }
-  if (!data.cotNum) {
+  if (!data.cotNum || cotNumIsTentative) {
     data.cotNum = await generateNextCotNumberFromDB();
     $('cotNum').value = data.cotNum;
+    setCotNumIsTentative(false);
   }
 
   const userId = currentSession?.userId;
@@ -1191,6 +1224,7 @@ async function saveQuote() {
       } else if (action === 'create_new') {
         data.cotNum = await generateNextCotNumberFromDB();
         $('cotNum').value = data.cotNum;
+        setCotNumIsTentative(false);
         row.cot_num = data.cotNum;
         const { data: inserted, error } = await supabase.from('saved_quotes').insert(row).select().single();
         if (error) throw error;
@@ -1204,7 +1238,11 @@ async function saveQuote() {
       toast('✓ Cotización guardada: ' + data.cotNum, 'success');
     }
   } catch (e) {
-    toast('Error al guardar: ' + e.message, 'danger');
+    if (isSessionExpiredError(e)) {
+      showSessionExpiredToast();
+    } else {
+      toast('Error al guardar: ' + e.message, 'danger');
+    }
   }
 }
 
@@ -1722,7 +1760,7 @@ function closeCreateProductModal() {
   $('createProductModal').classList.remove('open');
 }
 
-function onNewProdCategoryChange() {
+async function onNewProdCategoryChange() {
   const cat = $('newProdCategorySelect').value;
   const container = $('newProdFieldsContainer');
   const btn = $('btnSaveNewProduct');
@@ -1745,11 +1783,21 @@ function onNewProdCategoryChange() {
     ),
   ].sort();
 
-  const tableItems = CATALOG.filter(p => p._table === cat);
   const prefixMap = { equipos: 'EQ-', materiales: 'MT-', servicios: 'SV-' };
   const prefix = prefixMap[cat] || 'PR-';
-  const nextNum = tableItems.length + 1;
-  const suggestedId = prefix + String(nextNum).padStart(4, '0');
+  let suggestedId;
+  try {
+    const { data, error } = await supabase.rpc('next_source_seq', { p_table: cat, p_prefix: prefix });
+    if (error || !data) throw error || new Error('sin datos');
+    suggestedId = prefix + String(data).padStart(4, '0');
+  } catch (e) {
+    console.warn('[SOURCE_ID] RPC failed, fallback local:', e?.message);
+    const tableItems = CATALOG.filter(p => p._table === cat);
+    suggestedId = prefix + String(tableItems.length + 1).padStart(4, '0');
+  }
+
+  // El usuario pudo cambiar de categoría mientras se esperaba la respuesta del RPC.
+  if ($('newProdCategorySelect').value !== cat) return;
 
   let html = '';
 
@@ -1930,7 +1978,11 @@ async function saveNewProductFromModal() {
     renderViewerTable();
   } catch (e) {
     console.error('[CREATE PRODUCT] Save error:', e);
-    toast('Error al guardar producto: ' + e.message, 'danger');
+    if (isSessionExpiredError(e)) {
+      showSessionExpiredToast();
+    } else {
+      toast('Error al guardar producto: ' + e.message, 'danger');
+    }
   }
 }
 
@@ -2021,8 +2073,16 @@ async function saveNewInstallFromModal() {
   }
 
   const observaciones = $('newInstallObservaciones')?.value?.trim() || '';
-  const nextNum = (instalacionesCatalog || []).length + 1;
-  const sourceId = 'INST-' + String(nextNum).padStart(3, '0');
+  let sourceId;
+  try {
+    const { data, error } = await supabase.rpc('next_source_seq', { p_table: 'instalaciones', p_prefix: 'INST-' });
+    if (error || !data) throw error || new Error('sin datos');
+    sourceId = 'INST-' + String(data).padStart(3, '0');
+  } catch (e) {
+    console.warn('[SOURCE_ID] RPC failed, fallback local:', e?.message);
+    const nextNum = (instalacionesCatalog || []).length + 1;
+    sourceId = 'INST-' + String(nextNum).padStart(3, '0');
+  }
   if (sourceId && !validateUniqueSourceId(sourceId)) {
     toast(`⚠️ El código / ID "${sourceId}" ya existe. Usa uno diferente.`, 'warning');
     return;
@@ -2047,6 +2107,10 @@ async function saveNewInstallFromModal() {
     renderViewerInstallations();
   } catch (e) {
     console.error('[CREATE INSTALL] Save error:', e);
+    if (isSessionExpiredError(e)) {
+      showSessionExpiredToast();
+      return;
+    }
     toast('Error al guardar instalación: ' + e.message, 'danger');
   }
 }
@@ -2529,7 +2593,11 @@ async function bootApp() {
       /* ignore corrupt draft */
     }
   }
-  if (!$('cotNum').value) $('cotNum').value = await generateNextCotNumberFromDB();
+  // El número mostrado aquí (restaurado del borrador o recién generado) es
+  // solo tentativo: no reserva nada en la BD. saveQuote() pedirá el número
+  // real y definitivo recién al guardar.
+  if (!$('cotNum').value) $('cotNum').value = await previewNextCotNumber();
+  setCotNumIsTentative(true);
   if (!$('cotDate').value) $('cotDate').value = new Date().toISOString().split('T')[0];
 
   // Show skeleton in catalog panel

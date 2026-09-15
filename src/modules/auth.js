@@ -124,15 +124,43 @@ export async function validateSession() {
       localStorage.setItem('usuario_rol', session.rol);
     }
     return session;
-  } catch (_e) {
-    if (Date.now() - session.ts < 7 * 86400000) return session;
+  } catch (e) {
+    // Solo confiamos en la sesión local guardada si esto fue un fallo de RED
+    // (no se pudo ni consultar a Supabase). Si Supabase respondió con un error
+    // real de autenticación, no debemos dar la sesión por válida.
+    const isNetworkError = e instanceof TypeError || /fetch|network/i.test(e?.message || '');
+    if (isNetworkError && Date.now() - session.ts < 7 * 86400000) return session;
     localStorage.removeItem('session');
     return false;
   }
 }
 
+let _intentionalLogout = false;
+
+/**
+ * Start listening for Supabase auth state changes so a session that
+ * becomes invalid (JWT/refresh token expired or revoked) while the app is
+ * open is detected consistently, instead of each screen failing on its own
+ * with a raw error the next time it tries to save something.
+ * @returns {void}
+ */
+export function initSessionWatcher() {
+  supabase.auth.onAuthStateChange(event => {
+    if (event !== 'SIGNED_OUT') return;
+    const appIsOpen = document.getElementById('loginOverlay')?.classList.contains('hidden');
+    localStorage.removeItem('session');
+    // logout() ya limpia todo y recarga por su cuenta — no mostrar el
+    // mensaje de "sesión expirada" en un cierre de sesión manual.
+    if (appIsOpen && !_intentionalLogout) {
+      sessionStorage.setItem('session_expired_msg', '1');
+      location.reload();
+    }
+  });
+}
+
 export async function logout() {
   if (!(await window.showConfirm('¿Cerrar sesión?', 'Cerrar sesión', 'Salir'))) return;
+  _intentionalLogout = true;
   supabase.auth.signOut();
   localStorage.removeItem('session');
   localStorage.removeItem('usuario_nombre');

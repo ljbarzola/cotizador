@@ -27,7 +27,7 @@
 - `instalaciones` - Servicios de instalación (source_id, categoria, subcategoria, servicio, costo_unitario, observaciones). Tabla independiente, NO es una categoría.
 - `saved_quotes` - Cotizaciones guardadas (id, user_id, cot_num, cot_date, client JSONB, margin, productos JSONB, status, updated_at).
 - `templates` - Plantillas compartidas (id, name, description, client_type, industry, client JSONB, productos JSONB, ...).
-- `quote_sequences` - Secuencia global de cotizaciones (id, last_seq). Genera IDs únicos via RPC `next_quote_seq()`.
+- `quote_sequences` - Secuencia global de cotizaciones (id, last_seq). Genera IDs únicos via RPC `next_quote_seq()` (consume/incrementa, solo al guardar de verdad) y `peek_quote_seq()` (solo lectura, para mostrar un número tentativo en pantalla sin gastarlo).
 
 **Google Sheet fuente:** `https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo`
 
@@ -78,10 +78,12 @@ Cotizador/
 │   ├── reset_all_tables.sql    # Reset completo con schema correcto
 │   ├── add_cant_costo_columns.sql  # Agregar cantidad_default y costo_total a equipos/materiales
 │   ├── verify_supabase.sql     # Verificacion de tablas
-│   ├── next_cot_seq.sql        # Tabla辅助 quote_sequences + RPC next_quote_seq()
+│   ├── next_cot_seq.sql        # Tabla auxiliar quote_sequences + RPC next_quote_seq() (consume número real)
+│   ├── peek_quote_seq.sql      # RPC peek_quote_seq() de solo lectura (número tentativo, no consume)
 │   ├── rename_items_to_productos.sql  # Migra columna items→productos en saved_quotes y templates
 │   ├── add_cargo_column.sql           # Agregar columna cargo a profiles
-│   └── add_phone_column.sql           # Agregar columna telefono a profiles
+│   ├── add_phone_column.sql           # Agregar columna telefono a profiles
+│   └── next_source_seq.sql            # RPC next_source_seq(tabla, prefijo) para sugerir el próximo source_id de equipos/materiales/servicios/instalaciones (reemplaza el cálculo por conteo de items cargados)
 ├── public/
 │   ├── content/
 │   │   ├── logo-gemeseg-back-white.png   # Logo login
@@ -145,6 +147,12 @@ Cotizador/
     - **Guardar como Plantilla**: Corrección en `saveCurrentAsTemplate()` mapeando correctamente Kits (`isKit`), componentes, servicios de instalación y productos regulares con la clave `productos`, garantizando su almacenamiento en Supabase y restauración completa al importar o previsualizar la plantilla.
     - **Cálculo de Totales en Historial**: `quoteTotal(q)` calcula de forma precisa el total general incluyendo IVA (15%), costo y margen de instalaciones de productos, servicios de instalación del catálogo y aplicando el descuento registrado.
     - **Validación y Límites de Descuentos**: `updateDiscount()` y `calcDiscount()` aseguran que el descuento en porcentaje jamás supere el 100% y que el descuento de valor fijo no exceda el subtotal general de la cotización, mostrando una advertencia interactiva al usuario.
+31. **Sesión, generación de IDs y número de cotización (correcciones)**:
+    - **Manejo de sesión expirada**: `initSessionWatcher()` (`modules/auth.js`, iniciado desde `main.js`) escucha `supabase.auth.onAuthStateChange` y, si la sesión se cae mientras la app está abierta (JWT/refresh token inválido), limpia la sesión local y recarga a la pantalla de login con un mensaje consistente, en vez de que cada pantalla falle por su cuenta con el error crudo de Supabase. `validateSession()` solo confía en la sesión local guardada (ventana de 7 días) ante un error de **red** real, no ante una sesión efectivamente inválida. Los guardados críticos (cotización, producto, instalación, editor de catálogo) usan `isSessionExpiredError()`/`showSessionExpiredToast()` (`utils.js`) para mostrar un mensaje claro de reautenticación.
+    - **ID sugerido de productos/servicios/instalaciones**: en vez de contar los ítems cargados en memoria (`.length + 1`, que repetía códigos si había ítems borrados o filtrados), el código sugerido se pide vía RPC `next_source_seq(tabla, prefijo)` (`db/next_source_seq.sql`), que calcula el máximo real vigente en `source_id`. Con fallback local si el RPC no está disponible. Afecta creación individual (`app.js`) y el editor/importación CSV de instalaciones (`editor.js`, `sync.js`).
+    - **Número de cotización tentativo vs. confirmado**: al abrir/recargar la pantalla o pulsar "Nueva cotización" ya NO se consume un número real de `quote_sequences` — se usa `previewNextCotNumber()` (RPC `peek_quote_seq()`, solo lectura) para mostrar un número tentativo. Solo `saveQuote()` pide el número real y definitivo (`generateNextCotNumberFromDB()` / `next_quote_seq()`), controlado por el flag `cotNumIsTentative` en `state.js`. Antes de este fix, cada recarga sin guardar quemaba un número real.
+    - **Notificaciones e impresión**: el toast (`#toast`) se oculta en `@media print` para que no aparezca superpuesto en el PDF si estaba visible al imprimir. El proveedor de cada ítem (`item.supplier`, junto al código del producto) ahora tiene su propia clase `.supplier-line`, oculta solo en `@media print` — en pantalla se sigue mostrando igual, pero no se filtra al cliente en el documento impreso.
+    - **Cotizaciones guardadas ya no se corrompen al borrar un producto del catálogo**: cada ítem del carrito (individual o componente de kit) solo guardaba `catalogIdx` — su **posición** en el catálogo al momento de guardar, no un identificador estable. Como el catálogo se reordena por `source_id` en cada carga, borrar CUALQUIER producto corre una posición hacia atrás a todos los que van después, y una cotización guardada antigua podía terminar mostrando/calculando silenciosamente OTRO producto al reabrirse. `buildQuoteData()` ahora guarda también `sourceId` por ítem (`snapshotCartForSave()`, `app.js`), y `loadSaved()`/`quoteTotal()` (`history.js`) resuelven primero por `sourceId` contra el catálogo actual (via `resolveTemplateProductos()`, reutilizado de `quote.js`), usando `catalogIdx` solo como respaldo para cotizaciones guardadas ANTES de este fix (que no tienen `sourceId`). Nota: las cotizaciones ya guardadas antes de este fix no se migran ni se tocan — siguen dependiendo de `catalogIdx` tal cual, así que borrar un producto del catálogo puede seguir afectando su visualización si ya fueron guardadas; el fix protege las que se guarden de ahora en adelante.
 
 ### Flujo de precios (confirmado)
 
