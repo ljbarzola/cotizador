@@ -1,10 +1,4 @@
-import {
-  syncFromGoogleSheets,
-  syncInstalacionesOnly,
-  loadAllProducts,
-  loadAllInstalaciones,
-  getSyncLog,
-} from './modules/sync.js';
+import { loadAllProducts, loadAllInstalaciones } from './modules/sync.js';
 import supabase from './lib/supabase.js';
 import { calcItemPrice, calcInstallServicePrice, getSupplierMargin, marginBadge } from './modules/helpers.js';
 import { calcItemTotals, calcDiscount, calcSubtotal } from './modules/cartCalculations.js';
@@ -1251,170 +1245,6 @@ async function saveQuote() {
 
 function handleSyncClick() {
   openCatalogViewer();
-}
-
-// === SYNC PANEL ===
-let syncAbortController = null;
-
-function openSyncPanel() {
-  $('syncPanel').style.display = 'block';
-  $('syncPanelStatus').textContent = '';
-  $('syncPanelSummary').innerHTML = '';
-}
-
-function closeSyncPanel() {
-  if (syncAbortController) {
-    syncAbortController.abort();
-    syncAbortController = null;
-  }
-  $('syncPanel').style.display = 'none';
-  $('btnStartSync').style.display = '';
-  $('btnStopSync').style.display = 'none';
-}
-
-async function startSync() {
-  $('btnStartSync').style.display = 'none';
-  $('btnStopSync').style.display = '';
-  $('syncPanelStatus').textContent = 'Iniciando...';
-  $('syncPanelSummary').innerHTML = '';
-  $('syncLogEntries').innerHTML = '';
-  syncAbortController = new AbortController();
-  const signal = syncAbortController.signal;
-
-  function appendLog(msg, level) {
-    const entry = document.createElement('div');
-    const ts = new Date().toLocaleTimeString();
-    const color = level === 'error' ? '#ef4444' : level === 'warn' ? '#f59e0b' : '#9ca3af';
-    entry.innerHTML = `<span style="color:#6b7280;">${ts}</span> <span style="color:${color};">${msg}</span>`;
-    $('syncLogEntries').appendChild(entry);
-    entry.scrollIntoView({ block: 'end', behavior: 'smooth' });
-  }
-
-  appendLog('Iniciando sincronización...', 'info');
-  try {
-    const result = await syncFromGoogleSheets(msg => {
-      $('syncPanelStatus').textContent = msg;
-      appendLog(msg, 'info');
-    }, signal);
-
-    getSyncLog().forEach(e => appendLog(e.msg, e.level));
-    const sheets = result.sheets || {};
-    let summaryHtml = '<div style="display:flex;gap:12px;flex-wrap:wrap;">';
-    summaryHtml += `<span style="color:#10b981;font-weight:600;">✓ ${result.inserted} insertados</span>`;
-    summaryHtml += `<span style="color:#3b82f6;font-weight:600;">↻ ${result.updated} actualizados</span>`;
-    if (result.failed > 0)
-      summaryHtml += `<span style="color:#ef4444;font-weight:600;">✕ ${result.failed} fallidos</span>`;
-    if (result.aborted) summaryHtml += '<span style="color:#f59e0b;font-weight:600;">⏹ Detenido</span>';
-    summaryHtml += '</div>';
-    for (const [name, info] of Object.entries(sheets)) {
-      summaryHtml += `<div style="margin-top:6px;font-size:11px;color:var(--muted);">${name}: ↓${info.downloaded} parseadas ${info.parsed} | +${info.inserted} ~${info.updated} ✕${info.failed}</div>`;
-    }
-    $('syncPanelSummary').innerHTML = summaryHtml;
-
-    await loadCatalogFromDB();
-    renderCategories();
-    renderCatalog();
-    renderViewerTable();
-    toast(result.aborted ? '⏹ Detenido' : '✓ Sincronización completada', result.aborted ? '' : 'success');
-  } catch (e) {
-    appendLog('Error: ' + e.message, 'error');
-    toast('Error: ' + e.message, 'danger');
-  } finally {
-    syncAbortController = null;
-    $('btnStartSync').style.display = '';
-    $('btnStopSync').style.display = 'none';
-    $('syncPanelStatus').textContent = 'Completado';
-  }
-}
-
-function stopSync() {
-  if (syncAbortController) {
-    syncAbortController.abort();
-    $('syncPanelStatus').textContent = 'Deteniendo...';
-  }
-}
-
-// === INSTALL SYNC (separate from catalog sync) ===
-let installSyncAbortController = null;
-
-function openInstallSyncPanel() {
-  $('installSyncPanel').style.display = 'block';
-  $('installSyncPanelStatus').textContent = '';
-  $('installSyncPanelSummary').innerHTML = '';
-}
-
-function closeInstallSyncPanel() {
-  if (installSyncAbortController) {
-    installSyncAbortController.abort();
-    installSyncAbortController = null;
-  }
-  $('installSyncPanel').style.display = 'none';
-  $('btnStartInstallSync').style.display = '';
-  $('btnStopInstallSync').style.display = 'none';
-}
-
-async function startInstallSync() {
-  $('btnStartInstallSync').style.display = 'none';
-  $('btnStopInstallSync').style.display = '';
-  $('installSyncPanelStatus').textContent = 'Iniciando...';
-  $('installSyncPanelSummary').innerHTML = '';
-  $('installSyncLogEntries').innerHTML = '';
-  installSyncAbortController = new AbortController();
-  const signal = installSyncAbortController.signal;
-
-  function appendLog(msg, level) {
-    const entry = document.createElement('div');
-    const ts = new Date().toLocaleTimeString();
-    const color = level === 'error' ? '#ef4444' : level === 'warn' ? '#f59e0b' : '#9ca3af';
-    entry.innerHTML = `<span style="color:#6b7280;">${ts}</span> <span style="color:${color};">${msg}</span>`;
-    $('installSyncLogEntries').appendChild(entry);
-    entry.scrollIntoView({ block: 'end', behavior: 'smooth' });
-  }
-
-  appendLog('Sincronizando instalaciones...', 'info');
-  try {
-    const result = await syncInstalacionesOnly(msg => {
-      $('installSyncPanelStatus').textContent = msg;
-      appendLog(msg, 'info');
-    }, signal);
-
-    getSyncLog().forEach(e => appendLog(e.msg, e.level));
-    const sheets = result.sheets || {};
-    let summaryHtml = '<div style="display:flex;gap:12px;flex-wrap:wrap;">';
-    summaryHtml += `<span style="color:#10b981;font-weight:600;">✓ ${result.inserted} insertados</span>`;
-    summaryHtml += `<span style="color:#3b82f6;font-weight:600;">↻ ${result.updated} actualizados</span>`;
-    if (result.failed > 0)
-      summaryHtml += `<span style="color:#ef4444;font-weight:600;">✕ ${result.failed} fallidos</span>`;
-    if (result.aborted) summaryHtml += '<span style="color:#f59e0b;font-weight:600;">⏹ Detenido</span>';
-    summaryHtml += '</div>';
-    for (const [name, info] of Object.entries(sheets)) {
-      summaryHtml += `<div style="margin-top:6px;font-size:11px;color:var(--muted);">${name}: ↓${info.downloaded} | +${info.inserted} ~${info.updated} ✕${info.failed}</div>`;
-    }
-    $('installSyncPanelSummary').innerHTML = summaryHtml;
-
-    try {
-      const instalaciones = await loadAllInstalaciones();
-      setInstalacionesCatalog(instalaciones);
-    } catch (e) {
-      console.warn('Error reloading instalaciones:', e.message);
-    }
-    toast(result.aborted ? '⏹ Detenido' : '✓ Instalaciones sincronizadas', result.aborted ? '' : 'success');
-  } catch (e) {
-    appendLog('Error: ' + e.message, 'error');
-    toast('Error: ' + e.message, 'danger');
-  } finally {
-    installSyncAbortController = null;
-    $('btnStartInstallSync').style.display = '';
-    $('btnStopInstallSync').style.display = 'none';
-    $('installSyncPanelStatus').textContent = 'Completado';
-  }
-}
-
-function stopInstallSync() {
-  if (installSyncAbortController) {
-    installSyncAbortController.abort();
-    $('installSyncPanelStatus').textContent = 'Deteniendo...';
-  }
 }
 
 // === CATALOG VIEWER ===
@@ -3291,10 +3121,6 @@ window.loadSaved = loadSaved;
 window.deleteSaved = deleteSaved;
 window.changeStatus = changeStatus;
 window.applyHistoryFilters = applyHistoryFilters;
-window.openSyncPanel = openSyncPanel;
-window.closeSyncPanel = closeSyncPanel;
-window.startSync = startSync;
-window.stopSync = stopSync;
 window.goToPage = goToPage;
 window.changePageSize = changePageSize;
 window.openTemplatesModal = openTemplatesModal;
@@ -3360,8 +3186,4 @@ window.saveInstallServiceEditor = saveInstallServiceEditor;
 window.updateInstallServiceQty = updateInstallServiceQty;
 window.updateInstallServiceMargin = updateInstallServiceMargin;
 window.updateInstallServiceCost = updateInstallServiceCost;
-window.openInstallSyncPanel = openInstallSyncPanel;
-window.closeInstallSyncPanel = closeInstallSyncPanel;
-window.startInstallSync = startInstallSync;
-window.stopInstallSync = stopInstallSync;
 window.renderInstallServiceSubcategories = renderInstallServiceSubcategories;

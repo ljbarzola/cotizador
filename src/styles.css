@@ -2259,61 +2259,6 @@ textarea:focus {
   white-space: nowrap;
 }
 
-/* Sync panels */
-.viewer-sync-panel {
-  margin-bottom: 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: white;
-}
-.viewer-sync-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 14px;
-  background: var(--bg, #f3f4f6);
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--text);
-  border-bottom: 1px solid var(--border);
-}
-.viewer-sync-content {
-  padding: 12px 14px;
-}
-.viewer-sync-log {
-  background: #1f2937;
-  border-radius: 6px;
-  max-height: 200px;
-  overflow-y: auto;
-  font-family: ui-monospace, monospace;
-  font-size: 11px;
-  padding: 8px 10px;
-  color: #9ca3af;
-}
-.viewer-sync-summary {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.btn-close-sm {
-  background: transparent;
-  border: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.btn-close-sm:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: var(--text);
-}
-
 /* Table */
 .viewer-table-wrap {
   flex: 1;

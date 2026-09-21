@@ -4,12 +4,12 @@ Herramienta web para crear cotizaciones profesionales de productos y servicios d
 
 ## ¿Qué es este sistema?
 
-Aplicación web para el equipo de ventas de GEMESEG. Permite buscar productos en un catálogo sincronizado desde Google Sheets, armar cotizaciones, calcular precios con IVA, administrar servicios de instalación y generar PDFs oficiales listos para entregar al cliente. Los datos se almacenan en Supabase (base de datos en la nube).
+Aplicación web para el equipo de ventas de GEMESEG. Permite buscar productos en el catálogo, armar cotizaciones, calcular precios con IVA, administrar servicios de instalación y generar PDFs oficiales listos para entregar al cliente. Los datos se almacenan en Supabase (base de datos en la nube).
 
 ## Funcionalidades Clave
 
 - **Login seguro y Recuperación de Contraseña**: Autenticación con Supabase Auth (`signInWithPassword`) y flujo de recuperación de clave por correo.
-- **Catálogo desde Google Sheets (4 tablas)**: Sincronización de 4 pestañas a Supabase: `equipos`, `materiales`, `servicios` e `instalaciones`.
+- **Catálogo en Supabase (4 tablas)**: `equipos`, `materiales`, `servicios` e `instalaciones`, administradas directamente desde el visor/editor de catálogo de la app.
 - **Visor de Catálogo Interactivo**: 3 pestañas (Productos, Instalaciones, Kits) con edición inline, eliminación, creación de productos/instalaciones y redimensión de columnas.
 - **Servicios de Instalación**: Pestaña dedicada y picker de servicios de instalación con costo configurable por ítem, margen editable (35% por defecto) y sin cobro de IVA.
 - **Sistema de Precios Dinámico**: Costo base → +Margen Proveedor (editable, default 15%) → +IVA 15% → +Servicios de Instalación sin IVA.
@@ -27,18 +27,16 @@ Aplicación web para el equipo de ventas de GEMESEG. Permite buscar productos en
 
 1. Abrir la aplicación en el navegador.
 2. Iniciar sesión con usuario y clave (o usar la opción de recuperación de clave).
-3. Sincronizar catálogo desde Google Sheets si es necesario.
-4. Buscar y agregar productos, kits o servicios de instalación a la oferta.
-5. Completar los datos obligatorios del cliente (Razón Social, RUC/Cédula, Teléfono, Email).
-6. Configurar márgenes o descuentos según aplique.
-7. Guardar cotización en la nube, usar como plantilla o imprimir el PDF comercial.
+3. Buscar y agregar productos, kits o servicios de instalación a la oferta.
+4. Completar los datos obligatorios del cliente (Razón Social, RUC/Cédula, Teléfono, Email).
+5. Configurar márgenes o descuentos según aplique.
+6. Guardar cotización en la nube, usar como plantilla o imprimir el PDF comercial.
 
 ## Stack Técnico
 
 - **Frontend**: HTML5 + CSS3 (Grid/Flexbox/Print) + JavaScript ES6+ (SPA Vanilla)
 - **Bundler**: Vite
 - **Base de Datos**: Supabase (PostgreSQL + Auth + RLS)
-- **Fuente de Datos**: Google Sheets vía exportación CSV
 - **Hosting**: Google Cloud Run (imagen Docker/Nginx, build vía Google Cloud Build)
 
 ## Desarrollo Local

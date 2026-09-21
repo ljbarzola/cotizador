@@ -18,7 +18,7 @@
 
 ### Base de datos (Supabase)
 
-**Tablas (sincronizadas desde Google Sheets):**
+**Tablas (administradas directamente en Supabase, vía el editor de catálogo de la app):**
 
 - `profiles` - Perfiles de usuario (id, correo, nombre, rol, cargo, telefono). Trigger auto-create.
 - `equipos` - Catalogo de equipos (source_id, categoria, subcategoria, modelo, producto, unidades, costo_unitario, ganancia_flag, instalacion_flag, ultima_act, proveedor, observaciones).
@@ -28,13 +28,6 @@
 - `saved_quotes` - Cotizaciones guardadas (id, user_id, cot_num, cot_date, client JSONB, margin, productos JSONB, status, updated_at).
 - `templates` - Plantillas compartidas (id, name, description, client_type, industry, client JSONB, productos JSONB, ...).
 - `quote_sequences` - Secuencia global de cotizaciones (id, last_seq). Genera IDs únicos via RPC `next_quote_seq()` (consume/incrementa, solo al guardar de verdad) y `peek_quote_seq()` (solo lectura, para mostrar un número tentativo en pantalla sin gastarlo).
-
-**Google Sheet fuente:** `https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo`
-
-- Pestaña `PRECIOS EQUIPOS BD` → tabla `equipos`
-- Pestaña `PRECIOS MATERIALES BD` → tabla `materiales`
-- Pestaña `PRECIOS SERVICIOS BD` → tabla `servicios`
-- Pestaña `INSTALACIÓN BD` → tabla `instalaciones` (5 columnas, sin header: servicio, costo_unitario, categoria, subcategoria, observaciones)
 
 **RLS (Row Level Security):**
 
@@ -67,7 +60,7 @@ Cotizador/
 │       ├── modals.js           # Product/cart detail, help, templates (17 funciones, 384 lineas, JSDoc)
 │       ├── history.js          # Saved quotes, status, new quote (8 funciones, 237 lineas, JSDoc)
 │       ├── auth.js             # Login, sesion, perfiles
-│       ├── sync.js             # Sync Google Sheets ↔ Supabase (4 tablas)
+│       ├── sync.js             # Lectura de catalogo desde Supabase (equipos/materiales/servicios/instalaciones)
 │       ├── catalog.js          # Stub
 │       └── quote.js            # Template CRUD (Supabase-backed)
 ├── db/
@@ -100,7 +93,7 @@ Cotizador/
 
 1. **Autenticacion**: Login via Supabase Auth (`signInWithPassword`). Soporta email completo o username corto.
 2. **Perfiles**: Tabla `profiles` con trigger auto-create en `auth.users`. Roles: admin / vendedor.
-3. **Catalogo desde Google Sheets**: Sincronizacion automatica de 3 pestañas del Google Sheet a tablas Supabase via `sync.js`.
+3. **Catalogo en Supabase**: Equipos, materiales, servicios e instalaciones se administran directamente en Supabase desde el editor de catálogo de la app (altas, bajas y cambios de precio), sin dependencia de fuentes externas.
 4. **Visor de catalogo**: Modal de solo lectura (todos los usuarios). Busqueda + filtro por subcategoria.
 5. **Editor de catalogo**: Todos los usuarios pueden editar. Edicion inline, agregar/eliminar productos, batch save a Supabase. Select de categoría obligatorio para mostrar columnas específicas por tabla.
 6. **Carrito**: Agregar productos, cantidades, eliminar, totales con IVA 15%.
@@ -159,18 +152,13 @@ Cotizador/
 - **Servicios**: price = costo_mensual (o costo_anual/12 si mensual=0) + IVA 15%. Sin ganancia, sin instalacion.
 - **Equipos/Materiales**: costo → si Ganancia flag=1: +supplier margin (% editable, default 15%) → +IVA 15% (siempre) → si Instalacion flag=1 Y activa: +costo_tecnico + empresa margin (% global, default 35%). NO IVA on equipment installation.
 - **Margen por proveedor**: Cada proveedor tiene su propio %. Los productos sin proveedor ("Sin proveedor") tambien tienen un margen individual configurable.
-- **Servicios de instalación del catálogo**: Fixed cost from sheet → +individual margin (default 35%, editable per service) → +IVA 15%. Added as separate line items in cart, ONLY visible in 🔧 Ganancia por instalación section.
+- **Servicios de instalación del catálogo**: Fixed cost desde Supabase → +individual margin (default 35%, editable per service) → +IVA 15%. Added as separate line items in cart, ONLY visible in 🔧 Ganancia por instalación section.
 
-### Sync (Google Sheets → Supabase)
+### Catálogo (Supabase)
 
-- **CSV export URL**: `https://docs.google.com/spreadsheets/d/{ID}/gviz/tq?tqx=out:csv&sheet={SHEET_NAME}`
-- **Parser CSV**: `parseCsv()` maneja campos multi-línea entre comillas, `splitCsvLine()` separa por comas.
-- **Header maps**: Normalizan headers (toLowerCase → NFD → quitar tildes → trim) y mapean a campos de DB.
-- **Schema detection**: `getTableColumns()` detecta columnas existentes via dummy insert o SELECT *.
-- **Filtrado**: `filterRowToColumns()` quita columnas que no existen en la tabla (fallback V3_2_COLUMNS).
-- **Comparacion**: `compareRows()` detecta cambios campo por campo y loguea diferencias.
+- `sync.js` (nombre legado del módulo) expone solo lecturas: `loadAllProducts()` (equipos/materiales/servicios), `loadAllInstalaciones()`, `normalizeCategory()`, `getCategoryHierarchy()`.
+- Altas, bajas y cambios de precio se hacen desde el editor de catálogo de la app (`editor.js`), que escribe directo a Supabase — no hay fuente externa ni sincronización.
 - **Sorting**: Productos ordenados por source_id (natural sort: EQ-0001, EQ-0002, MT-0001, SV-0001, etc.).
-- **INSTALACIÓN BD**: Sync separado via `syncInstalacionesOnly()`. Parser posicional (5 columnas sin header): servicio, costo_unitario, categoria, subcategoria, observaciones.
 
 ### Comandos
 
@@ -196,7 +184,7 @@ VITE_SUPABASE_ANON_KEY=tu-anon-key-aqui
 
 ### Notas Importantes
 
-- 178 tests unitarios (sync: 18, helpers: 16, utils: 31, templates: 18, kits: 17, history: 13, auth: 22, editor: 27, cartCalculations: 16)
+- 160 tests unitarios (helpers: 16, utils: 31, templates: 18, kits: 17, history: 13, auth: 22, editor: 27, cartCalculations: 16)
 - **Deploy**: build de imagen Docker (`Dockerfile`, Node 20 + Nginx) vía **Google Cloud Build** (`cloudbuild.yaml`) y despliegue al servicio **Cloud Run** `cotizador` (region `us-central1`), disparado por un Cloud Build Trigger sobre push a `master`. Las variables `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` se inyectan como `--build-arg` en el paso de build. **Ya NO se despliega vía GitHub Pages** — el workflow `.github/workflows/deploy.yml` que hacía eso se eliminó el 2026-07-30 (commit `b32a344`, "Eliminar flujo de GitHub Pages"); solo queda `.github/workflows/backup.yml` (respaldo programado de Supabase), que es un job no relacionado con el deploy.
 - **NUNCA hacer push sin confirmacion del usuario**
 - El catalogo original de 400 productos esta en `db/migrate_catalog.sql` (legacy, reemplazado por sync desde Google Sheets)

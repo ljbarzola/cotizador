@@ -643,43 +643,12 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
             </select>
             <div class="viewer-actions" id="viewerActionsProducts">
               <button class="btn btn-sm btn-primary" onclick="addNewItemFromViewer('product');">+ Nuevo producto</button>
-              <button class="btn btn-sm btn-ghost" onclick="openSyncPanel();">🔄 Sincronizar Productos</button>
             </div>
             <div class="viewer-actions" id="viewerActionsInstall" style="display:none;">
               <button class="btn btn-sm btn-primary" onclick="addNewItemFromViewer('install');">+ Nueva instalación</button>
-              <button class="btn btn-sm btn-ghost" onclick="openInstallSyncPanel();">🔧 Sincronizar Instalaciones</button>
             </div>
             <div class="viewer-actions" id="viewerActionsKits" style="display:none;">
               <button class="btn btn-sm btn-primary" onclick="addNewKitFromViewer();">+ Nuevo kit</button>
-            </div>
-          </div>
-          <!-- SYNC PANELS -->
-          <div id="syncPanel" class="viewer-sync-panel" style="display:none;">
-            <div class="viewer-sync-header"><span>🔄 Sincronizar desde Google Sheets</span><button class="btn-close-sm" onclick="closeSyncPanel()">✕</button></div>
-            <div class="viewer-sync-content">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                <span style="font-size:12px;color:var(--muted);">Fuente:</span>
-                <a href="https://docs.google.com/spreadsheets/d/1UDY7vse-NqjQcBYSgsSdS3bT7s-MiZl_w_uaTcCOyUo/edit" target="_blank" style="font-size:12px;color:var(--primary);text-decoration:underline;">📎 Abrir Google Sheet</a>
-              </div>
-              <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
-                <button class="btn btn-primary" id="btnStartSync" onclick="startSync()" style="font-size:12px;">▶ Sincronizar</button>
-                <button class="btn btn-ghost" id="btnStopSync" onclick="stopSync()" style="font-size:12px;border-color:var(--danger);color:var(--danger);display:none;">⏹ Detener</button>
-                <span id="syncPanelStatus" style="font-size:12px;color:var(--muted);"></span>
-              </div>
-              <div class="viewer-sync-log" id="syncLogContainer"><div id="syncLogEntries">Esperando inicio...</div></div>
-              <div id="syncPanelSummary" class="viewer-sync-summary"></div>
-            </div>
-          </div>
-          <div id="installSyncPanel" class="viewer-sync-panel" style="display:none;">
-            <div class="viewer-sync-header"><span>🔧 Sincronizar instalaciones</span><button class="btn-close-sm" onclick="closeInstallSyncPanel()">✕</button></div>
-            <div class="viewer-sync-content">
-              <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
-                <button class="btn btn-primary" id="btnStartInstallSync" onclick="startInstallSync()" style="font-size:12px;">▶ Sincronizar</button>
-                <button class="btn btn-ghost" id="btnStopInstallSync" onclick="stopInstallSync()" style="font-size:12px;border-color:var(--danger);color:var(--danger);display:none;">⏹ Detener</button>
-                <span id="installSyncPanelStatus" style="font-size:12px;color:var(--muted);"></span>
-              </div>
-              <div class="viewer-sync-log" id="installSyncLogContainer"><div id="installSyncLogEntries">Esperando inicio...</div></div>
-              <div id="installSyncPanelSummary" class="viewer-sync-summary"></div>
             </div>
           </div>
           <!-- TABLE -->
@@ -1116,7 +1085,6 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
                 <li><strong>Eliminar:</strong> Haz clic en ✕ para borrar un registro.</li>
                 <li><strong>Crear nuevo:</strong> Usa <code>[+ Nuevo]</code> en la barra superior del visor.</li>
                 <li><strong>Redimensionar columnas:</strong> Arrastra los bordes de la cabecera de cualquier columna.</li>
-                <li><strong>Sincronizar:</strong> Usa <code>[🔄 Sincronizar Productos]</code> o <code>[🔧 Sincronizar Instalaciones]</code> para actualizar desde Google Sheets.</li>
               </ul>
             </div>
           </div>
