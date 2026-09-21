@@ -184,7 +184,7 @@ VITE_SUPABASE_ANON_KEY=tu-anon-key-aqui
 
 ### Notas Importantes
 
-- 160 tests unitarios (helpers: 16, utils: 31, templates: 18, kits: 17, history: 13, auth: 22, editor: 27, cartCalculations: 16)
+- 166 tests unitarios (helpers: 16, utils: 31, templates: 18, kits: 17, history: 13, auth: 22, editor: 27, cartCalculations: 16, catalog-crud-sync: 6)
 - **Deploy**: build de imagen Docker (`Dockerfile`, Node 20 + Nginx) vía **Google Cloud Build** (`cloudbuild.yaml`) y despliegue al servicio **Cloud Run** `cotizador` (region `us-central1`), disparado por un Cloud Build Trigger sobre push a `master`. Las variables `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` se inyectan como `--build-arg` en el paso de build. **Ya NO se despliega vía GitHub Pages** — el workflow `.github/workflows/deploy.yml` que hacía eso se eliminó el 2026-07-30 (commit `b32a344`, "Eliminar flujo de GitHub Pages"); solo queda `.github/workflows/backup.yml` (respaldo programado de Supabase), que es un job no relacionado con el deploy.
 - **NUNCA hacer push sin confirmacion del usuario**
 - El catalogo original de 400 productos esta en `db/migrate_catalog.sql` (legacy, reemplazado por sync desde Google Sheets)
