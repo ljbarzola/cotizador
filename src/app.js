@@ -99,9 +99,11 @@ import {
   changeStatus,
   loadSaved,
   deleteSaved,
+  duplicateSharedQuote,
   newQuote,
   quoteTotal,
 } from './modules/history.js';
+import { openShareQuoteModal, closeShareQuoteModal, addQuoteShare, revokeQuoteShare } from './modules/sharing.js';
 import { generateDefaultTemplates } from './modules/quote.js';
 import {
   $,
@@ -3118,6 +3120,11 @@ window.addToCart = addToCart;
 window.updateQty = updateQty;
 window.removeItem = removeItem;
 window.loadSaved = loadSaved;
+window.duplicateSharedQuote = duplicateSharedQuote;
+window.openShareQuoteModal = openShareQuoteModal;
+window.closeShareQuoteModal = closeShareQuoteModal;
+window.addQuoteShare = addQuoteShare;
+window.revokeQuoteShare = revokeQuoteShare;
 window.deleteSaved = deleteSaved;
 window.changeStatus = changeStatus;
 window.applyHistoryFilters = applyHistoryFilters;

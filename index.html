@@ -599,6 +599,26 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
       </div>
     </div>
 
+    <!-- MODAL: COMPARTIR COTIZACIÓN -->
+    <div class="modal-backdrop" id="shareQuoteModal" role="dialog" aria-modal="true" aria-labelledby="shareQuoteTitle">
+      <div class="modal" style="max-width: 480px">
+        <div class="modal-header">
+          <h2 id="shareQuoteTitle">🔗 Compartir cotización</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeShareQuoteModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="share-add-row">
+            <select id="shareUserSelect" aria-label="Usuario"></select>
+            <button class="btn btn-primary" onclick="addQuoteShare()">Compartir</button>
+          </div>
+          <div id="shareCurrentList"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeShareQuoteModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
     <!-- MODAL: VISOR DE CATÁLOGO -->
     <div class="modal-backdrop" id="catalogViewerModal" role="dialog" aria-modal="true" aria-labelledby="catalogViewerTitle">
       <div class="modal" style="max-width: 95vw; height: 90vh; display: flex; flex-direction: column">
@@ -1052,6 +1072,7 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
                 <li><strong>Cargar:</strong> Recupera una cotización previa para revisar o editar.</li>
                 <li><strong>Cambiar estado:</strong> Modifica el ciclo de vida de la propuesta.</li>
                 <li><strong>Eliminar:</strong> Borra la cotización de forma permanente.</li>
+                <li><strong>Compartir:</strong> Deja que otro asesor revise una cotización tuya sin poder editarla — ver la sección <strong>11. Compartir cotizaciones</strong>.</li>
               </ul>
             </div>
           </div>
@@ -1085,6 +1106,22 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
                 <li><strong>Eliminar:</strong> Haz clic en ✕ para borrar un registro.</li>
                 <li><strong>Crear nuevo:</strong> Usa <code>[+ Nuevo]</code> en la barra superior del visor.</li>
                 <li><strong>Redimensionar columnas:</strong> Arrastra los bordes de la cabecera de cualquier columna.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+              <span class="help-icon">🔗</span><span class="help-title">11. Compartir cotizaciones</span>
+              <span class="help-arrow">▼</span>
+            </button>
+            <div class="help-section-content">
+              <p>Comparte una cotización tuya con otro asesor para que la revise, sin que él pueda modificar la tuya.</p>
+              <ul>
+                <li><strong>Compartir:</strong> En el Historial, en una cotización tuya, haz clic en <code>🔗 Compartir</code>. Elige el usuario y confirma. Ahí mismo puedes ver con quién ya la compartiste y revocar el acceso (✕) cuando quieras.</li>
+                <li><strong>Cómo la ve el otro asesor:</strong> Le aparece en su propio Historial, marcada con la etiqueta <strong>"🔗 Compartida por {tu nombre}"</strong>. Su estado se muestra como texto, no lo puede cambiar.</li>
+                <li><strong>Crear copia:</strong> Es el único botón disponible sobre una cotización compartida. La abre para que el otro asesor la revise (puede ver todos los productos e imprimir el PDF) y, si quiere trabajar sobre ella, la guarda como una cotización propia y totalmente independiente (número y estado nuevos). Tu cotización original nunca se modifica ni se borra por esta vía — solo tú (o un administrador) pueden editarla o eliminarla.</li>
+                <li><strong>Revocar acceso:</strong> Desde el mismo modal de <code>🔗 Compartir</code>, en cualquier momento. La otra persona deja de verla la próxima vez que abra su Historial; si ya había creado una copia antes, esa copia no se ve afectada.</li>
               </ul>
             </div>
           </div>

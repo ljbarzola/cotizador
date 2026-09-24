@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../state.js', () => ({
   CATALOG: [
@@ -15,11 +15,47 @@ vi.mock('../state.js', () => ({
   ],
   supplierMargins: { Sisegusa: 25 },
   DEFAULT_SUPPLIER_MARGIN: 15,
+  DEFAULT_INSTALL_MARGIN: 35,
   installationMarginPct: 35,
+  cart: [],
+  currentSession: { userId: 'u1', rol: 'vendedor' },
+  currentQuoteId: null,
+  historyQuotesCache: [],
+  STATUS_LABELS: {
+    borrador: 'Borrador',
+    enviada: 'Enviada',
+    vista: 'Vista',
+    aceptada: 'Aceptada',
+    rechazada: 'Rechazada',
+    vencida: 'Vencida',
+  },
+  STATUS_ORDER: ['borrador', 'enviada', 'vista', 'aceptada', 'rechazada', 'vencida'],
+  setCurrentQuoteId: vi.fn(),
+  setCart: vi.fn(),
+  setSupplierMargins: vi.fn(),
+  setInstallationMarginPct: vi.fn(),
+  setDiscountType: vi.fn(),
+  setDiscountValue: vi.fn(),
+  setHistoryQuotesCache: vi.fn(),
+  setCotNumIsTentative: vi.fn(),
+}));
+
+const { rpcMock, singleMock } = vi.hoisted(() => ({
+  rpcMock: vi.fn(() => Promise.resolve({ data: 1, error: null })),
+  singleMock: vi.fn(),
+}));
+vi.mock('../lib/supabase.js', () => ({
+  default: {
+    from: () => ({
+      select: () => ({ eq: () => ({ single: singleMock }) }),
+    }),
+    rpc: rpcMock,
+  },
 }));
 
 import { getSupplierMargin } from '../modules/helpers.js';
-import { quoteTotal } from '../modules/history.js';
+import { quoteTotal, renderHistoryList, duplicateSharedQuote } from '../modules/history.js';
+import { setCurrentQuoteId } from '../state.js';
 
 // getSupplierMargin() tests
 describe('getSupplierMargin() - supplier margin lookup', () => {
@@ -121,5 +157,102 @@ describe('quoteTotal() - quote total calculation', () => {
       supplierMargins: {},
     });
     expect(viaStaleIdxWithSourceId).toBe(viaCorrectIdx);
+  });
+});
+
+function setupHistoryDOM() {
+  document.body.innerHTML = `
+    <div id="toast"></div>
+    <div id="savedModal" class="modal-backdrop"></div>
+    <div id="historyStats"></div>
+    <div id="historyList"></div>
+  `;
+}
+
+// renderHistoryList() - compartir cotizaciones: gating por _myPermission
+describe('renderHistoryList() - cotizaciones compartidas', () => {
+  beforeEach(() => {
+    setupHistoryDOM();
+  });
+
+  it('una cotización propia muestra Compartir/Eliminar y el estado editable, sin badge', () => {
+    renderHistoryList([{ id: 'q1', user_id: 'u1', client: { name: 'Cliente A' }, status: 'borrador', productos: [] }]);
+    const html = document.getElementById('historyList').innerHTML;
+    expect(html).toContain("openShareQuoteModal('q1')");
+    expect(html).toContain("deleteSaved('q1')");
+    expect(html).toContain("changeStatus('q1'");
+    expect(html).not.toContain('history-shared-badge');
+    expect(html).not.toContain('duplicateSharedQuote');
+  });
+
+  it('como admin, una cotización ajena (no compartida explícitamente) NO muestra el botón Compartir, pero sí Eliminar/estado (comportamiento admin ya existente)', () => {
+    renderHistoryList([
+      { id: 'q-other', user_id: 'otro-usuario', client: { name: 'Cliente Ajeno' }, status: 'borrador', productos: [] },
+    ]);
+    const html = document.getElementById('historyList').innerHTML;
+    expect(html).not.toContain('openShareQuoteModal');
+    expect(html).toContain("deleteSaved('q-other')");
+    expect(html).toContain("changeStatus('q-other'");
+  });
+
+  it('una cotización compartida muestra el badge, el estado como texto, y un único botón "Crear copia" (sin Cargar/Compartir/Eliminar/estado editable)', () => {
+    renderHistoryList([
+      {
+        id: 'q2',
+        client: { name: 'Cliente B' },
+        status: 'enviada',
+        productos: [],
+        _sharedBy: 'Juan',
+      },
+    ]);
+    const html = document.getElementById('historyList').innerHTML;
+    expect(html).toContain('🔗 Compartida por Juan');
+    expect(html).toContain('status-readonly');
+    expect(html).toContain("duplicateSharedQuote('q2')");
+    expect(html).toContain('Crear copia');
+    expect(html).not.toContain('openShareQuoteModal');
+    expect(html).not.toContain('deleteSaved');
+    expect(html).not.toContain('changeStatus');
+    expect(html).not.toContain('loadSaved');
+  });
+});
+
+// duplicateSharedQuote() - nunca escribe sobre la cotización original
+describe('duplicateSharedQuote() - duplicar como cotización propia', () => {
+  beforeEach(() => {
+    setupHistoryDOM();
+    singleMock.mockReset();
+    setCurrentQuoteId.mockClear();
+    window.loadQuoteData = vi.fn();
+  });
+
+  it('lee la cotización compartida y la carga como una nueva (currentQuoteId a null, sin update/insert)', async () => {
+    singleMock.mockResolvedValue({
+      data: {
+        id: 'shared-1',
+        cot_num: 'COT-20260101-0001',
+        client: { name: 'Cliente Compartido' },
+        supplier_margins: {},
+        install_margin: 35,
+        productos: [],
+      },
+      error: null,
+    });
+
+    await duplicateSharedQuote('shared-1');
+
+    // Nunca se llama a update/insert contra saved_quotes: solo se leyó.
+    expect(setCurrentQuoteId).toHaveBeenCalledWith(null);
+    expect(window.loadQuoteData).toHaveBeenCalledTimes(1);
+    const loaded = window.loadQuoteData.mock.calls[0][0];
+    expect(loaded.client).toEqual({ name: 'Cliente Compartido' });
+    // El número de cotización de la copia es nuevo, no el de la original.
+    expect(loaded.cotNum).not.toBe('COT-20260101-0001');
+  });
+
+  it('muestra un error si la lectura falla, sin lanzar excepción', async () => {
+    singleMock.mockResolvedValue({ data: null, error: { message: 'no autorizado' } });
+    await expect(duplicateSharedQuote('shared-2')).resolves.toBeUndefined();
+    expect(window.loadQuoteData).not.toHaveBeenCalled();
   });
 });

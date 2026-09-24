@@ -136,11 +136,45 @@ export async function openSavedModal() {
     if (!isAdmin(currentSession)) query = query.eq('user_id', userId);
     const { data: saved, error } = await query.order('updated_at', { ascending: false });
     if (error) throw error;
-    setHistoryQuotesCache(saved || []);
+
+    let combined = saved || [];
+    // Admin ya ve todas las cotizaciones arriba, así que no hace falta
+    // traer también las compartidas explícitamente para ellos.
+    if (!isAdmin(currentSession)) {
+      const shared = await fetchSharedWithMe(userId);
+      combined = combined.concat(shared);
+      combined.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
+    }
+    setHistoryQuotesCache(combined);
     renderHistoryList(historyQuotesCache);
   } catch (e) {
     $('historyList').innerHTML = '<div class="empty-state">Error: ' + e.message + '</div>';
   }
+}
+
+/**
+ * Fetch quotes shared with the given user, tagged with the owner's display
+ * name. Sharing always grants the same capability (view + create a copy),
+ * so there is no per-share permission to track here.
+ * @param {string} userId - Current user's UUID
+ * @returns {Promise<Array<Object>>} Shared quote objects with _sharedBy
+ */
+async function fetchSharedWithMe(userId) {
+  const { data: shares, error } = await supabase
+    .from('saved_quote_shares')
+    .select('owner_id, saved_quotes(*)')
+    .eq('shared_with', userId);
+  if (error) throw error;
+  const rows = (shares || []).filter(s => s.saved_quotes);
+  if (rows.length === 0) return [];
+  const ownerIds = [...new Set(rows.map(s => s.owner_id))];
+  const { data: owners } = await supabase.from('profiles').select('id, nombre').in('id', ownerIds);
+  const nameById = {};
+  (owners || []).forEach(o => (nameById[o.id] = o.nombre));
+  return rows.map(s => ({
+    ...s.saved_quotes,
+    _sharedBy: nameById[s.owner_id] || '',
+  }));
 }
 
 /**
@@ -176,19 +210,30 @@ export function renderHistoryList(quotes) {
       const total = quoteTotal(q);
       const status = q.status || 'borrador';
       const vendor = q.vendor_name || '';
-      const statusOptions = STATUS_ORDER.map(
-        s => `<option value="${s}" ${s === status ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`
-      ).join('');
+      const isShared = !!q._sharedBy;
+      const sharedBadge = isShared
+        ? ` <span class="margin-badge history-shared-badge">🔗 Compartida por ${esc(q._sharedBy)}</span>`
+        : '';
+      const statusMarkup = isShared
+        ? `<span class="status-select status-readonly">${esc(STATUS_LABELS[status] || status)}</span>`
+        : `<select class="status-select" aria-label="Cambiar estado de cotización" onchange="changeStatus('${q.id}', this.value)">${STATUS_ORDER.map(
+            s => `<option value="${s}" ${s === status ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`
+          ).join('')}</select>`;
+      const isOwnQuote = q.user_id === currentSession?.userId;
+      const actions = isShared
+        ? `<button onclick="duplicateSharedQuote('${q.id}')">Crear copia</button>`
+        : `<button onclick="loadSaved('${q.id}')">Cargar</button>
+           ${isOwnQuote ? `<button onclick="openShareQuoteModal('${q.id}')">🔗 Compartir</button>` : ''}
+           <button style="color:var(--danger);border-color:var(--danger);" onclick="deleteSaved('${q.id}')">Eliminar</button>`;
       return `
       <div class="history-item history-producto">
         <div class="history-item-info history-producto-info">
-          <div class="history-item-client history-producto-client">${esc(client.name || '(sin nombre)')}</div>
+          <div class="history-item-client history-producto-client">${esc(client.name || '(sin nombre)')}${sharedBadge}</div>
           <div class="history-item-meta history-producto-meta">${esc(q.cot_num || '(sin número)')} · ${q.productos?.length || 0} Productos · ${fmt(total)} · ${d.toLocaleDateString('es-EC')} ${d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}${vendor ? ' · <span style="color:var(--primary);font-weight:500;">' + esc(vendor) + '</span>' : ''}</div>
         </div>
-        <select class="status-select" aria-label="Cambiar estado de cotización" onchange="changeStatus('${q.id}', this.value)">${statusOptions}</select>
+        ${statusMarkup}
         <div class="history-item-actions history-producto-actions">
-          <button onclick="loadSaved('${q.id}')">Cargar</button>
-          <button style="color:var(--danger);border-color:var(--danger);" onclick="deleteSaved('${q.id}')">Eliminar</button>
+          ${actions}
         </div>
       </div>`;
     })
@@ -288,6 +333,41 @@ export async function loadSaved(id) {
     toast('✓ Cotización cargada: ' + data.cot_num);
   } catch (e) {
     toast('Error: ' + e.message, 'danger');
+  }
+}
+
+/**
+ * Duplicate a quote shared with the current user into a brand-new,
+ * independent quote owned by them. The original quote is only read, never
+ * updated — the copy gets a fresh cot_num and is loaded into the cart as an
+ * unsaved new quote (currentQuoteId cleared), so pressing "Guardar" inserts
+ * a new row instead of touching the shared original.
+ * @param {string} id - UUID of the shared saved quote to copy
+ * @returns {Promise<void>}
+ */
+export async function duplicateSharedQuote(id) {
+  try {
+    const { data, error } = await supabase.from('saved_quotes').select('*').eq('id', id).single();
+    if (error) throw error;
+    setCurrentQuoteId(null);
+    setCotNumIsTentative(true);
+    const { cart: resolvedProductos, unmatched } = resolveTemplateProductos(data.productos || [], CATALOG);
+    const newCotNum = await previewNextCotNumber();
+    window.loadQuoteData?.({
+      cotNum: newCotNum,
+      cotDate: new Date().toISOString().split('T')[0],
+      client: data.client,
+      supplierMargins: data.supplier_margins,
+      installMargin: data.install_margin,
+      productos: resolvedProductos,
+    });
+    closeSavedModal();
+    if (unmatched.length > 0) {
+      toast(`⚠️ ${unmatched.length} producto(s) de esta cotización ya no existen en el catálogo`, 'warning');
+    }
+    toast('✓ Copia creada — edítala y guárdala como tuya');
+  } catch (e) {
+    toast('Error al duplicar: ' + e.message, 'danger');
   }
 }
 

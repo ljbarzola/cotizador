@@ -2052,6 +2052,51 @@ textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
+.status-readonly {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  color: var(--muted);
+}
+
+/* === COMPARTIR COTIZACIONES === */
+.history-shared-badge {
+  background: #ede9fe;
+  color: #5b21b6;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.share-add-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.share-add-row select {
+  flex: 1;
+  min-width: 140px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.share-current-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.share-current-row:last-child {
+  border-bottom: none;
+}
+.share-current-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+}
 
 /* === CATALOG EDITOR === */
 .editor-table {

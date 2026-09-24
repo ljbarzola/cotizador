@@ -26,14 +26,16 @@
 - `servicios` - Catalogo de servicios (source_id, categoria, subcategoria, servicio, descripcion, costo_mensual, costo_anual, costo_unitario, observaciones).
 - `instalaciones` - Servicios de instalación (source_id, categoria, subcategoria, servicio, costo_unitario, observaciones). Tabla independiente, NO es una categoría.
 - `saved_quotes` - Cotizaciones guardadas (id, user_id, cot_num, cot_date, client JSONB, margin, productos JSONB, status, updated_at).
+- `saved_quote_shares` - Compartir cotizaciones puntuales entre usuarios (id, quote_id → saved_quotes, owner_id, shared_with, permission [columna heredada de un diseño con 2 niveles, ya NO se lee/usa desde el frontend — compartir siempre otorga la misma capacidad: ver + crear copia], created_at, updated_at). `UNIQUE(quote_id, shared_with)`, `ON DELETE CASCADE` en `quote_id`. Ver sección "Compartir cotizaciones" más abajo. Script: `db/add_quote_shares_table.sql` + fix `db/fix_quote_shares_insert_recursion.sql` (ambos aplicados en producción).
 - `templates` - Plantillas compartidas (id, name, description, client_type, industry, client JSONB, productos JSONB, ...).
 - `quote_sequences` - Secuencia global de cotizaciones (id, last_seq). Genera IDs únicos via RPC `next_quote_seq()` (consume/incrementa, solo al guardar de verdad) y `peek_quote_seq()` (solo lectura, para mostrar un número tentativo en pantalla sin gastarlo).
 
 **RLS (Row Level Security):**
 
-- `profiles`: Los usuarios ven solo su perfil. Admin puede ver todos.
+- `profiles`: Los usuarios ven solo su perfil, más los perfiles activos de cualquier otro usuario (política `profiles_active_select_for_sharing`, agregada para poblar el selector de usuarios del modal "Compartir" — no expone usuarios inactivos). Admin puede ver todos.
 - `equipos/materiales/servicios/instalaciones`: Lectura publica, escritura publica (app).
-- `saved_quotes`: Admin ve todas, vendedor solo las suyas.
+- `saved_quotes`: Admin ve todas, vendedor solo las suyas + las que le compartieron explícitamente vía `saved_quote_shares` (política `saved_quotes_shared_select`, solo lectura — nadie más que el dueño/admin puede hacer `UPDATE`, sin importar si la cotización está compartida).
+- `saved_quote_shares`: el dueño de la cotización crea/ve/edita/borra sus propios permisos compartidos (`shares_owner_*`); el receptor solo puede leer los que le pertenecen (`shares_recipient_select`); admin ve todos. El `INSERT` valida la propiedad de la cotización con la función `is_quote_owner(quote_id, user_id)` (`SECURITY DEFINER`) en vez de una subconsulta directa a `saved_quotes` — sin esto, Postgres detecta "infinite recursion detected in policy" porque `saved_quotes` y `saved_quote_shares` se consultan mutuamente entre sus propias políticas (ver `db/fix_quote_shares_insert_recursion.sql` para el detalle).
 
 **Estados de cotizacion:** borrador → enviada → vista → aceptada → rechazada → vencida
 
@@ -58,7 +60,8 @@ Cotizador/
 │       ├── kits.js             # Kit CRUD + rendering (27 funciones, ~600 lineas, JSDoc)
 │       ├── editor.js           # Catalog editor + install editor (20 funciones, 661 lineas, JSDoc) — bulk editor, no se usa desde el visor
 │       ├── modals.js           # Product/cart detail, help, templates (17 funciones, 384 lineas, JSDoc)
-│       ├── history.js          # Saved quotes, status, new quote (8 funciones, 237 lineas, JSDoc)
+│       ├── history.js          # Saved quotes, status, new quote, compartidas conmigo, duplicar copia (JSDoc)
+│       ├── sharing.js          # Modal "Compartir cotización": usuarios, alta/revocación de accesos (JSDoc)
 │       ├── auth.js             # Login, sesion, perfiles
 │       ├── sync.js             # Lectura de catalogo desde Supabase (equipos/materiales/servicios/instalaciones)
 │       ├── catalog.js          # Stub
@@ -76,7 +79,9 @@ Cotizador/
 │   ├── rename_items_to_productos.sql  # Migra columna items→productos en saved_quotes y templates
 │   ├── add_cargo_column.sql           # Agregar columna cargo a profiles
 │   ├── add_phone_column.sql           # Agregar columna telefono a profiles
-│   └── next_source_seq.sql            # RPC next_source_seq(tabla, prefijo) para sugerir el próximo source_id de equipos/materiales/servicios/instalaciones (reemplaza el cálculo por conteo de items cargados)
+│   ├── next_source_seq.sql            # RPC next_source_seq(tabla, prefijo) para sugerir el próximo source_id de equipos/materiales/servicios/instalaciones (reemplaza el cálculo por conteo de items cargados)
+│   ├── add_quote_shares_table.sql     # Tabla saved_quote_shares + RLS (compartir cotizaciones), aditivo
+│   └── fix_quote_shares_insert_recursion.sql  # Fix "infinite recursion detected in policy" al compartir (función is_quote_owner SECURITY DEFINER)
 ├── public/
 │   ├── content/
 │   │   ├── logo-gemeseg-back-white.png   # Logo login
@@ -146,6 +151,11 @@ Cotizador/
     - **Número de cotización tentativo vs. confirmado**: al abrir/recargar la pantalla o pulsar "Nueva cotización" ya NO se consume un número real de `quote_sequences` — se usa `previewNextCotNumber()` (RPC `peek_quote_seq()`, solo lectura) para mostrar un número tentativo. Solo `saveQuote()` pide el número real y definitivo (`generateNextCotNumberFromDB()` / `next_quote_seq()`), controlado por el flag `cotNumIsTentative` en `state.js`. Antes de este fix, cada recarga sin guardar quemaba un número real.
     - **Notificaciones e impresión**: el toast (`#toast`) se oculta en `@media print` para que no aparezca superpuesto en el PDF si estaba visible al imprimir. El proveedor de cada ítem (`item.supplier`, junto al código del producto) ahora tiene su propia clase `.supplier-line`, oculta solo en `@media print` — en pantalla se sigue mostrando igual, pero no se filtra al cliente en el documento impreso.
     - **Cotizaciones guardadas ya no se corrompen al borrar un producto del catálogo**: cada ítem del carrito (individual o componente de kit) solo guardaba `catalogIdx` — su **posición** en el catálogo al momento de guardar, no un identificador estable. Como el catálogo se reordena por `source_id` en cada carga, borrar CUALQUIER producto corre una posición hacia atrás a todos los que van después, y una cotización guardada antigua podía terminar mostrando/calculando silenciosamente OTRO producto al reabrirse. `buildQuoteData()` ahora guarda también `sourceId` por ítem (`snapshotCartForSave()`, `app.js`), y `loadSaved()`/`quoteTotal()` (`history.js`) resuelven primero por `sourceId` contra el catálogo actual (via `resolveTemplateProductos()`, reutilizado de `quote.js`), usando `catalogIdx` solo como respaldo para cotizaciones guardadas ANTES de este fix (que no tienen `sourceId`). Nota: las cotizaciones ya guardadas antes de este fix no se migran ni se tocan — siguen dependiendo de `catalogIdx` tal cual, así que borrar un producto del catálogo puede seguir afectando su visualización si ya fueron guardadas; el fix protege las que se guarden de ahora en adelante.
+32. **Compartir cotizaciones entre usuarios** (`modules/sharing.js`, cambios en `modules/history.js`) — 2026-09-24:
+    - **Alcance decidido explícitamente por el usuario**: se descartó un diseño inicial con 2 niveles de permiso ("Solo ver" / "Ver y duplicar") porque "Solo ver" no protegía nada de verdad — el botón "Cargar" ya dejaba la cotización en el carrito editable, y al guardar, el flujo existente de número de cotización repetido (`showQuoteDuplicateModal`) permitía elegir "Crear como nueva" y terminar con una copia igual, sin pasar por ningún permiso. Se simplificó a **un solo nivel**: compartir siempre otorga ver + poder crear una copia propia editable. La cotización original **nunca** es editable ni por su estado por nadie más que su dueño o el admin, sin importar el nivel — eso no se negoció, solo se quitó la ilusión de una restricción de "solo ver" que no se podía hacer cumplir sin construir un visor realmente de solo lectura (fuera de alcance para una app de 2-3 usuarios).
+    - **Compartir es por cotización individual**, no masivo ni por defecto: botón `🔗 Compartir` (`renderHistoryList()`) visible solo cuando `q.user_id === currentSession.userId` (dueño real, sin importar si es admin — un admin no ve "Compartir" en cotizaciones ajenas, aunque sí las vea/edite igual que siempre por su rol).
+    - **Cómo se ve para el receptor**: no hay pestaña separada — la cotización compartida aparece mezclada en el mismo listado del historial (`openSavedModal()` combina `saved_quotes` propias + `fetchSharedWithMe()`), marcada con el badge `.history-shared-badge` ("🔗 Compartida por {nombre}"). Su estado se renderiza siempre como texto (`.status-readonly`), nunca como el `<select>` editable. El único botón disponible es **"Crear copia"** (`duplicateSharedQuote()`, sin emoji — deliberado, para no mezclar estilos con "Cargar"/"Eliminar"): lee la cotización compartida, genera un `cot_num` nuevo vía `previewNextCotNumber()` y la carga en el carrito con `currentQuoteId` en `null`, de forma que "Guardar" siempre inserta una fila nueva propia, nunca actualiza la original.
+    - **`updated_at` como fuente de verdad para colaboración**: si el dueño corrige la cotización después de compartirla, el receptor ve el cambio la próxima vez que abre su historial (nunca hay una copia cacheada de los datos del dueño hasta que el receptor decide "Crear copia").
 
 ### Flujo de precios (confirmado)
 
