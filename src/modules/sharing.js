@@ -52,7 +52,9 @@ async function loadShareUserOptions() {
       select.innerHTML = '<option value="">No hay otros usuarios activos</option>';
       return;
     }
-    select.innerHTML = others.map(u => `<option value="${u.id}">${esc(u.nombre || u.correo)}</option>`).join('');
+    const placeholder = '<option value="" selected disabled>Selecciona un usuario...</option>';
+    select.innerHTML =
+      placeholder + others.map(u => `<option value="${u.id}">${esc(u.nombre || u.correo)}</option>`).join('');
   } catch (e) {
     toast('Error cargando usuarios: ' + e.message, 'danger');
   }

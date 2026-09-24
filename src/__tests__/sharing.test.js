@@ -142,10 +142,12 @@ beforeEach(() => {
 });
 
 describe('openShareQuoteModal() - selector de usuarios', () => {
-  it('lista usuarios activos excluyendo al dueño actual y a inactivos', async () => {
+  it('lista usuarios activos excluyendo al dueño actual y a inactivos, con un placeholder sin selección por defecto', async () => {
     await openShareQuoteModal('quote-1');
-    const options = [...document.getElementById('shareUserSelect').options].map(o => o.value);
-    expect(options).toEqual(['user-2']);
+    const select = document.getElementById('shareUserSelect');
+    const options = [...select.options].map(o => o.value);
+    expect(options).toEqual(['', 'user-2']);
+    expect(select.value).toBe('');
     closeShareQuoteModal();
   });
 });
