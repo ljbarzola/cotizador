@@ -2067,6 +2067,12 @@ textarea:focus {
   margin-left: 6px;
   white-space: nowrap;
 }
+.history-editable-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+  margin-left: 6px;
+  white-space: nowrap;
+}
 .share-add-row {
   display: flex;
   gap: 8px;

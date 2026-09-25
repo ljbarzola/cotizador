@@ -109,10 +109,28 @@ const { fakeSupabase, resetShares, getShares } = vi.hoisted(() => {
     return builder;
   }
 
+  function makeEditGrantsBuilder() {
+    // Sin concesiones de edición en estos tests de sharing.js: siempre vacío,
+    // así el filtro de "ya tiene acceso completo" nunca excluye a nadie.
+    const builder = {
+      select() {
+        return builder;
+      },
+      eq() {
+        return builder;
+      },
+      then(resolve) {
+        resolve({ data: [], error: null });
+      },
+    };
+    return builder;
+  }
+
   const supabaseMock = {
     from: table => {
       if (table === 'saved_quote_shares') return makeSharesBuilder();
       if (table === 'profiles') return makeProfilesBuilder();
+      if (table === 'quote_edit_grants') return makeEditGrantsBuilder();
       throw new Error('tabla no mockeada: ' + table);
     },
   };

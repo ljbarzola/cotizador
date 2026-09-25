@@ -38,6 +38,7 @@ vi.mock('../state.js', () => ({
   setDiscountValue: vi.fn(),
   setHistoryQuotesCache: vi.fn(),
   setCotNumIsTentative: vi.fn(),
+  setLoadedQuoteOwnerProfile: vi.fn(),
 }));
 
 const { rpcMock, singleMock } = vi.hoisted(() => ({

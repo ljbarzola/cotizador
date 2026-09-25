@@ -83,6 +83,16 @@ export let cotNumIsTentative = false;
 /** @type {Array<Object>} Cached list of saved quotes */
 export let historyQuotesCache = [];
 
+/**
+ * Profile (nombre/cargo/telefono) of the ORIGINAL owner of the quote
+ * currently loaded in the cart, only set when it belongs to someone else
+ * (loaded via edit-access grant). syncPrintView() uses this instead of
+ * currentSession so the printed/PDF "emite" footer keeps showing the real
+ * owner, not whoever is editing it. Null when working on your own quote.
+ * @type {Object|null}
+ */
+export let loadedQuoteOwnerProfile = null;
+
 /** @type {Object<string, number>} Per-supplier margin percentages */
 export let supplierMargins = {};
 
@@ -162,6 +172,15 @@ export function setCotNumIsTentative(v) {
  */
 export function setHistoryQuotesCache(v) {
   historyQuotesCache = v;
+}
+
+/**
+ * Set the original owner's profile for the quote currently loaded in the
+ * cart, or null when it's the current user's own quote (or a new one).
+ * @param {Object|null} v - Owner profile ({ nombre, cargo, telefono }) or null
+ */
+export function setLoadedQuoteOwnerProfile(v) {
+  loadedQuoteOwnerProfile = v || null;
 }
 
 /**

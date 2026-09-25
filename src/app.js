@@ -26,6 +26,7 @@ import {
   setDiscountValue,
   historyQuotesCache,
   setHistoryQuotesCache,
+  loadedQuoteOwnerProfile,
   STATUS_LABELS,
   instalacionesCatalog,
   setInstalacionesCatalog,
@@ -104,6 +105,7 @@ import {
   quoteTotal,
 } from './modules/history.js';
 import { openShareQuoteModal, closeShareQuoteModal, addQuoteShare, revokeQuoteShare } from './modules/sharing.js';
+import { openEditAccessModal, closeEditAccessModal, grantEditAccess, revokeEditAccess } from './modules/editAccess.js';
 import { generateDefaultTemplates } from './modules/quote.js';
 import {
   $,
@@ -1204,7 +1206,9 @@ async function saveQuote() {
         const { error } = await supabase
           .from('saved_quotes')
           .update({
-            vendor_name: row.vendor_name,
+            // vendor_name NO se incluye aquí: si quien guarda no es el dueño
+            // original (edición vía quote_edit_grants), no debe pisar la
+            // atribución de quien creó la cotización. Solo se fija al INSERT.
             cot_num: row.cot_num,
             cot_date: row.cot_date,
             client: row.client,
@@ -2548,17 +2552,20 @@ function syncPrintView() {
   $('printClientEmail').textContent = $('clientEmail').value || '—';
   const hdr = $('printHeaderClientName');
   if (hdr) hdr.textContent = $('clientName').value || '';
+  // Si la cotización cargada es de otro dueño (acceso de edición prestado),
+  // el pie de página debe mostrar SIEMPRE al dueño original, no a quien la
+  // está editando en este momento.
+  const issuer = loadedQuoteOwnerProfile || currentSession;
   const cotName = $('printCotizadorName');
   const cotRole = $('printCotizadorRole');
   if (cotName)
-    cotName.textContent =
-      currentSession?.nombre || localStorage.getItem('usuario_nombre') || '[Nombre del responsable]';
+    cotName.textContent = issuer?.nombre || localStorage.getItem('usuario_nombre') || '[Nombre del responsable]';
   if (cotRole) {
-    const cargo = currentSession?.cargo || '';
+    const cargo = issuer?.cargo || '';
     cotRole.textContent = cargo || '[Cargo]';
   }
   const phoneEl = $('printAsesorPhone');
-  if (phoneEl) phoneEl.textContent = '📞 ' + (currentSession?.telefono || '+593 99 897 4909');
+  if (phoneEl) phoneEl.textContent = '📞 ' + (issuer?.telefono || '+593 99 897 4909');
   const condEl = $('quoteConditions');
   const printCondEl = $('printConditions');
   if (condEl && printCondEl) {
@@ -3125,6 +3132,10 @@ window.openShareQuoteModal = openShareQuoteModal;
 window.closeShareQuoteModal = closeShareQuoteModal;
 window.addQuoteShare = addQuoteShare;
 window.revokeQuoteShare = revokeQuoteShare;
+window.openEditAccessModal = openEditAccessModal;
+window.closeEditAccessModal = closeEditAccessModal;
+window.grantEditAccess = grantEditAccess;
+window.revokeEditAccess = revokeEditAccess;
 window.deleteSaved = deleteSaved;
 window.changeStatus = changeStatus;
 window.applyHistoryFilters = applyHistoryFilters;

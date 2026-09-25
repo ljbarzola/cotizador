@@ -20,6 +20,7 @@ import {
   setDiscountValue,
   setHistoryQuotesCache,
   setCotNumIsTentative,
+  setLoadedQuoteOwnerProfile,
 } from '../state.js';
 import supabase from '../lib/supabase.js';
 import { $, fmt, esc, toast, showConfirm, isAdmin, previewNextCotNumber } from '../utils.js';
@@ -139,10 +140,11 @@ export async function openSavedModal() {
 
     let combined = saved || [];
     // Admin ya ve todas las cotizaciones arriba, así que no hace falta
-    // traer también las compartidas explícitamente para ellos.
+    // traer también las compartidas/editables explícitamente para ellos.
     if (!isAdmin(currentSession)) {
-      const shared = await fetchSharedWithMe(userId);
-      combined = combined.concat(shared);
+      const [shared, editable] = await Promise.all([fetchSharedWithMe(userId), fetchEditableByMe(userId)]);
+      const ownIds = new Set(combined.map(q => q.id));
+      combined = combined.concat(shared).concat(editable.filter(q => !ownIds.has(q.id)));
       combined.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
     }
     setHistoryQuotesCache(combined);
@@ -174,6 +176,31 @@ async function fetchSharedWithMe(userId) {
   return rows.map(s => ({
     ...s.saved_quotes,
     _sharedBy: nameById[s.owner_id] || '',
+  }));
+}
+
+/**
+ * Fetch quotes owned by someone else who granted me full edit access,
+ * tagged with the owner's display name via _editableOwnedBy. Unlike
+ * fetchSharedWithMe, these quotes can be loaded and saved (edited) just
+ * like the current user's own quotes — the RLS UPDATE policy on
+ * saved_quotes allows it as long as a matching quote_edit_grants row exists.
+ * @param {string} userId - Current user's UUID
+ * @returns {Promise<Array<Object>>} Editable quote objects with _editableOwnedBy
+ */
+async function fetchEditableByMe(userId) {
+  const { data: grants, error } = await supabase.from('quote_edit_grants').select('owner_id').eq('editor_id', userId);
+  if (error) throw error;
+  const ownerIds = [...new Set((grants || []).map(g => g.owner_id))];
+  if (ownerIds.length === 0) return [];
+  const { data: owners } = await supabase.from('profiles').select('id, nombre').in('id', ownerIds);
+  const nameById = {};
+  (owners || []).forEach(o => (nameById[o.id] = o.nombre));
+  const { data: quotes, error: qErr } = await supabase.from('saved_quotes').select('*').in('user_id', ownerIds);
+  if (qErr) throw qErr;
+  return (quotes || []).map(q => ({
+    ...q,
+    _editableOwnedBy: nameById[q.user_id] || '',
   }));
 }
 
@@ -211,20 +238,29 @@ export function renderHistoryList(quotes) {
       const status = q.status || 'borrador';
       const vendor = q.vendor_name || '';
       const isShared = !!q._sharedBy;
+      const isEditGranted = !!q._editableOwnedBy;
       const sharedBadge = isShared
         ? ` <span class="margin-badge history-shared-badge">🔗 Compartida por ${esc(q._sharedBy)}</span>`
-        : '';
+        : isEditGranted
+          ? ` <span class="margin-badge history-editable-badge">✏️ Editable · de ${esc(q._editableOwnedBy)}</span>`
+          : '';
       const statusMarkup = isShared
         ? `<span class="status-select status-readonly">${esc(STATUS_LABELS[status] || status)}</span>`
         : `<select class="status-select" aria-label="Cambiar estado de cotización" onchange="changeStatus('${q.id}', this.value)">${STATUS_ORDER.map(
             s => `<option value="${s}" ${s === status ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`
           ).join('')}</select>`;
       const isOwnQuote = q.user_id === currentSession?.userId;
+      // El acceso de edición prestado (isEditGranted) da permiso para editar
+      // el contenido, pero no para borrar la cotización de otro ni para
+      // compartirla a su vez — eso sigue siendo del dueño (o de un admin,
+      // que llega aquí sin isEditGranted porque ya ve todo por la consulta
+      // principal en openSavedModal, sin pasar por el merge de "editables").
       const actions = isShared
         ? `<button onclick="duplicateSharedQuote('${q.id}')">Crear copia</button>`
         : `<button onclick="loadSaved('${q.id}')">Cargar</button>
+           ${isEditGranted ? `<button onclick="duplicateSharedQuote('${q.id}')">Crear copia</button>` : ''}
            ${isOwnQuote ? `<button onclick="openShareQuoteModal('${q.id}')">🔗 Compartir</button>` : ''}
-           <button style="color:var(--danger);border-color:var(--danger);" onclick="deleteSaved('${q.id}')">Eliminar</button>`;
+           ${!isEditGranted ? `<button style="color:var(--danger);border-color:var(--danger);" onclick="deleteSaved('${q.id}')">Eliminar</button>` : ''}`;
       return `
       <div class="history-item history-producto">
         <div class="history-item-info history-producto-info">
@@ -312,6 +348,16 @@ export async function loadSaved(id) {
     if (error) throw error;
     setCurrentQuoteId(data.id);
     setCotNumIsTentative(false);
+    if (data.user_id && data.user_id !== currentSession?.userId) {
+      const { data: owner } = await supabase
+        .from('profiles')
+        .select('nombre, cargo, telefono')
+        .eq('id', data.user_id)
+        .maybeSingle();
+      setLoadedQuoteOwnerProfile(owner || null);
+    } else {
+      setLoadedQuoteOwnerProfile(null);
+    }
     // catalogIdx guardado es solo una posición en el catálogo de cuando se
     // guardó la cotización; si algún producto anterior fue borrado desde
     // entonces, esa posición ahora apunta a OTRO producto. Se re-resuelve por
@@ -351,6 +397,7 @@ export async function duplicateSharedQuote(id) {
     if (error) throw error;
     setCurrentQuoteId(null);
     setCotNumIsTentative(true);
+    setLoadedQuoteOwnerProfile(null);
     const { cart: resolvedProductos, unmatched } = resolveTemplateProductos(data.productos || [], CATALOG);
     const newCotNum = await previewNextCotNumber();
     window.loadQuoteData?.({
@@ -403,6 +450,7 @@ export async function newQuote() {
     return;
   setCart([]);
   setCurrentQuoteId(null);
+  setLoadedQuoteOwnerProfile(null);
   setSupplierMargins({});
   setInstallationMarginPct(DEFAULT_INSTALL_MARGIN);
   setDiscountType('none');

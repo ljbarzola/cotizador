@@ -41,13 +41,16 @@ async function loadShareUserOptions() {
   const select = $('shareUserSelect');
   if (!select) return;
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, nombre, correo')
-      .eq('activo', true)
-      .order('nombre', { ascending: true });
+    const [{ data, error }, { data: editGrants }] = await Promise.all([
+      supabase.from('profiles').select('id, nombre, correo').eq('activo', true).order('nombre', { ascending: true }),
+      supabase.from('quote_edit_grants').select('editor_id').eq('owner_id', currentSession?.userId),
+    ]);
     if (error) throw error;
-    const others = (data || []).filter(u => u.id !== currentSession?.userId);
+    // Quien ya tiene acceso de edición total a TODAS mis cotizaciones no
+    // necesita (ni tiene sentido) que además se le comparta esta puntual
+    // para solo ver — ya puede verla y editarla.
+    const alreadyFullAccess = new Set((editGrants || []).map(g => g.editor_id));
+    const others = (data || []).filter(u => u.id !== currentSession?.userId && !alreadyFullAccess.has(u.id));
     if (others.length === 0) {
       select.innerHTML = '<option value="">No hay otros usuarios activos</option>';
       return;

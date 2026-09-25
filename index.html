@@ -273,6 +273,8 @@
               <button class="user-dropdown-item" onclick="openProfile()">
                 ✏️ Perfil
               </button>
+              <button class="user-dropdown-item" onclick="openEditAccessModal()">🔒 Compartir edición</button>
+              <div class="user-dropdown-divider"></div>
               <button class="user-dropdown-item user-dropdown-logout" onclick="logout()">🚪 Cerrar sesión</button>
             </div>
           </div>
@@ -615,6 +617,30 @@ Moneda: Dólares de los Estados Unidos (USD).</textarea>
         </div>
         <div class="modal-footer">
           <button class="btn btn-ghost" onclick="closeShareQuoteModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: COMPARTIR EDICIÓN DE MIS COTIZACIONES -->
+    <div class="modal-backdrop" id="editAccessModal" role="dialog" aria-modal="true" aria-labelledby="editAccessTitle">
+      <div class="modal" style="max-width: 480px">
+        <div class="modal-header">
+          <h2 id="editAccessTitle">🔒 Compartir edición de mis cotizaciones</h2>
+          <button class="modal-close" aria-label="Cerrar modal" onclick="closeEditAccessModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 12px">
+            Los usuarios que agregues aquí podrán ver y editar (precios, descuentos, todo) TODAS tus cotizaciones,
+            actuales y futuras. Seguirán apareciendo a tu nombre.
+          </p>
+          <div class="share-add-row">
+            <select id="editAccessUserSelect" aria-label="Usuario"></select>
+            <button class="btn btn-primary" onclick="grantEditAccess()">Dar acceso</button>
+          </div>
+          <div id="editAccessCurrentList"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeEditAccessModal()">Cerrar</button>
         </div>
       </div>
     </div>
